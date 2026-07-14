@@ -2,15 +2,16 @@
 
 This checklist tracks what must be true before the vertical slice is mobile-ready.
 
-## Current Status Through Phase 5
+## Current Status Through Phase 6
 
 - Godot 4.7 stable is available and verified.
 - Project imports in headless mode.
 - Configured main scene starts in headless mode.
 - Mobile renderer is selected.
 - Touch input is handled directly with `InputEventScreenTouch` and `InputEventScreenDrag`.
-- Offline progression, star ratings, app shell menus, level select, pause, result overlays, and basic settings now exist.
-- Cosmetics has a clean Phase 5 placeholder only; real cosmetic selection remains Phase 6.
+- Offline progression, star ratings, app shell menus, level select, pause, result overlays, basic settings, and earnable cosmetics now exist.
+- Cosmetics are offline-only, gameplay-earned, and persisted locally through `SaveService`.
+- Cosmetic visuals are material overrides, bounded trail points, and transient goal effects; they do not alter physics or scoring.
 - Export presets and platform packaging are not configured yet.
 
 ## Project Settings
@@ -49,6 +50,7 @@ Current gaps:
 
 - Controller navigation is only basic Godot focus support.
 - Physical touch testing is still required for Level Select scrolling and gameplay finger occlusion.
+- Physical touch testing is still required for Cosmetics screen scrolling and Equip flow comfort.
 
 ## Gameplay Readability
 
@@ -64,6 +66,7 @@ Current gaps:
 
 - Final Phase 7 art polish is still pending.
 - Physical small-screen readability checks are still required.
+- Cosmetic trails and goal effects require physical-device readability checks to confirm they do not hide tight gaps or goals.
 
 ## Performance
 
@@ -76,6 +79,7 @@ Audit and optimize:
 - Swipe sample arrays.
 - Curve calculations.
 - Particles.
+- Cosmetic trail point count and goal effect node cleanup.
 - Transparent net materials.
 - Draw calls.
 - Console logging.
@@ -141,6 +145,7 @@ Flows:
 - Pause.
 - Save and reload.
 - Cosmetics.
+- Cosmetic unlocks, selection persistence, and selected visuals in gameplay.
 - Settings.
 - Final-shot goal.
 - Final-shot miss.

@@ -141,18 +141,18 @@ Progression flow:
 
 1. `level_controller.gd` creates a completed `LevelResult` on goal only.
 2. The controller calls `/root/SaveService.record_level_result()`.
-3. `SaveService` calculates stars, preserves best-ever stars/fewest shots, marks completion, unlocks the next level, saves immediately, and emits `progression_changed(update)`.
+3. `SaveService` calculates stars, preserves best-ever stars/fewest shots, marks completion, unlocks the next level, evaluates earned cosmetics, saves immediately, and emits `progression_changed(update)`.
 4. Failure, Retry, manual Reset Ball, and auto-reset do not call the save service.
 
 The Autoload disables recording during `--script` debug runs by default to avoid mutating normal user progress. Phase 4 tests opt into recording with isolated save paths.
 
 ## Phase 5 Menu And Navigation Update
 
-Phase 5 adds the production app shell without changing shooting, level layouts, cosmetics, monetization, or online systems.
+Phase 5 adds the production app shell without changing shooting, level layouts, monetization, or online systems.
 
 New systems:
 
-- `NetboundApp` (`res://scripts/app/netbound_app.gd`) owns main menu, level select, settings, cosmetics placeholder, pause, results, and scene navigation.
+- `NetboundApp` (`res://scripts/app/netbound_app.gd`) owns main menu, level select, settings, cosmetics, pause, results, and scene navigation.
 - `res://app/netbound_app.tscn` is the configured main scene.
 - `NetboundMenuBackdrop` draws the lightweight animated arcade menu background procedurally.
 - `verify_phase5_navigation_external.gd` covers app flow and UI state with isolated save data.
@@ -172,6 +172,41 @@ Level UI integration:
 - The app shell calls `set_external_navigation_ui_enabled(true)` on loaded levels, hiding temporary result panels and the old Retry Level HUD button.
 - Normal gameplay keeps shots remaining, tutorial copy, Reset Ball, swipe overlay, and the app-level Pause button.
 - Developer labels remain hidden unless the saved development setting enables them.
+
+## Phase 6 Cosmetic System Update
+
+Phase 6 replaces the placeholder cosmetics menu with an offline, gameplay-earned cosmetic system. Cosmetics are visual-only and must not change launch tuning, mass, damping, collision shape, goal detection, radius, camera behavior, or progression math.
+
+New systems:
+
+- `CosmeticRegistry` (`res://scripts/cosmetics/cosmetic_registry.gd`) is the only authority for cosmetic IDs, categories, defaults, unlock requirements, display names, descriptions, and validation.
+- `CosmeticVisuals` (`res://scripts/cosmetics/cosmetic_visuals.gd`) applies selected visuals to existing level nodes.
+- `NetboundBallTrail` (`res://scripts/cosmetics/ball_trail.gd`) provides bounded visual-only trail points.
+- `NetboundCosmeticPreview` (`res://scripts/cosmetics/cosmetic_preview.gd`) provides a lightweight preview viewport for the cosmetics screen without loading a production level.
+- `verify_phase6_cosmetics_external.gd` covers registry, save migration, unlocks, UI state, gameplay visuals, result unlock messages, and production level startup.
+
+Save/progression integration:
+
+1. `SaveService.record_level_result()` records normal level progression after a successful goal.
+2. The save service evaluates cosmetic milestones from completed levels and total best stars.
+3. Newly unlocked cosmetic IDs are appended once, saved immediately, and returned on `ProgressionUpdate.unlocked_cosmetic_ids`.
+4. Result UI displays only the newly unlocked IDs from that actual update.
+5. Failure, Retry, Reset Ball, auto-reset, and previewing locked cosmetics never unlock or equip cosmetics.
+
+Gameplay visual flow:
+
+1. A level refreshes selected cosmetic IDs from `/root/SaveService` during ready/retry/reset and before goal feedback.
+2. Ball skins replace only material overrides on the existing `Ball` child meshes.
+3. Trails are child visual nodes and reset when the ball is reset or the level unloads.
+4. Goal effects trigger once from `_show_goal_feedback()` after a valid score and are cleared on Retry, unload, Level Select, and Main Menu.
+
+Developer-only utilities live on `SaveService`:
+
+- `unlock_all_cosmetics_for_development()`
+- `reset_cosmetics_to_defaults_for_development()`
+- `print_cosmetic_registry_validation()`
+
+They are not exposed in normal production UI.
 
 Settings integration:
 

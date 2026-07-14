@@ -3,12 +3,19 @@ extends Node
 
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
 const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
+const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
+const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
 
-const APP_VERSION_LABEL := "Vertical Slice P5"
+const APP_VERSION_LABEL := "Vertical Slice P6"
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
 const RESULT_REVEAL_DELAY := 0.35
 const TOUCH_MINIMUM := Vector2(48.0, 48.0)
+const COSMETIC_CATEGORIES := [
+	CosmeticRegistryScript.CATEGORY_BALL,
+	CosmeticRegistryScript.CATEGORY_TRAIL,
+	CosmeticRegistryScript.CATEGORY_GOAL_EFFECT,
+]
 
 var current_level_id: String = ""
 var current_level: Node
@@ -35,6 +42,17 @@ var result_unlock_label: Label
 var result_next_button: Button
 var settings_widgets: Dictionary = {}
 var last_status_message: String = ""
+var current_cosmetic_category: String = CosmeticRegistryScript.CATEGORY_BALL
+var previewed_cosmetic_id: String = "ball_classic"
+var cosmetic_category_buttons: Dictionary = {}
+var cosmetic_card_buttons: Dictionary = {}
+var cosmetic_items_box: VBoxContainer
+var cosmetic_preview
+var cosmetic_name_label: Label
+var cosmetic_description_label: Label
+var cosmetic_requirement_label: Label
+var cosmetic_status_label: Label
+var cosmetic_equip_button: Button
 
 
 func _ready() -> void:
@@ -451,6 +469,8 @@ func _show_settings_internal() -> void:
 func _show_cosmetics_internal() -> void:
 	current_screen_name = "cosmetics"
 	_clear_screen()
+	cosmetic_category_buttons.clear()
+	cosmetic_card_buttons.clear()
 
 	var screen := _new_screen("Cosmetics")
 	screen.add_child(_new_flat_backdrop())
@@ -458,29 +478,226 @@ func _show_cosmetics_internal() -> void:
 	screen.add_child(margin)
 
 	var outer := VBoxContainer.new()
-	outer.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_theme_constant_override("separation", 16)
+	outer.add_theme_constant_override("separation", 12)
 	margin.add_child(outer)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	outer.add_child(header)
+
+	var back_button := _new_small_button("Back")
+	back_button.pressed.connect(_return_from_submenu)
+	header.add_child(back_button)
 
 	var title := Label.new()
 	title.text = "Cosmetics"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	outer.add_child(title)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 36)
+	header.add_child(title)
 
-	var body := Label.new()
-	body.text = "Ball skins, trails, and goal effects unlock in the next phase."
-	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_theme_font_size_override("font_size", 22)
-	body.custom_minimum_size = Vector2(520.0, 80.0)
+	var stars := Label.new()
+	stars.text = "Stars: %d / %d" % [_get_save_service().get_total_stars(), MAX_STARS]
+	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	stars.add_theme_font_size_override("font_size", 20)
+	header.add_child(stars)
+
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 16)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(body)
 
-	var back_button := _new_menu_button("Back", true)
-	back_button.pressed.connect(_return_from_submenu)
-	outer.add_child(back_button)
+	var preview_panel := PanelContainer.new()
+	preview_panel.custom_minimum_size = Vector2(390.0, 0.0)
+	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(preview_panel)
+
+	var preview_margin := MarginContainer.new()
+	preview_margin.add_theme_constant_override("margin_left", 16)
+	preview_margin.add_theme_constant_override("margin_top", 16)
+	preview_margin.add_theme_constant_override("margin_right", 16)
+	preview_margin.add_theme_constant_override("margin_bottom", 16)
+	preview_panel.add_child(preview_margin)
+
+	var preview_box := VBoxContainer.new()
+	preview_box.add_theme_constant_override("separation", 10)
+	preview_margin.add_child(preview_box)
+
+	cosmetic_preview = CosmeticPreviewScript.new()
+	cosmetic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cosmetic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_box.add_child(cosmetic_preview)
+
+	cosmetic_name_label = Label.new()
+	cosmetic_name_label.add_theme_font_size_override("font_size", 28)
+	cosmetic_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preview_box.add_child(cosmetic_name_label)
+
+	cosmetic_description_label = Label.new()
+	cosmetic_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cosmetic_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cosmetic_description_label.add_theme_font_size_override("font_size", 17)
+	preview_box.add_child(cosmetic_description_label)
+
+	cosmetic_requirement_label = Label.new()
+	cosmetic_requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cosmetic_requirement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cosmetic_requirement_label.add_theme_font_size_override("font_size", 16)
+	preview_box.add_child(cosmetic_requirement_label)
+
+	cosmetic_equip_button = _new_menu_button("Equip", true)
+	cosmetic_equip_button.pressed.connect(_equip_previewed_cosmetic)
+	preview_box.add_child(cosmetic_equip_button)
+
+	cosmetic_status_label = Label.new()
+	cosmetic_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cosmetic_status_label.add_theme_font_size_override("font_size", 16)
+	preview_box.add_child(cosmetic_status_label)
+
+	var list_column := VBoxContainer.new()
+	list_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_column.add_theme_constant_override("separation", 10)
+	body.add_child(list_column)
+
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 8)
+	list_column.add_child(tabs)
+	for category in COSMETIC_CATEGORIES:
+		var category_name := CosmeticRegistryScript.get_category_plural_name(String(category))
+		var tab := _new_small_button(category_name)
+		tab.toggle_mode = true
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var category_copy := String(category)
+		tab.pressed.connect(func() -> void: _select_cosmetic_category(category_copy))
+		tabs.add_child(tab)
+		cosmetic_category_buttons[category_copy] = tab
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_column.add_child(scroll)
+
+	cosmetic_items_box = VBoxContainer.new()
+	cosmetic_items_box.add_theme_constant_override("separation", 10)
+	cosmetic_items_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(cosmetic_items_box)
 
 	screen_root.add_child(screen)
+	_refresh_cosmetics_screen()
+
+
+func _select_cosmetic_category(category: String) -> void:
+	if not CosmeticRegistryScript.is_valid_category(category):
+		return
+	current_cosmetic_category = category
+	previewed_cosmetic_id = _get_save_service().get_selected_cosmetic(category)
+	_refresh_cosmetics_screen()
+
+
+func _preview_cosmetic(cosmetic_id: String) -> void:
+	var definition := CosmeticRegistryScript.get_definition(cosmetic_id)
+	if definition.is_empty():
+		return
+	current_cosmetic_category = String(definition.get("category", current_cosmetic_category))
+	previewed_cosmetic_id = cosmetic_id
+	_refresh_cosmetics_screen()
+
+
+func _equip_previewed_cosmetic() -> void:
+	var service := _get_save_service()
+	if not service.is_cosmetic_unlocked(previewed_cosmetic_id):
+		cosmetic_status_label.text = "Locked"
+		return
+	if service.set_selected_cosmetic(current_cosmetic_category, previewed_cosmetic_id):
+		cosmetic_status_label.text = "Equipped"
+	else:
+		cosmetic_status_label.text = "Unable to equip"
+	_refresh_cosmetics_screen()
+
+
+func _refresh_cosmetics_screen() -> void:
+	if not cosmetic_items_box:
+		return
+	if not CosmeticRegistryScript.is_valid_category(current_cosmetic_category):
+		current_cosmetic_category = CosmeticRegistryScript.CATEGORY_BALL
+
+	var service := _get_save_service()
+	for category in cosmetic_category_buttons.keys():
+		var tab := cosmetic_category_buttons[category] as Button
+		if tab:
+			tab.button_pressed = String(category) == current_cosmetic_category
+
+	if previewed_cosmetic_id.is_empty():
+		previewed_cosmetic_id = service.get_selected_cosmetic(current_cosmetic_category)
+	var preview_definition := CosmeticRegistryScript.get_definition(previewed_cosmetic_id)
+	if (
+		preview_definition.is_empty()
+		or String(preview_definition.get("category", "")) != current_cosmetic_category
+	):
+		previewed_cosmetic_id = service.get_selected_cosmetic(current_cosmetic_category)
+		preview_definition = CosmeticRegistryScript.get_definition(previewed_cosmetic_id)
+
+	for child in cosmetic_items_box.get_children():
+		child.queue_free()
+	cosmetic_card_buttons.clear()
+
+	for definition in CosmeticRegistryScript.get_by_category(current_cosmetic_category):
+		var card := _build_cosmetic_card(definition)
+		cosmetic_items_box.add_child(card)
+		cosmetic_card_buttons[String(definition.get("cosmetic_id", ""))] = card
+
+	_refresh_cosmetic_preview_panel(preview_definition)
+
+
+func _build_cosmetic_card(definition: Dictionary) -> Button:
+	var cosmetic_id := String(definition.get("cosmetic_id", ""))
+	var display_name := String(definition.get("display_name", cosmetic_id))
+	var service := _get_save_service()
+	var unlocked: bool = service.is_cosmetic_unlocked(cosmetic_id)
+	var selected: bool = service.get_selected_cosmetic(current_cosmetic_category) == cosmetic_id
+	var previewed: bool = previewed_cosmetic_id == cosmetic_id
+	var state_text := "Selected" if selected else ("Unlocked" if unlocked else "Locked")
+	var card := Button.new()
+	card.custom_minimum_size = Vector2(280.0, 112.0)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.focus_mode = Control.FOCUS_ALL
+	card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	card.text = "%s%s\n%s\n%s" % [
+		"> " if previewed else "",
+		display_name,
+		state_text,
+		CosmeticRegistryScript.get_unlock_requirement_text(cosmetic_id),
+	]
+	var cosmetic_id_copy := cosmetic_id
+	card.pressed.connect(func() -> void: _preview_cosmetic(cosmetic_id_copy))
+	return card
+
+
+func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
+	if definition.is_empty():
+		return
+	var cosmetic_id := String(definition.get("cosmetic_id", ""))
+	var service := _get_save_service()
+	var unlocked: bool = service.is_cosmetic_unlocked(cosmetic_id)
+	var selected: bool = service.get_selected_cosmetic(current_cosmetic_category) == cosmetic_id
+	if cosmetic_preview:
+		cosmetic_preview.set_preview(current_cosmetic_category, cosmetic_id)
+	if cosmetic_name_label:
+		cosmetic_name_label.text = String(definition.get("display_name", cosmetic_id))
+	if cosmetic_description_label:
+		cosmetic_description_label.text = String(definition.get("description", ""))
+	if cosmetic_requirement_label:
+		cosmetic_requirement_label.text = CosmeticRegistryScript.get_unlock_requirement_text(cosmetic_id)
+	if cosmetic_equip_button:
+		cosmetic_equip_button.disabled = not unlocked or selected
+		cosmetic_equip_button.text = "Selected" if selected else ("Equip" if unlocked else "Locked")
+	if cosmetic_status_label:
+		if selected:
+			cosmetic_status_label.text = "Currently equipped"
+		elif unlocked:
+			cosmetic_status_label.text = "Unlocked"
+		else:
+			cosmetic_status_label.text = "Preview only"
 
 
 func _build_gameplay_overlay() -> void:
@@ -542,7 +759,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	current_screen_name = "result"
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("ResultOverlay")
-	var panel := _new_center_panel(Vector2(580.0, 560.0))
+	var panel := _new_center_panel(Vector2(620.0, 620.0))
 	overlay.add_child(panel)
 	var box := _panel_vbox(panel)
 
@@ -605,6 +822,15 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	else:
 		result_unlock_label.text = ""
 	box.add_child(result_unlock_label)
+
+	var cosmetic_unlock_ids := _get_update_string_array(progression_update, "unlocked_cosmetic_ids")
+	if not cosmetic_unlock_ids.is_empty():
+		var cosmetic_unlock_label := Label.new()
+		cosmetic_unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cosmetic_unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cosmetic_unlock_label.add_theme_font_size_override("font_size", 17)
+		cosmetic_unlock_label.text = _format_cosmetic_unlock_text(cosmetic_unlock_ids)
+		box.add_child(cosmetic_unlock_label)
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 12)
@@ -731,6 +957,15 @@ func _clear_screen() -> void:
 		if child != fade_rect:
 			child.queue_free()
 	status_label = null
+	cosmetic_items_box = null
+	cosmetic_preview = null
+	cosmetic_name_label = null
+	cosmetic_description_label = null
+	cosmetic_requirement_label = null
+	cosmetic_status_label = null
+	cosmetic_equip_button = null
+	cosmetic_category_buttons.clear()
+	cosmetic_card_buttons.clear()
 
 
 func _clear_gameplay_overlay() -> void:
@@ -921,6 +1156,24 @@ func _mechanic_label(mechanic_id: String) -> String:
 	return String(labels.get(mechanic_id, mechanic_id.capitalize()))
 
 
+func _format_cosmetic_unlock_text(cosmetic_ids: Array[String]) -> String:
+	var lines: Array[String] = []
+	lines.append("New Cosmetic Unlocked" if cosmetic_ids.size() == 1 else "New Cosmetics Unlocked")
+	for cosmetic_id in cosmetic_ids:
+		var definition := CosmeticRegistryScript.get_definition(cosmetic_id)
+		if definition.is_empty():
+			continue
+		lines.append(
+			"%s - %s" % [
+				String(definition.get("display_name", cosmetic_id)),
+				CosmeticRegistryScript.get_category_display_name(
+					String(definition.get("category", ""))
+				),
+			]
+		)
+	return "\n".join(lines)
+
+
 func _new_screen(node_name: String) -> Control:
 	var screen := Control.new()
 	screen.name = node_name
@@ -1014,3 +1267,16 @@ func _get_update_string(update: RefCounted, property_name: String, fallback: Str
 	if not update:
 		return fallback
 	return String(update.get(property_name))
+
+
+func _get_update_string_array(update: RefCounted, property_name: String) -> Array[String]:
+	var result: Array[String] = []
+	if not update:
+		return result
+	var value: Variant = update.get(property_name)
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	var values := value as Array
+	for item in values:
+		result.append(String(item))
+	return result

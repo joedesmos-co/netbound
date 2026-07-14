@@ -342,7 +342,7 @@ Outcome: passed.
 - missing save creates defaults
 - Level 01 unlocked and Levels 02-10 locked by default
 - zero default stars
-- default cosmetic/settings placeholders
+- default cosmetic selections and settings
 - exactly 10 registered production levels
 - unique, sequential registry IDs
 - valid scene and definition paths
@@ -371,7 +371,7 @@ Phase 4 tests use isolated `user://phase4_*` save paths so development progress 
 
 ## Phase 5 Verification Results
 
-Phase 5 adds the production app shell, main menu, level select, pause menu, settings screen, cosmetics placeholder, and save-driven result overlays.
+Phase 5 added the production app shell, main menu, level select, pause menu, settings screen, placeholder cosmetics entry point, and save-driven result overlays.
 
 Command:
 
@@ -407,9 +407,55 @@ Outcome: passed.
 - Level 10 result disables Next Level
 - settings persist through `SaveService`
 - basic touch target minimums are preserved
-- cosmetics screen is a placeholder, not Phase 6 selection
+- cosmetics screen opens from navigation
 
 Phase 5 tests use isolated `user://phase5_*` save paths.
+
+## Phase 6 Verification Results
+
+Phase 6 adds the offline cosmetic registry, unlockable ball skins, trails, goal effects, cosmetics screen, gameplay visual application, save migration, and result unlock announcements.
+
+Command:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless \
+  --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_phase6_cosmetics_external.gd
+```
+
+Outcome: passed.
+
+`verify_phase6_cosmetics_external.gd` covers:
+
+- expected 14 cosmetics across balls, trails, and goal effects
+- unique stable IDs
+- valid categories and defaults
+- valid unlock requirement text
+- default selections and unlocked cosmetics
+- locked cosmetics cannot be equipped
+- unlocked cosmetics can be equipped
+- selection persists after reload
+- invalid saved selection falls back to defaults
+- Phase 4 legacy cosmetic IDs migrate safely into stable IDs
+- save version remains `1`
+- Level 2 completion unlocks Neon Ball
+- total-star thresholds unlock Fire, Flame, Confetti, Rainbow, Gold, and Shockwave
+- Level 10 completion unlocks Galaxy Ball
+- failures do not unlock cosmetics
+- repeated evaluation does not duplicate unlocks
+- all-unlocked development fixture unlocks exactly 14 cosmetics
+- selected ball skin appears without changing mass, collision radius, or global shot speed tuning
+- selected trail appears while moving and resets
+- selected goal effect creates and clears a transient visual node
+- Cosmetics screen has all three categories
+- locked preview does not save selection
+- Back navigation exits the Cosmetics screen
+- result screen displays actual newly unlocked cosmetic IDs
+- repeat completion does not announce old unlocks again
+- all 10 production levels start with selected cosmetics applied
+
+Phase 6 tests use isolated `user://phase6_*` save paths.
 
 ## Trajectory Acceptance Targets
 

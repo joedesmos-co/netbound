@@ -10,6 +10,7 @@ var previous_fewest_shots: int = -1
 var new_fewest_shots: int = -1
 var unlocked_level_id: String = ""
 var did_unlock_new_level: bool = false
+var unlocked_cosmetic_ids: Array[String] = []
 var total_stars_before: int = 0
 var total_stars_after: int = 0
 var save_succeeded: bool = false
@@ -27,6 +28,7 @@ func to_dictionary() -> Dictionary:
 		"new_fewest_shots": new_fewest_shots,
 		"unlocked_level_id": unlocked_level_id,
 		"did_unlock_new_level": did_unlock_new_level,
+		"unlocked_cosmetic_ids": unlocked_cosmetic_ids.duplicate(),
 		"total_stars_before": total_stars_before,
 		"total_stars_after": total_stars_after,
 		"save_succeeded": save_succeeded,

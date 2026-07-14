@@ -7,6 +7,7 @@ enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 
 const RESETTABLE_GROUP := "netbound_level_resettable"
 const GOAL_TARGET_GROUP := "netbound_goal_target"
+const CosmeticVisualsScript := preload("res://scripts/cosmetics/cosmetic_visuals.gd")
 
 @export var level_definition: LevelDefinition
 @export var max_shots: int = 3
@@ -53,11 +54,15 @@ var goal_targets: Array[GoalTarget] = []
 var last_level_result: LevelResult
 var last_progression_update: RefCounted
 var external_navigation_ui_enabled: bool = false
+var selected_ball_skin_id: String = "ball_classic"
+var selected_trail_id: String = "trail_none"
+var selected_goal_effect_id: String = "goal_classic"
 
 
 func _ready() -> void:
 	_apply_level_definition_runtime_values()
 	await super._ready()
+	_refresh_selected_cosmetics()
 	_apply_level_definition_ui_values()
 	_setup_goal_targets()
 	retry_button.pressed.connect(_on_retry_level_pressed)
@@ -86,6 +91,7 @@ func prepare_for_unload() -> void:
 	Engine.time_scale = 1.0
 	_clear_active_curve()
 	_clear_swipe()
+	_clear_cosmetic_feedback()
 	_reset_all_goal_tracking()
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
@@ -206,6 +212,7 @@ func _on_reset_button_pressed() -> void:
 		return
 
 	_ensure_ball_ready_for_play()
+	_refresh_selected_cosmetics()
 	shot_manually_reset = false
 	if shots_remaining > 0:
 		level_state = LevelState.READY
@@ -257,6 +264,7 @@ func _restart_level() -> void:
 	await _apply_physics_safe_reset()
 	_reset_level_elements()
 	_ensure_ball_ready_for_play()
+	_refresh_selected_cosmetics()
 	level_state = LevelState.READY
 	_update_level_ui()
 	_update_instruction_visibility()
@@ -344,6 +352,7 @@ func _auto_reset_after_miss(shot_id: int, callback_generation: int) -> void:
 		return
 
 	_ensure_ball_ready_for_play()
+	_refresh_selected_cosmetics()
 	level_state = LevelState.READY
 	_update_level_ui()
 	_update_instruction_visibility()
@@ -488,9 +497,16 @@ func _is_ball_out_of_bounds() -> bool:
 
 
 func _show_goal_feedback() -> void:
+	_refresh_selected_cosmetics()
+	CosmeticVisualsScript.trigger_goal_effect(
+		self,
+		goal_root,
+		goal_flash,
+		goal_particles,
+		selected_goal_effect_id
+	)
 	goal_flash.visible = true
 	goal_flash.modulate.a = 0.85
-	goal_particles.emitting = true
 	Engine.time_scale = goal_slow_motion_scale
 	var callback_generation := state_generation
 	get_tree().create_timer(goal_slow_motion_duration).timeout.connect(
@@ -516,6 +532,7 @@ func _hide_overlays() -> void:
 	fail_panel.visible = false
 	goal_flash.visible = false
 	goal_particles.emitting = false
+	_clear_cosmetic_feedback()
 
 
 func _update_level_ui() -> void:
@@ -527,3 +544,20 @@ func _update_level_ui() -> void:
 		or level_state == LevelState.GOAL
 		or level_state == LevelState.FAILED
 	)
+
+
+func _refresh_selected_cosmetics() -> void:
+	var service := get_node_or_null("/root/SaveService")
+	if service:
+		if service.has_method("get_selected_ball"):
+			selected_ball_skin_id = String(service.call("get_selected_ball"))
+		if service.has_method("get_selected_trail"):
+			selected_trail_id = String(service.call("get_selected_trail"))
+		if service.has_method("get_selected_goal_effect"):
+			selected_goal_effect_id = String(service.call("get_selected_goal_effect"))
+	CosmeticVisualsScript.apply_to_ball(ball, selected_ball_skin_id, selected_trail_id)
+
+
+func _clear_cosmetic_feedback() -> void:
+	CosmeticVisualsScript.reset_ball_trail(ball)
+	CosmeticVisualsScript.clear_goal_effects(self)

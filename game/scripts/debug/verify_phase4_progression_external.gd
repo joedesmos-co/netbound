@@ -105,9 +105,9 @@ func _test_defaults() -> bool:
 		passed = not service.is_level_completed(level_id) and passed
 		passed = service.get_best_stars(level_id) == 0 and passed
 	passed = service.get_total_stars() == 0 and passed
-	passed = service.get_selected_ball() == "classic" and passed
-	passed = service.get_selected_trail() == "none" and passed
-	passed = service.get_selected_goal_effect() == "classic" and passed
+	passed = service.get_selected_ball() == "ball_classic" and passed
+	passed = service.get_selected_trail() == "trail_none" and passed
+	passed = service.get_selected_goal_effect() == "goal_classic" and passed
 	passed = bool(service.get_setting_value("haptics_enabled", false)) and passed
 	service.free()
 	print("PHASE4 defaults ok=", passed)
@@ -219,7 +219,7 @@ func _test_persistence() -> bool:
 	var service = _new_service("persist")
 	service.load_or_create()
 	service.set_setting_value("master_volume", 0.42)
-	service.unlock_cosmetic("ball:gold")
+	service.unlock_cosmetic("ball_gold")
 	service.set_selected_ball("gold")
 	service.mark_tutorial_complete("level_03")
 	var level_01 := LevelRegistryScript.load_definition("level_01")
@@ -228,7 +228,7 @@ func _test_persistence() -> bool:
 	var reloaded = _new_service("persist")
 	var passed: bool = reloaded.load_or_create()
 	passed = is_equal_approx(float(reloaded.get_setting_value("master_volume", 1.0)), 0.42) and passed
-	passed = reloaded.get_selected_ball() == "gold" and passed
+	passed = reloaded.get_selected_ball() == "ball_gold" and passed
 	passed = reloaded.is_tutorial_complete("level_03") and passed
 	passed = reloaded.is_level_completed("level_01") and passed
 	passed = reloaded.is_level_unlocked("level_02") and passed
@@ -281,7 +281,7 @@ func _test_corruption() -> bool:
 	passed = not normalized.is_level_unlocked("level_99") and passed
 	passed = normalized.get_best_stars("level_02") == 3 and passed
 	passed = normalized.get_fewest_shots("level_02") == 3 and passed
-	passed = normalized.get_selected_ball() == "classic" and passed
+	passed = normalized.get_selected_ball() == "ball_classic" and passed
 	passed = is_equal_approx(float(normalized.get_setting_value("master_volume", 0.0)), 1.0) and passed
 	passed = is_equal_approx(float(normalized.get_setting_value("music_volume", 1.0)), 0.0) and passed
 	passed = bool(normalized.get_save_data().has("future_field")) and passed
@@ -296,7 +296,7 @@ func _test_atomic_write() -> bool:
 	var service = _new_service("atomic")
 	service.load_or_create()
 	var original_text := FileAccess.get_file_as_string(service.get_save_path())
-	service.unlock_cosmetic("ball:gold")
+	service.unlock_cosmetic("ball_gold")
 	var passed: bool = FileAccess.file_exists(service.get_save_path()) \
 		and FileAccess.file_exists(service.get_backup_path()) \
 		and not FileAccess.file_exists(service.get_temp_path())

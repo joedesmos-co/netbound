@@ -24,7 +24,7 @@ Startup
   - first unlocked incomplete level
   - highest unlocked level if unlocked levels are complete but later levels remain locked
   - Level Select when all 10 levels are complete
-- Cosmetics opens an honest placeholder until Phase 6.
+- Cosmetics opens the Phase 6 cosmetic selection screen.
 
 ### Level Select
 
@@ -52,9 +52,21 @@ Startup
 
 - Level completion is recorded by `SaveService` before the result overlay appears.
 - Success shows level name, run stars, shots used, par, total stars, best result comparison, and unlock messages.
+- Newly unlocked cosmetics from the actual progression update appear in a compact unlock section.
 - Next Level is enabled only if a valid registered next level is unlocked.
 - Level 10 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
+
+### Cosmetics
+
+- Category tabs switch between Balls, Trails, and Goal Effects.
+- The large preview uses a dedicated lightweight `SubViewport`; it does not load a production level.
+- Item cards can always be previewed.
+- Locked item cards show their gameplay requirement and cannot be equipped.
+- Previewing a locked item does not mutate save data.
+- Unlocked items can be equipped with the Equip button and save immediately.
+- One selected cosmetic is stored per category.
+- Back returns to the previous menu or pause overlay.
 
 ## Back And Escape
 
@@ -70,4 +82,5 @@ Startup
 - Screens use full-rect anchors, containers, scroll views, and conservative margins.
 - Buttons and level cards use touch-sized minimums.
 - Level Select adjusts grid columns based on viewport width.
+- Cosmetics uses touch-sized tabs, scrollable item cards, and a separate Equip button to avoid accidental selection while scrolling.
 - Physical iOS/Android safe-area validation is still required in Phase 8.

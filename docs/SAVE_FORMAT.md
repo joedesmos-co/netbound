@@ -33,10 +33,10 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "total_stars": 0
   },
   "cosmetics": {
-    "selected_ball": "classic",
-    "selected_trail": "none",
-    "selected_goal_effect": "classic",
-    "unlocked": ["ball:classic", "trail:none", "goal_effect:classic"]
+    "selected_ball": "ball_classic",
+    "selected_trail": "trail_none",
+    "selected_goal_effect": "goal_classic",
+    "unlocked": ["ball_classic", "trail_none", "goal_classic"]
   },
   "settings": {
     "master_volume": 1.0,
@@ -63,6 +63,8 @@ The save service validates every loaded save:
 - Missing progression, cosmetic, or settings fields are filled with defaults.
 - Volumes are clamped to `0..1`.
 - Selected cosmetics fall back to defaults if they are not unlocked.
+- Cosmetic IDs are validated against `CosmeticRegistry`.
+- Phase 4 legacy IDs such as `classic`, `ball:classic`, `trail:none`, and `goal_effect:classic` migrate into stable Phase 6 IDs.
 - Unknown top-level fields are preserved where practical.
 
 ## Star Rules
@@ -109,9 +111,16 @@ Important methods:
 - `reset_to_defaults()`
 - `unlock_cosmetic(cosmetic_id)`
 - `is_cosmetic_unlocked(cosmetic_id)`
+- `get_unlocked_cosmetics()`
+- `get_selected_cosmetic(category)`
+- `set_selected_cosmetic(category, cosmetic_id)`
+- `evaluate_cosmetic_unlocks()`
 - `set_selected_ball(ball_id)`
 - `set_selected_trail(trail_id)`
 - `set_selected_goal_effect(effect_id)`
+- `unlock_all_cosmetics_for_development()`
+- `reset_cosmetics_to_defaults_for_development()`
+- `print_cosmetic_registry_validation()`
 - `get_setting_value(setting_name, default_value)`
 - `set_setting_value(setting_name, value)`
 
@@ -146,8 +155,9 @@ The registry validates:
 4. Preserve best-ever stars and fewest shots.
 5. Mark completion permanently.
 6. Unlock the next level if available.
-7. Save immediately.
-8. Emit `progression_changed(update)`.
+7. Evaluate gameplay-earned cosmetic unlocks from completed levels and total best stars.
+8. Save immediately.
+9. Emit `progression_changed(update)`.
 
 Failures, Retry, auto-reset, and manual Reset Ball do not alter progression.
 
@@ -163,3 +173,28 @@ The Phase 5 Settings screen reads and writes the existing `settings` object thro
 - `developer_debug` is exposed only in debug builds and toggles gameplay debug labels for levels loaded through the app shell.
 
 No new save-version migration was required for Phase 5.
+
+## Phase 6 Cosmetic Integration
+
+No save-version bump was required for Phase 6 because the Phase 4 schema already had the needed cosmetic slots:
+
+- one selected ball
+- one selected trail
+- one selected goal effect
+- an unlocked cosmetic ID array
+
+Phase 6 changes the values inside those fields to stable registry IDs. The loader migrates known Phase 4 placeholder IDs safely and filters invalid IDs. Selection can only be saved if the cosmetic is already unlocked.
+
+Cosmetic categories:
+
+- `ball`
+- `trail`
+- `goal_effect`
+
+Stable default IDs:
+
+- `ball_classic`
+- `trail_none`
+- `goal_classic`
+
+Unlock evaluation is monotonic. Newly unlocked IDs are returned on `ProgressionUpdate.unlocked_cosmetic_ids` for the result screen, but existing unlocked cosmetics are not announced again.

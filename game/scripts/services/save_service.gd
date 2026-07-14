@@ -12,15 +12,16 @@ const DEFAULT_BACKUP_PATH := "user://netbound_save.bak"
 const DEFAULT_CORRUPT_PATH := "user://netbound_save.corrupt"
 
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
+const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const ProgressionUpdateScript := preload("res://scripts/services/progression_update.gd")
 
-const DEFAULT_BALL := "classic"
-const DEFAULT_TRAIL := "none"
-const DEFAULT_GOAL_EFFECT := "classic"
+const DEFAULT_BALL := "ball_classic"
+const DEFAULT_TRAIL := "trail_none"
+const DEFAULT_GOAL_EFFECT := "goal_classic"
 const DEFAULT_UNLOCKED_COSMETICS := [
-	"ball:classic",
-	"trail:none",
-	"goal_effect:classic",
+	"ball_classic",
+	"trail_none",
+	"goal_classic",
 ]
 
 var recording_enabled: bool = true
@@ -91,6 +92,10 @@ func load_or_create() -> bool:
 	if not bool(registry_validation.ok):
 		for error in registry_validation.errors:
 			_diagnostic("level registry: %s" % String(error))
+	var cosmetic_validation := CosmeticRegistryScript.validate_registry()
+	if not bool(cosmetic_validation.ok):
+		for error in cosmetic_validation.errors:
+			_diagnostic("cosmetic registry: %s" % String(error))
 
 	if not FileAccess.file_exists(_save_path):
 		_save_data = _create_default_save()
@@ -113,7 +118,10 @@ func load_or_create() -> bool:
 		return recovered_saved
 
 	_save_data = _normalize_save(parsed as Dictionary)
+	var migrated_cosmetics := _evaluate_cosmetic_unlocks_for_current_save()
 	_loaded = true
+	if not migrated_cosmetics.is_empty():
+		save()
 	save_loaded.emit(_save_data.duplicate(true))
 	return true
 
@@ -294,6 +302,9 @@ func record_level_result(
 
 	_save_data = _normalize_save(_save_data)
 	update.total_stars_after = get_total_stars()
+	update.unlocked_cosmetic_ids = _evaluate_cosmetic_unlocks_for_current_save()
+	if not update.unlocked_cosmetic_ids.is_empty():
+		update.changed = true
 	update.save_succeeded = save()
 	progression_changed.emit(update)
 	return update
@@ -315,29 +326,45 @@ func is_tutorial_complete(level_id: String) -> bool:
 
 
 func get_selected_ball() -> String:
-	_ensure_loaded()
-	return String((_save_data.cosmetics as Dictionary).get("selected_ball", DEFAULT_BALL))
+	return get_selected_cosmetic(CosmeticRegistryScript.CATEGORY_BALL)
 
 
 func get_selected_trail() -> String:
-	_ensure_loaded()
-	return String((_save_data.cosmetics as Dictionary).get("selected_trail", DEFAULT_TRAIL))
+	return get_selected_cosmetic(CosmeticRegistryScript.CATEGORY_TRAIL)
 
 
 func get_selected_goal_effect() -> String:
+	return get_selected_cosmetic(CosmeticRegistryScript.CATEGORY_GOAL_EFFECT)
+
+
+func get_selected_cosmetic(category: String) -> String:
 	_ensure_loaded()
-	return String(
-		(_save_data.cosmetics as Dictionary).get("selected_goal_effect", DEFAULT_GOAL_EFFECT)
-	)
+	if not CosmeticRegistryScript.is_valid_category(category):
+		return ""
+	var key := CosmeticRegistryScript.get_selection_key(category)
+	var fallback := CosmeticRegistryScript.get_default_for_category(category)
+	var cosmetic_id := String((_save_data.cosmetics as Dictionary).get(key, fallback))
+	if not CosmeticRegistryScript.has_cosmetic(cosmetic_id):
+		return fallback
+	return cosmetic_id
+
+
+func get_unlocked_cosmetics() -> Array[String]:
+	_ensure_loaded()
+	var result: Array[String] = []
+	for cosmetic_id in (_save_data.cosmetics as Dictionary).unlocked as Array:
+		result.append(String(cosmetic_id))
+	return result
 
 
 func unlock_cosmetic(cosmetic_id: String) -> bool:
 	_ensure_loaded()
-	if cosmetic_id.is_empty():
+	var normalized := CosmeticRegistryScript.normalize_any_id(cosmetic_id)
+	if not CosmeticRegistryScript.has_cosmetic(normalized):
 		return false
 	var unlocked := (_save_data.cosmetics as Dictionary).unlocked as Array
-	if not _string_array_contains(unlocked, cosmetic_id):
-		unlocked.append(cosmetic_id)
+	if not _string_array_contains(unlocked, normalized):
+		unlocked.append(normalized)
 		_save_data = _normalize_save(_save_data)
 		return save()
 	return true
@@ -345,24 +372,67 @@ func unlock_cosmetic(cosmetic_id: String) -> bool:
 
 func is_cosmetic_unlocked(cosmetic_id: String) -> bool:
 	_ensure_loaded()
-	return _string_array_contains((_save_data.cosmetics as Dictionary).unlocked as Array, cosmetic_id)
+	var normalized := CosmeticRegistryScript.normalize_any_id(cosmetic_id)
+	return _string_array_contains((_save_data.cosmetics as Dictionary).unlocked as Array, normalized)
+
+
+func evaluate_cosmetic_unlocks() -> Array[String]:
+	_ensure_loaded()
+	var new_unlocks := _evaluate_cosmetic_unlocks_for_current_save()
+	if not new_unlocks.is_empty():
+		save()
+	return new_unlocks
+
+
+func set_selected_cosmetic(category: String, cosmetic_id: String) -> bool:
+	_ensure_loaded()
+	if not CosmeticRegistryScript.is_valid_category(category):
+		return false
+	var normalized := CosmeticRegistryScript.normalize_id_for_category(category, cosmetic_id)
+	if not is_cosmetic_unlocked(normalized):
+		return false
+	var key := CosmeticRegistryScript.get_selection_key(category)
+	(_save_data.cosmetics as Dictionary)[key] = normalized
+	_save_data = _normalize_save(_save_data)
+	return save()
 
 
 func set_selected_ball(ball_id: String) -> bool:
-	return _set_selected_cosmetic("selected_ball", "ball:%s" % ball_id, ball_id, DEFAULT_BALL)
+	return set_selected_cosmetic(CosmeticRegistryScript.CATEGORY_BALL, ball_id)
 
 
 func set_selected_trail(trail_id: String) -> bool:
-	return _set_selected_cosmetic("selected_trail", "trail:%s" % trail_id, trail_id, DEFAULT_TRAIL)
+	return set_selected_cosmetic(CosmeticRegistryScript.CATEGORY_TRAIL, trail_id)
 
 
 func set_selected_goal_effect(effect_id: String) -> bool:
-	return _set_selected_cosmetic(
-		"selected_goal_effect",
-		"goal_effect:%s" % effect_id,
-		effect_id,
-		DEFAULT_GOAL_EFFECT
-	)
+	return set_selected_cosmetic(CosmeticRegistryScript.CATEGORY_GOAL_EFFECT, effect_id)
+
+
+func unlock_all_cosmetics_for_development(save_to_disk: bool = true) -> bool:
+	_ensure_loaded()
+	var unlocked := (_save_data.cosmetics as Dictionary).unlocked as Array
+	for definition in CosmeticRegistryScript.get_all():
+		var cosmetic_id := String(definition.get("cosmetic_id", ""))
+		if not _string_array_contains(unlocked, cosmetic_id):
+			unlocked.append(cosmetic_id)
+	_save_data = _normalize_save(_save_data)
+	return save() if save_to_disk else true
+
+
+func reset_cosmetics_to_defaults_for_development(save_to_disk: bool = true) -> bool:
+	_ensure_loaded()
+	(_save_data.cosmetics as Dictionary).selected_ball = DEFAULT_BALL
+	(_save_data.cosmetics as Dictionary).selected_trail = DEFAULT_TRAIL
+	(_save_data.cosmetics as Dictionary).selected_goal_effect = DEFAULT_GOAL_EFFECT
+	(_save_data.cosmetics as Dictionary).unlocked = DEFAULT_UNLOCKED_COSMETICS.duplicate()
+	_save_data = _normalize_save(_save_data)
+	return save() if save_to_disk else true
+
+
+func print_cosmetic_registry_validation() -> void:
+	var validation := CosmeticRegistryScript.validate_registry()
+	print(JSON.stringify(validation, "\t"))
 
 
 func get_setting_value(setting_name: String, default_value: Variant = null) -> Variant:
@@ -509,21 +579,34 @@ func _normalize_cosmetics(raw: Dictionary) -> Dictionary:
 	var raw_unlocked: Variant = raw.get("unlocked", [])
 	if typeof(raw_unlocked) == TYPE_ARRAY:
 		for item in raw_unlocked:
-			var cosmetic_id := String(item)
-			if not cosmetic_id.is_empty() and not _string_array_contains(unlocked, cosmetic_id):
+			var cosmetic_id := CosmeticRegistryScript.normalize_any_id(String(item))
+			if (
+				CosmeticRegistryScript.has_cosmetic(cosmetic_id)
+				and not _string_array_contains(unlocked, cosmetic_id)
+			):
 				unlocked.append(cosmetic_id)
 	for default_cosmetic in DEFAULT_UNLOCKED_COSMETICS:
 		if not _string_array_contains(unlocked, default_cosmetic):
 			unlocked.append(default_cosmetic)
+	unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
 
-	var selected_ball := String(raw.get("selected_ball", DEFAULT_BALL))
-	if not _string_array_contains(unlocked, "ball:%s" % selected_ball):
+	var selected_ball := CosmeticRegistryScript.normalize_id_for_category(
+		CosmeticRegistryScript.CATEGORY_BALL,
+		String(raw.get("selected_ball", DEFAULT_BALL))
+	)
+	if not _string_array_contains(unlocked, selected_ball):
 		selected_ball = DEFAULT_BALL
-	var selected_trail := String(raw.get("selected_trail", DEFAULT_TRAIL))
-	if not _string_array_contains(unlocked, "trail:%s" % selected_trail):
+	var selected_trail := CosmeticRegistryScript.normalize_id_for_category(
+		CosmeticRegistryScript.CATEGORY_TRAIL,
+		String(raw.get("selected_trail", DEFAULT_TRAIL))
+	)
+	if not _string_array_contains(unlocked, selected_trail):
 		selected_trail = DEFAULT_TRAIL
-	var selected_goal_effect := String(raw.get("selected_goal_effect", DEFAULT_GOAL_EFFECT))
-	if not _string_array_contains(unlocked, "goal_effect:%s" % selected_goal_effect):
+	var selected_goal_effect := CosmeticRegistryScript.normalize_id_for_category(
+		CosmeticRegistryScript.CATEGORY_GOAL_EFFECT,
+		String(raw.get("selected_goal_effect", DEFAULT_GOAL_EFFECT))
+	)
+	if not _string_array_contains(unlocked, selected_goal_effect):
 		selected_goal_effect = DEFAULT_GOAL_EFFECT
 
 	return {
@@ -551,19 +634,30 @@ func _sum_best_stars(best_stars: Dictionary) -> int:
 	return total
 
 
-func _set_selected_cosmetic(
-	key: String,
-	unlock_id: String,
-	selected_value: String,
-	default_value: String
-) -> bool:
-	_ensure_loaded()
+func _evaluate_cosmetic_unlocks_for_current_save() -> Array[String]:
+	var new_unlocks: Array[String] = []
+	if _save_data.is_empty() or not _save_data.has("progression") or not _save_data.has("cosmetics"):
+		return new_unlocks
+
+	var progression := _save_data.progression as Dictionary
+	var completed_levels := progression.get("completed_levels", []) as Array
+	var total_stars := int(progression.get("total_stars", 0))
 	var cosmetics := _save_data.cosmetics as Dictionary
-	if not _string_array_contains(cosmetics.unlocked as Array, unlock_id):
-		return false
-	cosmetics[key] = selected_value if not selected_value.is_empty() else default_value
-	_save_data = _normalize_save(_save_data)
-	return save()
+	var unlocked := cosmetics.get("unlocked", []) as Array
+
+	for definition in CosmeticRegistryScript.get_all():
+		var cosmetic_id := String(definition.get("cosmetic_id", ""))
+		if _string_array_contains(unlocked, cosmetic_id):
+			continue
+		if CosmeticRegistryScript.is_requirement_met(cosmetic_id, completed_levels, total_stars):
+			unlocked.append(cosmetic_id)
+			new_unlocks.append(cosmetic_id)
+
+	if not new_unlocks.is_empty():
+		cosmetics.unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
+		_save_data.cosmetics = cosmetics
+		_save_data = _normalize_save(_save_data)
+	return new_unlocks
 
 
 func _progression_array(key: String) -> Array:
