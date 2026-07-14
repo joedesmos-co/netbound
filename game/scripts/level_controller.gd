@@ -76,7 +76,7 @@ func _ready() -> void:
 	win_retry_button.pressed.connect(_on_retry_level_pressed)
 	win_continue_button.pressed.connect(_on_continue_pressed)
 	fail_retry_button.pressed.connect(_on_retry_level_pressed)
-	reset_button.text = "Reset Ball"
+	reset_button.text = "RESET BALL"
 	await _restart_level()
 	if external_navigation_ui_enabled:
 		set_external_navigation_ui_enabled(true)
@@ -475,6 +475,10 @@ func _apply_level_definition_runtime_values() -> void:
 func _apply_level_definition_ui_values() -> void:
 	if level_definition and not level_definition.tutorial_text.is_empty():
 		instruction_label.text = level_definition.tutorial_text
+	var instruction_kicker := top_left_ui.get_node_or_null("InstructionKicker") as Label
+	if instruction_kicker:
+		var level_name := level_definition.display_name if level_definition else "OPEN RANGE"
+		instruction_kicker.text = "TRY THIS!  /  %s" % String(level_name).to_upper()
 
 
 func _setup_goal_targets() -> void:
@@ -634,7 +638,7 @@ func _hide_overlays() -> void:
 
 
 func _update_level_ui() -> void:
-	shots_label.text = "Shots: %d" % shots_remaining
+	shots_label.text = "SHOTS  /  %02d" % shots_remaining
 	retry_button.visible = not external_navigation_ui_enabled
 	retry_button.disabled = reset_in_progress
 	reset_button.disabled = (

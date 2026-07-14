@@ -2,7 +2,7 @@
 
 Audit date: 2026-07-14  
 Production viewport baseline: `1280x720`  
-Direction: **Trajectory Editorial**
+Direction: **Trajectory Playground**
 
 ## Current UI Audit
 
@@ -89,17 +89,19 @@ Risks:
 
 ## Chosen Direction
 
-**Trajectory Editorial** uses Trajectory Atlas as the structural system, Matchday Editorial for hierarchy, and a restrained amount of Training Rig tactility for buttons and score notation.
+**Trajectory Playground** uses Trajectory Atlas as the structural system, bright arcade-field illustration for its emotional tone, Matchday Editorial for hierarchy, and a restrained amount of Training Rig tactility for buttons and score notation.
 
 The mixture is intentionally unequal:
 
-- 70% trajectory and target geometry
-- 20% editorial sports typography and composition
+- 45% trajectory, target, and route geometry
+- 30% playful field color and chunky illustrated motion
+- 15% editorial sports typography and composition
 - 10% tactile equipment treatment
 
 Rationale:
 
 - The route, arc, and target are specific to Netbound's core interaction.
+- Open sky, field green, warm cream, and oversized ball/target gestures make the first read welcoming and game-like.
 - Condensed display typography gives the shell confidence without requiring decorative art.
 - Hard-edged, shallow controls feel physical while avoiding dashboard cards, glass, and casino styling.
 - The system can be produced with fonts, flat colors, line drawing, and small reusable controls that fit the mobile renderer budget.
@@ -114,7 +116,8 @@ Netbound is a fun arcade game, not a solemn sports utility. The system should th
 - Primary controls compress and recover like physical arcade buttons.
 - Result stars land with a short punch rather than a formal broadcast dissolve.
 - Empty space and alignment remain intentional so the playfulness never turns into clutter.
-- The tone is bold and mischievous, not childish, toy-like, or mascot-driven.
+- The tone is sunny, bold, and mischievous, not childish, toy-like, or mascot-driven.
+- Dark navy is an anchor for contrast and controls, never the dominant emotional atmosphere.
 
 ## Visual System
 
@@ -124,24 +127,56 @@ Core shell palette:
 
 | Token | Hex | Purpose |
 | --- | --- | --- |
-| `ink` | `#081218` | Primary background and modal shade |
-| `field_ink` | `#102A27` | Secondary field-derived surface |
-| `surface` | `#162329` | Interactive surface and panel structure |
-| `surface_high` | `#22343A` | Hover, focus, and selected surface |
-| `chalk` | `#F4F2E8` | Primary text and goal-line marks |
-| `muted` | `#9AA9A7` | Secondary text and inactive route lines |
-| `signal` | `#F2D22E` | Signature accent, primary action, active trajectory |
-| `success` | `#69DB7C` | Completion, earned stars, unlocked route |
-| `failure` | `#FF665E` | Failure, unavailable action, warning |
-| `locked` | `#526166` | Locked/disabled state |
-| `curve` | `#4BC7D8` | Gameplay curve notation only |
+| `ink` | `#0B2942` | Navy anchor, text, rails, and modal shade |
+| `field_ink` | `#0F4F54` | Deep field-derived pressed state |
+| `surface` | `#174D68` | Interactive navy-blue surface |
+| `surface_high` | `#216882` | Hover, focus, and selected surface |
+| `chalk` | `#FFF9E8` | Primary light text and field marks |
+| `paper` | `#FFF3D6` | Warm score surfaces and unlocked route markers |
+| `sky` | `#55B9EF` | Welcoming menu and route atmosphere |
+| `grass` | `#31BF72` | Arcade field and progression ground |
+| `muted` | `#A9C2C8` | Secondary text and inactive route lines |
+| `signal` | `#FFD84A` | Primary action, stars, and active route |
+| `coral` | `#FF765E` | Impact, curve flourish, and playful directional edge |
+| `success` | `#43C878` | Completion and unlocked route |
+| `failure` | `#FF625F` | Failure, unavailable action, warning |
+| `locked` | `#718A91` | Locked/disabled state |
+| `curve` | `#43D2E3` | Gameplay curve notation only |
 
 Rules:
 
-- `signal` is the only general shell accent.
+- `signal` is the primary action accent; `coral` is reserved for impact and directional emphasis.
 - `success`, `failure`, and `curve` communicate specific state; they are not general decoration.
 - Gameplay cosmetics may retain their authored colors inside previews and play, but shell chrome stays neutral.
 - Panels use flat colors. Gradients are not part of the shell system.
+
+## Vertical Slice Review
+
+The first production slice covered Main Menu, Level Select, Level 01 HUD, and success results before any secondary screen was redesigned.
+
+Iteration 1 established hierarchy and the route system, but visible review found that its dark field-grid presentation read as a sports simulator or technical training utility. It also exposed trajectory/title tangles, route lines crossing marker content, an always-visible idle power bar, and a centered-card feeling in the result state.
+
+- `docs/ui_art_direction/vertical_slice/main_menu_v1_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/level_select_v1_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/gameplay_hud_v1_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/success_v1_1280x720.png`
+
+Iteration 2 corrected the functional composition: trajectory paths stopped crossing the wordmark, route connectors used edge ports, long level names fit, the idle power meter disappeared, and the result became an edge rail. The slice was clear but still emotionally too clinical.
+
+- `docs/ui_art_direction/vertical_slice/main_menu_v2_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/level_select_v2_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/gameplay_v2_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/success_v2_1280x720.png`
+
+Iteration 3 changed the emotional art direction to Trajectory Playground: sky, grass, warm paper, chunky cut-corner markers, yellow stars, a coral strike accent, friendlier copy, and a light result score surface. The half-hidden menu goal and result whitespace were then removed/refined for iteration 4.
+
+- `docs/ui_art_direction/vertical_slice/main_menu_v3_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/level_select_v3_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/gameplay_v3_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/success_v3_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/main_menu_v4_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/level_select_v4_playground_1280x720.png`
+- `docs/ui_art_direction/vertical_slice/success_v4_playground_1280x720.png`
 
 ### Typography
 

@@ -2,6 +2,8 @@ class_name NetboundMenuBackdrop
 extends Control
 
 var animation_time: float = 0.0
+var variant: String = "menu"
+var reduced_motion: bool = false
 
 
 func _ready() -> void:
@@ -10,8 +12,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	animation_time += delta
-	queue_redraw()
+	if not reduced_motion:
+		animation_time += delta
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -19,49 +22,102 @@ func _draw() -> void:
 	var size := rect.size
 	if size.x <= 1.0 or size.y <= 1.0:
 		return
+	draw_rect(Rect2(Vector2.ZERO, size), NetboundUITheme.SKY, true)
+	if variant == "route":
+		_draw_route_field(size)
+	else:
+		_draw_menu_field(size)
 
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.035, 0.07, 0.105, 1.0), true)
 
-	var horizon_y := size.y * 0.62
-	var field_color := Color(0.05, 0.34, 0.18, 1.0)
-	var lane_color := Color(0.12, 0.72, 0.42, 0.55)
-	draw_rect(Rect2(Vector2(0.0, horizon_y), Vector2(size.x, size.y - horizon_y)), field_color, true)
-
-	for i in 7:
-		var t := float(i) / 6.0
-		var x := lerpf(size.x * 0.08, size.x * 0.92, t)
-		draw_line(Vector2(size.x * 0.5, horizon_y), Vector2(x, size.y), lane_color, 2.0)
-
-	for i in 5:
-		var y := lerpf(horizon_y + 18.0, size.y - 16.0, float(i) / 4.0)
-		draw_line(Vector2(0.0, y), Vector2(size.x, y), Color(1.0, 1.0, 1.0, 0.08), 2.0)
-
-	var goal_center := Vector2(size.x * 0.5, horizon_y - size.y * 0.08)
-	var goal_width := minf(size.x * 0.34, 360.0)
-	var goal_height := minf(size.y * 0.26, 160.0)
-	var post_color := Color(0.95, 1.0, 1.0, 0.88)
-	var left := goal_center.x - goal_width * 0.5
-	var right := goal_center.x + goal_width * 0.5
-	var top := goal_center.y - goal_height
-	var bottom := goal_center.y
-	draw_line(Vector2(left, bottom), Vector2(left, top), post_color, 7.0)
-	draw_line(Vector2(right, bottom), Vector2(right, top), post_color, 7.0)
-	draw_line(Vector2(left, top), Vector2(right, top), post_color, 7.0)
-	for i in 6:
-		var x := lerpf(left, right, float(i) / 5.0)
-		draw_line(Vector2(x, top), Vector2(x, bottom), Color(1.0, 1.0, 1.0, 0.13), 1.0)
-
-	var pulse := sin(animation_time * 1.6) * 0.5 + 0.5
-	var ball_x := size.x * (0.24 + 0.08 * sin(animation_time * 0.9))
-	var ball_y := horizon_y - 18.0 - pulse * 36.0
-	var ball_pos := Vector2(ball_x, ball_y)
-	var trail_start := ball_pos + Vector2(-120.0, 74.0)
-	var mid := ball_pos + Vector2(-58.0, -34.0 - pulse * 20.0)
-	draw_polyline(
-		PackedVector2Array([trail_start, mid, ball_pos]),
-		Color(1.0, 0.75, 0.12, 0.42),
-		9.0,
+func _draw_menu_field(size: Vector2) -> void:
+	var horizon_y := size.y * 0.57
+	_draw_cloud(Vector2(size.x * 0.11, size.y * 0.15), size.y * 0.055)
+	_draw_cloud(Vector2(size.x * 0.48, size.y * 0.1), size.y * 0.04)
+	draw_circle(Vector2(size.x * 0.72, size.y * 0.11), size.y * 0.055, NetboundUITheme.SIGNAL)
+	draw_rect(
+		Rect2(Vector2(0.0, horizon_y), Vector2(size.x, size.y - horizon_y)),
+		NetboundUITheme.GRASS,
 		true
 	)
-	draw_circle(ball_pos, 17.0, Color(0.95, 0.98, 1.0, 1.0))
-	draw_circle(ball_pos + Vector2(-4.0, -3.0), 5.0, Color(0.05, 0.07, 0.09, 0.9))
+	for index in 6:
+		var ratio := float(index) / 5.0
+		var x := lerpf(size.x * 0.02, size.x * 0.98, ratio)
+		draw_line(
+			Vector2(size.x * 0.58, horizon_y),
+			Vector2(x, size.y),
+			Color(NetboundUITheme.CHALK, 0.28),
+			3.0,
+			true
+		)
+	for index in 4:
+		var y := lerpf(horizon_y + 36.0, size.y - 20.0, float(index) / 3.0)
+		draw_line(Vector2(0.0, y), Vector2(size.x, y), Color(NetboundUITheme.CHALK, 0.24), 3.0, true)
+
+	var target_point := Vector2(size.x * 0.68, horizon_y - size.y * 0.08)
+
+	var path := _quadratic_path(
+		Vector2(size.x * 0.06, size.y * 0.9),
+		Vector2(size.x * 0.47, size.y * 0.76),
+		target_point,
+		38
+	)
+	for index in path.size() - 1:
+		if index % 3 != 2:
+			draw_line(path[index], path[index + 1], Color(NetboundUITheme.CHALK, 0.92), 7.0, true)
+	var ball_ratio := 0.7 if reduced_motion else fmod(animation_time * 0.16, 1.0)
+	var ball_index := clampi(roundi(ball_ratio * float(path.size() - 1)), 0, path.size() - 1)
+	var ball_position := path[ball_index]
+	draw_circle(ball_position + Vector2(4.0, 6.0), 18.0, Color(NetboundUITheme.INK, 0.24))
+	draw_circle(ball_position, 18.0, NetboundUITheme.CHALK)
+	draw_circle(ball_position + Vector2(-4.0, -3.0), 5.0, NetboundUITheme.INK)
+	var target := path[-1]
+	draw_arc(target, 34.0, 0.0, TAU, 28, NetboundUITheme.CORAL, 7.0, true)
+	draw_arc(target, 15.0, 0.0, TAU, 20, NetboundUITheme.CHALK, 4.0, true)
+
+
+func _draw_route_field(size: Vector2) -> void:
+	draw_rect(Rect2(Vector2.ZERO, size), Color("65c7f3"), true)
+	draw_rect(
+		Rect2(Vector2.ZERO, Vector2(size.x, size.y * 0.16)),
+		NetboundUITheme.INK,
+		true
+	)
+	draw_rect(
+		Rect2(Vector2(0.0, size.y * 0.16), Vector2(size.x, size.y * 0.84)),
+		Color("42bd75"),
+		true
+	)
+	var center := Vector2(size.x * 0.5, size.y * 0.54)
+	draw_arc(center, minf(size.x, size.y) * 0.31, -2.7, 0.25, 64, Color(NetboundUITheme.CHALK, 0.32), 4.0, true)
+	draw_arc(center, minf(size.x, size.y) * 0.22, 0.45, 3.4, 64, Color(NetboundUITheme.SIGNAL, 0.5), 7.0, true)
+	for index in 5:
+		var x := lerpf(size.x * 0.08, size.x * 0.92, float(index) / 4.0)
+		draw_line(Vector2(x, size.y * 0.17), Vector2(x, size.y), Color(NetboundUITheme.CHALK, 0.18), 2.0, true)
+	var target := Vector2(size.x * 0.87, size.y * 0.23)
+	draw_arc(target, 54.0, 0.0, TAU, 32, Color(NetboundUITheme.CORAL, 0.72), 7.0, true)
+	draw_arc(target, 24.0, 0.0, TAU, 24, Color(NetboundUITheme.CHALK, 0.8), 4.0, true)
+
+
+func _draw_cloud(center: Vector2, radius: float) -> void:
+	var cloud := Color(NetboundUITheme.CHALK, 0.78)
+	draw_circle(center + Vector2(-radius * 0.75, radius * 0.18), radius * 0.62, cloud)
+	draw_circle(center, radius * 0.86, cloud)
+	draw_circle(center + Vector2(radius * 0.8, radius * 0.24), radius * 0.56, cloud)
+	draw_rect(
+		Rect2(center + Vector2(-radius * 1.25, radius * 0.18), Vector2(radius * 2.5, radius * 0.65)),
+		cloud,
+		true
+	)
+
+
+func _quadratic_path(start: Vector2, control: Vector2, end: Vector2, count: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for index in count:
+		var t := float(index) / float(maxi(1, count - 1))
+		var inverse := 1.0 - t
+		points.append(
+			inverse * inverse * start
+			+ 2.0 * inverse * t * control
+			+ t * t * end
+		)
+	return points

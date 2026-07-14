@@ -5,6 +5,11 @@ const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
 const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
+const WordmarkScript := preload("res://scripts/ui/wordmark.gd")
+const LevelMarkerScript := preload("res://scripts/ui/level_marker.gd")
+const LevelRouteScript := preload("res://scripts/ui/level_route.gd")
+const StarDisplayScript := preload("res://scripts/ui/star_display.gd")
+const ResultMotifScript := preload("res://scripts/ui/result_motif.gd")
 
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
@@ -40,7 +45,7 @@ var status_label: Label
 var play_button: Button
 var play_subtitle_label: Label
 var total_stars_label: Label
-var level_grid: GridContainer
+var level_grid: Container
 var result_title_label: Label
 var result_detail_label: Label
 var result_stars_label: Label
@@ -356,72 +361,132 @@ func _show_main_menu_internal() -> void:
 	_play_menu_music()
 
 	var screen := _new_screen("MainMenu")
+	screen.theme = NetboundUITheme.get_theme()
 	var backdrop := MenuBackdropScript.new()
-	screen.add_child(backdrop)
+	backdrop.reduced_motion = _motion_reduced_for_ui()
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	screen.add_child(backdrop)
 
 	var margin := _new_margin_container()
 	screen.add_child(margin)
 
-	var layout := VBoxContainer.new()
-	layout.alignment = BoxContainer.ALIGNMENT_CENTER
-	layout.add_theme_constant_override("separation", 14)
-	margin.add_child(layout)
+	var composition := HBoxContainer.new()
+	composition.add_theme_constant_override("separation", NetboundUITheme.SPACE_8)
+	margin.add_child(composition)
 
-	var title := Label.new()
-	title.text = "NETBOUND"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 58)
-	title.add_theme_color_override("font_color", Color(1.0, 0.92, 0.16, 1.0))
-	layout.add_child(title)
+	var brand_column := VBoxContainer.new()
+	brand_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	brand_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brand_column.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	composition.add_child(brand_column)
+
+	var brand_eyebrow := Label.new()
+	brand_eyebrow.text = "SWIPE IT. BEND IT. SCORE!"
+	brand_eyebrow.theme_type_variation = "SectionLabel"
+	brand_eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	brand_column.add_child(brand_eyebrow)
+
+	var wordmark := WordmarkScript.new()
+	wordmark.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brand_column.add_child(wordmark)
 
 	var subtitle := Label.new()
-	subtitle.text = "Arcade trick-shot soccer"
+	subtitle.text = "TRICK-SHOT FOOTBALL, TURNED UP."
+	subtitle.theme_type_variation = "BodyLabel"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 22)
-	layout.add_child(subtitle)
+	brand_column.add_child(subtitle)
 
-	play_button = _new_menu_button("Play", true)
+	var identity_note := Label.new()
+	identity_note.text = "10 WILD SHOTS. ZERO WAITING."
+	identity_note.theme_type_variation = "MetaLabel"
+	identity_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	brand_column.add_child(identity_note)
+
+	var action_rail := PanelContainer.new()
+	action_rail.theme_type_variation = "RailPanel"
+	action_rail.custom_minimum_size = Vector2(420.0, 430.0)
+	action_rail.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	composition.add_child(action_rail)
+
+	var rail_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		rail_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_8)
+	action_rail.add_child(rail_margin)
+
+	var layout := VBoxContainer.new()
+	layout.alignment = BoxContainer.ALIGNMENT_CENTER
+	layout.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	rail_margin.add_child(layout)
+
+	var next_label := Label.new()
+	next_label.text = "NEXT CHALLENGE"
+	next_label.theme_type_variation = "SectionLabel"
+	layout.add_child(next_label)
+
+	play_button = _new_menu_button("PLAY", true)
+	play_button.custom_minimum_size = Vector2(0.0, 82.0)
+	play_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_button.pressed.connect(request_continue)
 	layout.add_child(play_button)
 
 	play_subtitle_label = Label.new()
-	play_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	play_subtitle_label.add_theme_font_size_override("font_size", 17)
+	play_subtitle_label.theme_type_variation = "MetaLabel"
 	layout.add_child(play_subtitle_label)
 
-	var level_select_button := _new_menu_button("Level Select")
+	var divider := HSeparator.new()
+	layout.add_child(divider)
+
+	var primary_links := GridContainer.new()
+	primary_links.columns = 2
+	primary_links.add_theme_constant_override("h_separation", NetboundUITheme.SPACE_3)
+	primary_links.add_theme_constant_override("v_separation", NetboundUITheme.SPACE_3)
+	layout.add_child(primary_links)
+
+	var level_select_button := _new_menu_button("LEVELS")
+	level_select_button.custom_minimum_size = Vector2(180.0, 62.0)
+	level_select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	level_select_button.pressed.connect(show_level_select)
-	layout.add_child(level_select_button)
+	primary_links.add_child(level_select_button)
 
-	var cosmetics_button := _new_menu_button("Cosmetics")
+	var cosmetics_button := _new_menu_button("COSMETICS")
+	cosmetics_button.custom_minimum_size = Vector2(180.0, 62.0)
+	cosmetics_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cosmetics_button.pressed.connect(show_cosmetics)
-	layout.add_child(cosmetics_button)
+	primary_links.add_child(cosmetics_button)
 
-	var store_button := _new_menu_button("Store")
+	var utility_links := HBoxContainer.new()
+	utility_links.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	layout.add_child(utility_links)
+
+	var store_button := _new_small_button("STORE")
+	store_button.theme_type_variation = "QuietButton"
+	store_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	store_button.pressed.connect(func() -> void: show_store("main_menu"))
-	layout.add_child(store_button)
+	utility_links.add_child(store_button)
 
-	var settings_button := _new_menu_button("Settings")
+	var settings_button := _new_small_button("SETTINGS")
+	settings_button.theme_type_variation = "QuietButton"
+	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_button.pressed.connect(func() -> void: show_settings("main_menu"))
-	layout.add_child(settings_button)
+	utility_links.add_child(settings_button)
 
 	if not OS.has_feature("mobile"):
-		var quit_button := _new_menu_button("Quit")
+		var quit_button := _new_small_button("QUIT")
+		quit_button.theme_type_variation = "QuietButton"
+		quit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		quit_button.pressed.connect(func() -> void: get_tree().quit())
-		layout.add_child(quit_button)
+		utility_links.add_child(quit_button)
 
 	status_label = Label.new()
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 16)
+	status_label.theme_type_variation = "MetaLabel"
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	layout.add_child(status_label)
 
 	var build := Label.new()
 	build.text = get_app_version_label()
 	build.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	build.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	build.add_theme_font_size_override("font_size", 14)
-	build.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.58))
+	build.theme_type_variation = "MetaLabel"
 	build.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_position_bottom_right_label(build)
 	screen.add_child(build)
@@ -440,46 +505,63 @@ func _show_level_select_internal() -> void:
 	level_card_buttons.clear()
 
 	var screen := _new_screen("LevelSelect")
-	screen.add_child(_new_flat_backdrop())
+	screen.theme = NetboundUITheme.get_theme()
+	var backdrop := MenuBackdropScript.new()
+	backdrop.variant = "route"
+	backdrop.reduced_motion = _motion_reduced_for_ui()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	screen.add_child(backdrop)
 	var margin := _new_margin_container()
 	screen.add_child(margin)
 
 	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 12)
+	outer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	margin.add_child(outer)
 
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
+	header.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	outer.add_child(header)
 
-	var back_button := _new_small_button("Back")
+	var back_button := _new_small_button("BACK")
+	back_button.theme_type_variation = "QuietButton"
+	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(show_main_menu)
 	header.add_child(back_button)
 
+	var title_stack := VBoxContainer.new()
+	title_stack.add_theme_constant_override("separation", 0)
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_stack)
+
 	var title := Label.new()
-	title.text = "Level Select"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 34)
-	header.add_child(title)
+	title.text = "PICK YOUR SHOT"
+	title.theme_type_variation = "ScreenTitle"
+	title_stack.add_child(title)
+
+	var route_subtitle := Label.new()
+	route_subtitle.text = "FOLLOW THE ROUTE TO THE FINAL GOAL."
+	route_subtitle.theme_type_variation = "MetaLabel"
+	title_stack.add_child(route_subtitle)
 
 	total_stars_label = Label.new()
+	total_stars_label.theme_type_variation = "NumericLabel"
 	total_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	total_stars_label.add_theme_font_size_override("font_size", 22)
 	header.add_child(total_stars_label)
 
-	var continue_button := _new_small_button("Continue")
+	var continue_button := _new_small_button("CONTINUE")
+	continue_button.theme_type_variation = "PrimaryButton"
+	continue_button.custom_minimum_size = Vector2(190.0, 58.0)
 	continue_button.pressed.connect(request_continue)
-	outer.add_child(continue_button)
+	header.add_child(continue_button)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	outer.add_child(scroll)
 
-	level_grid = GridContainer.new()
-	level_grid.add_theme_constant_override("h_separation", 12)
-	level_grid.add_theme_constant_override("v_separation", 12)
+	level_grid = LevelRouteScript.new()
 	level_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	level_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.add_child(level_grid)
 
 	for i in LevelRegistryScript.get_level_ids().size():
@@ -489,6 +571,7 @@ func _show_level_select_internal() -> void:
 		level_card_buttons[level_id] = card
 
 	status_label = Label.new()
+	status_label.theme_type_variation = "MetaLabel"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer.add_child(status_label)
 
@@ -1007,10 +1090,13 @@ func _build_gameplay_overlay() -> void:
 	layer_control.process_mode = Node.PROCESS_MODE_ALWAYS
 	layer_control.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer_control.theme = NetboundUITheme.get_theme()
 	gameplay_overlay_root.add_child(layer_control)
 
-	gameplay_pause_button = _new_small_button("Pause")
+	gameplay_pause_button = _new_small_button("PAUSE")
 	gameplay_pause_button.name = "PauseButton"
+	gameplay_pause_button.theme_type_variation = "HudButton"
+	gameplay_pause_button.custom_minimum_size = Vector2(112.0, 48.0)
 	gameplay_pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	gameplay_pause_button.pressed.connect(show_pause_menu)
 	layer_control.add_child(gameplay_pause_button)
@@ -1057,40 +1143,74 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	_play_sfx("result_success")
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("ResultOverlay")
-	var panel := _new_center_panel(Vector2(620.0, 620.0))
-	overlay.add_child(panel)
-	var box := _panel_vbox(panel)
+	overlay.theme = NetboundUITheme.get_theme()
+	var safe_margin := _new_margin_container()
+	overlay.add_child(safe_margin)
+	var shell := HBoxContainer.new()
+	shell.add_theme_constant_override("separation", NetboundUITheme.SPACE_8)
+	safe_margin.add_child(shell)
+	var gameplay_context := Control.new()
+	gameplay_context.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shell.add_child(gameplay_context)
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = "SuccessPanel"
+	panel.custom_minimum_size = Vector2(600.0, 0.0)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.add_child(panel)
+	var result_motif := ResultMotifScript.new()
+	panel.add_child(result_motif)
+	var panel_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		panel_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_8)
+	panel.add_child(panel_margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	panel_margin.add_child(box)
+
+	var result_eyebrow := Label.new()
+	result_eyebrow.text = "LEVEL %02d  /  CLEAN FINISH" % (LevelRegistryScript.get_level_ids().find(level_result.level_id) + 1)
+	result_eyebrow.theme_type_variation = "LightSectionLabel"
+	box.add_child(result_eyebrow)
+
+	var goal_display := Label.new()
+	goal_display.text = "GOAL!"
+	goal_display.theme_type_variation = "LightResultTitle"
+	box.add_child(goal_display)
 
 	result_title_label = Label.new()
 	result_title_label.text = "Goal Complete"
-	result_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_title_label.add_theme_font_size_override("font_size", 38)
+	result_title_label.theme_type_variation = "LightBodyLabel"
 	box.add_child(result_title_label)
 
 	var level_name := definition.display_name if definition else level_result.level_id
 	result_detail_label = Label.new()
-	result_detail_label.text = "%s\nShots: %d / %d   Par: %d" % [
-		level_name,
-		level_result.shots_used,
-		level_result.shot_limit,
-		level_result.par_shots,
-	]
-	result_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_detail_label.add_theme_font_size_override("font_size", 21)
+	result_detail_label.text = String(level_name).to_upper()
+	result_detail_label.theme_type_variation = "LightBodyLabel"
 	box.add_child(result_detail_label)
 
 	var run_stars := _get_update_int(progression_update, "stars_earned", 0)
+	var star_display := StarDisplayScript.new()
+	star_display.set_stars(run_stars, true)
+	box.add_child(star_display)
+
 	result_stars_label = Label.new()
-	result_stars_label.text = "Stars this run: %d / 3   Total: %d / %d" % [
+	result_stars_label.text = "%d / 3 STARS  //  TOTAL %d / %d" % [
 		run_stars,
 		_get_save_service().get_total_stars(),
 		MAX_STARS,
 	]
 	if level_result.rewarded_continue_used:
-		result_stars_label.text += "\nAd continue used: max 1 star"
+		result_stars_label.text += "  //  CONTINUE CAP: 1 STAR"
+	result_stars_label.theme_type_variation = "LightMetaLabel"
 	result_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_stars_label.add_theme_font_size_override("font_size", 22)
 	box.add_child(result_stars_label)
+
+	var stats := HBoxContainer.new()
+	stats.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+	box.add_child(stats)
+	stats.add_child(_new_result_stat("%02d" % level_result.shots_used, "SHOTS USED"))
+	stats.add_child(_new_result_stat("%02d" % level_result.par_shots, "PAR"))
+	stats.add_child(_new_result_stat("%02d" % level_result.shot_limit, "LIMIT"))
 
 	var previous_best := _get_update_int(progression_update, "previous_best_stars", 0)
 	var new_best := _get_update_int(progression_update, "new_best_stars", previous_best)
@@ -1098,27 +1218,22 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	var new_fewest := _get_update_int(progression_update, "new_fewest_shots", previous_fewest)
 	var improved := new_best > previous_best or (previous_fewest < 0 or new_fewest < previous_fewest)
 	result_best_label = Label.new()
-	result_best_label.text = "Best: %d -> %d stars   Fewest shots: %s%s" % [
-		previous_best,
+	result_best_label.text = "%s  //  %d STARS  //  %s SHOTS" % [
+		"NEW BEST" if improved else "BEST",
 		new_best,
-		("--" if previous_fewest < 0 else str(previous_fewest)),
-		(" -> %d" % new_fewest if new_fewest >= 0 else ""),
+		("--" if new_fewest < 0 else str(new_fewest)),
 	]
-	if improved:
-		result_best_label.text += "\nNew best result"
-	result_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_best_label.add_theme_font_size_override("font_size", 18)
+	result_best_label.theme_type_variation = "LightSuccessLabel" if improved else "LightMetaLabel"
 	box.add_child(result_best_label)
 
 	result_unlock_label = Label.new()
-	result_unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_unlock_label.add_theme_font_size_override("font_size", 18)
+	result_unlock_label.theme_type_variation = "LightSuccessLabel"
 	var unlocked_id := _get_update_string(progression_update, "unlocked_level_id", "")
 	if not unlocked_id.is_empty():
 		var unlocked_definition := LevelRegistryScript.load_definition(unlocked_id)
-		result_unlock_label.text = "Unlocked: %s" % unlocked_definition.display_name
+		result_unlock_label.text = "ROUTE OPEN  //  %s" % String(unlocked_definition.display_name).to_upper()
 	elif level_result.level_id == LevelRegistryScript.get_level_ids()[-1]:
-		result_unlock_label.text = "All production levels complete"
+		result_unlock_label.text = "ALL PRODUCTION LEVELS COMPLETE"
 	else:
 		result_unlock_label.text = ""
 	box.add_child(result_unlock_label)
@@ -1127,31 +1242,44 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	if not cosmetic_unlock_ids.is_empty():
 		_play_sfx("cosmetic_unlock")
 		var cosmetic_unlock_label := Label.new()
-		cosmetic_unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cosmetic_unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cosmetic_unlock_label.add_theme_font_size_override("font_size", 17)
+		cosmetic_unlock_label.theme_type_variation = "LightSectionLabel"
 		cosmetic_unlock_label.text = _format_cosmetic_unlock_text(cosmetic_unlock_ids)
 		box.add_child(cosmetic_unlock_label)
 
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 12)
-	box.add_child(actions)
+	var action_spacer := Control.new()
+	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(action_spacer)
 
-	result_next_button = _new_small_button("Next Level")
+	result_next_button = _new_menu_button("NEXT LEVEL", true)
+	result_next_button.custom_minimum_size = Vector2(0.0, 68.0)
+	result_next_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var next_id := definition.next_level_id if definition else ""
 	result_next_button.disabled = next_id.is_empty() or not _get_save_service().is_level_unlocked(next_id)
+	if next_id.is_empty():
+		result_next_button.text = "ROUTE COMPLETE"
 	result_next_button.pressed.connect(func() -> void: _navigate_to_next_after_success(next_id))
-	actions.add_child(result_next_button)
+	box.add_child(result_next_button)
 
-	var retry_button := _new_small_button("Retry")
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	box.add_child(actions)
+
+	var retry_button := _new_small_button("RETRY")
+	retry_button.theme_type_variation = "LightQuietButton"
+	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
 	actions.add_child(retry_button)
 
-	var select_button := _new_small_button("Level Select")
+	var select_button := _new_small_button("LEVELS")
+	select_button.theme_type_variation = "LightQuietButton"
+	select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	select_button.pressed.connect(_show_level_select_after_success)
 	actions.add_child(select_button)
 
-	var menu_button := _new_small_button("Main Menu")
+	var menu_button := _new_small_button("MAIN MENU")
+	menu_button.theme_type_variation = "LightQuietButton"
+	menu_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_button.pressed.connect(show_main_menu)
 	actions.add_child(menu_button)
 
@@ -1159,6 +1287,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	gameplay_overlay_root.add_child(result_overlay)
 	_animate_modal_entrance(result_overlay)
 	_animate_result_reveal(box)
+	star_display.play_reveal(_motion_reduced_for_ui())
 
 
 func _show_failure_result(level_result: LevelResult) -> void:
@@ -1601,6 +1730,8 @@ func _refresh_main_menu_play_state() -> void:
 
 func _refresh_level_select_state() -> void:
 	var service := _get_save_service()
+	var play_resolution := get_play_resolution()
+	var current_level_target := String(play_resolution.get("level_id", ""))
 	if total_stars_label:
 		total_stars_label.text = "Stars: %d / %d" % [service.get_total_stars(), MAX_STARS]
 	for i in LevelRegistryScript.get_level_ids().size():
@@ -1619,16 +1750,32 @@ func _refresh_level_select_state() -> void:
 		if not unlocked and i > 0:
 			requirement = "\nUnlock: complete Level %02d" % i
 		button.disabled = not unlocked
-		button.text = "%02d  %s\n%s  |  %s\nStars: %d/3  Par: %d  Best: %s%s" % [
-			i + 1,
-			definition.display_name,
-			_mechanic_label(definition.mechanic_id),
-			state_text,
-			stars,
-			definition.par_shots,
-			best_text,
-			requirement,
-		]
+		if button.has_method("configure_level"):
+			button.call(
+				"configure_level",
+				i + 1,
+				definition.display_name,
+				_mechanic_label(definition.mechanic_id),
+				unlocked,
+				completed,
+				level_id == current_level_target,
+				stars,
+				definition.par_shots,
+				fewest
+			)
+		else:
+			button.text = "%02d  %s\n%s  |  %s\nStars: %d/3  Par: %d  Best: %s%s" % [
+				i + 1,
+				definition.display_name,
+				_mechanic_label(definition.mechanic_id),
+				state_text,
+				stars,
+				definition.par_shots,
+				best_text,
+				requirement,
+			]
+	if level_grid:
+		level_grid.queue_redraw()
 
 
 func _refresh_level_grid_columns() -> void:
@@ -1640,12 +1787,12 @@ func _refresh_level_grid_columns() -> void:
 		- float(margins.get("left", SAFE_MARGIN))
 		- float(margins.get("right", SAFE_MARGIN))
 	)
-	if width >= 1100.0:
-		level_grid.columns = 5
-	elif width >= 780.0:
-		level_grid.columns = 3
+	if width >= 1120.0:
+		level_grid.set("columns", 5)
+	elif width >= 860.0:
+		level_grid.set("columns", 4)
 	else:
-		level_grid.columns = 2
+		level_grid.set("columns", 3)
 
 
 func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: String) -> void:
@@ -1846,13 +1993,13 @@ func _is_headless_run() -> bool:
 
 
 func _build_level_card(level_id: String, index: int) -> Button:
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(220.0, 132.0)
+	var button := LevelMarkerScript.new() as Button
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.set_meta("registry_index", index)
 	var id_copy := level_id
 	button.pressed.connect(func() -> void: request_level_launch(id_copy))
+	_connect_button_feedback(button, "ui_confirm")
 	return button
 
 
@@ -1994,7 +2141,7 @@ func _position_gameplay_pause_button() -> void:
 	if not gameplay_pause_button:
 		return
 	var margins := _safe_area_margins()
-	gameplay_pause_button.offset_left = -156.0 - float(margins.get("right", SAFE_MARGIN))
+	gameplay_pause_button.offset_left = -130.0 - float(margins.get("right", SAFE_MARGIN))
 	gameplay_pause_button.offset_top = 18.0 + float(margins.get("top", SAFE_MARGIN))
 	gameplay_pause_button.offset_right = -18.0 - float(margins.get("right", SAFE_MARGIN))
 	gameplay_pause_button.offset_bottom = 66.0 + float(margins.get("top", SAFE_MARGIN))
@@ -2024,7 +2171,7 @@ func _new_menu_button(text_value: String, primary: bool = false) -> Button:
 	button.custom_minimum_size = Vector2(360.0, 54.0)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_font_size_override("font_size", 22 if primary else 20)
+	button.theme_type_variation = "PrimaryButton" if primary else "SecondaryButton"
 	_connect_button_feedback(button, "ui_confirm" if primary else "ui_tap")
 	return button
 
@@ -2034,7 +2181,7 @@ func _new_small_button(text_value: String) -> Button:
 	button.text = text_value
 	button.custom_minimum_size = TOUCH_MINIMUM
 	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_font_size_override("font_size", 18)
+	button.theme_type_variation = "SecondaryButton"
 	_connect_button_feedback(button, "ui_tap")
 	return button
 
@@ -2194,6 +2341,23 @@ func _panel_vbox(panel: PanelContainer) -> VBoxContainer:
 	box.add_theme_constant_override("separation", 14)
 	margin.add_child(box)
 	return box
+
+
+func _new_result_stat(value_text: String, label_text: String) -> VBoxContainer:
+	var block := VBoxContainer.new()
+	block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	block.add_theme_constant_override("separation", 0)
+	var value := Label.new()
+	value.text = value_text
+	value.theme_type_variation = "LightNumericLabel"
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	block.add_child(value)
+	var label := Label.new()
+	label.text = label_text
+	label.theme_type_variation = "LightMetaLabel"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	block.add_child(label)
+	return block
 
 
 func _get_update_int(update: RefCounted, property_name: String, fallback: int) -> int:

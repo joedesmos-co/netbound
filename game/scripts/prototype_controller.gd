@@ -124,6 +124,7 @@ var last_camera_feedback_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
+	_apply_ui_art_direction()
 	_setup_camera()
 	_configure_ball_spawn_height()
 	_configure_swipe_distance()
@@ -135,6 +136,37 @@ func _ready() -> void:
 	_clear_swipe_visuals()
 	await _apply_physics_safe_reset()
 	_debug_log("INIT ball=%s" % ball.global_position)
+
+
+func _apply_ui_art_direction() -> void:
+	var ui_theme := NetboundUITheme.get_theme()
+	if top_bar:
+		top_bar.theme = ui_theme
+		top_bar.theme_type_variation = "HudBadge"
+		var shots := top_bar.get_node_or_null("ShotsLabel") as Label
+		if shots:
+			shots.label_settings = null
+			shots.theme_type_variation = "NumericLabel"
+			shots.add_theme_font_size_override("font_size", 22)
+			shots.add_theme_color_override("font_color", NetboundUITheme.SIGNAL)
+	if top_left_ui:
+		top_left_ui.theme = ui_theme
+		var instruction_kicker := top_left_ui.get_node_or_null("InstructionKicker") as Label
+		if instruction_kicker:
+			instruction_kicker.theme_type_variation = "SectionLabel"
+	if reset_button:
+		reset_button.theme_type_variation = "HudButton"
+		reset_button.custom_minimum_size = Vector2(156.0, 48.0)
+	if instruction_label:
+		instruction_label.label_settings = null
+		instruction_label.theme_type_variation = "BodyLabel"
+		instruction_label.add_theme_font_size_override("font_size", 17)
+		instruction_label.add_theme_color_override("font_outline_color", Color(NetboundUITheme.INK, 0.94))
+		instruction_label.add_theme_constant_override("outline_size", 3)
+	if power_bar_container:
+		power_bar_container.theme = ui_theme
+	if power_bar:
+		power_bar.theme = ui_theme
 
 
 func _notification(what: int) -> void:
@@ -1085,16 +1117,20 @@ func apply_safe_area_margins(margins: Dictionary) -> void:
 	var bottom := float(margins.get("bottom", 16.0))
 	if top_bar:
 		top_bar.offset_top = top + 8.0
-		top_bar.offset_bottom = top + 48.0
+		top_bar.offset_bottom = top + 56.0
 	if top_left_ui:
 		top_left_ui.offset_left = left + 16.0
-		top_left_ui.offset_top = top + 58.0
-		top_left_ui.offset_right = left + 420.0
+		top_left_ui.offset_top = top + 12.0
+		top_left_ui.offset_right = left + 388.0
 	if power_bar_container:
-		power_bar_container.offset_left = left + 24.0
-		power_bar_container.offset_right = -(right + 24.0)
-		power_bar_container.offset_bottom = -(bottom + 16.0)
-		power_bar_container.offset_top = power_bar_container.offset_bottom - 40.0
+		var available_width := get_viewport().get_visible_rect().size.x - left - right
+		var meter_width := minf(480.0, available_width * 0.52)
+		power_bar_container.anchor_left = 0.5
+		power_bar_container.anchor_right = 0.5
+		power_bar_container.offset_left = -meter_width * 0.5
+		power_bar_container.offset_right = meter_width * 0.5
+		power_bar_container.offset_bottom = -(bottom + 18.0)
+		power_bar_container.offset_top = power_bar_container.offset_bottom - 20.0
 
 
 func _apply_ball_tuning() -> void:
@@ -1126,6 +1162,8 @@ func _update_debug_ui() -> void:
 	curve_label.visible = developer_debug_enabled
 	loft_category_label.visible = developer_debug_enabled
 	shot_debug_label.visible = developer_debug_enabled
+	if power_bar_container:
+		power_bar_container.visible = is_swiping
 
 	power_label.text = "Launch Speed: %.2f (ratio %.2f)" % [current_launch_speed, current_power_ratio]
 	direction_label.text = "Direction: (%.2f, %.2f, %.2f)" % [

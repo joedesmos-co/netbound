@@ -391,28 +391,30 @@ mesh = SubResource("CylinderMesh_aim_head")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="TopBar" type="HBoxContainer" parent="UI"]
+[node name="TopBar" type="PanelContainer" parent="UI"]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -120.0
-offset_top = 16.0
-offset_right = 120.0
-offset_bottom = 56.0
+offset_left = -92.0
+offset_top = 20.0
+offset_right = 92.0
+offset_bottom = 68.0
 grow_horizontal = 2
 mouse_filter = 2
+theme_type_variation = &"HudBadge"
 
 [node name="ShotsLabel" type="Label" parent="UI/TopBar"]
 layout_mode = 2
-text = "Shots: 3"
+text = "SHOTS  /  03"
 label_settings = SubResource("LabelSettings_instruction")
 horizontal_alignment = 1
 
 [node name="TopLeftUI" type="VBoxContainer" parent="UI"]
-offset_left = 16.0
-offset_top = 64.0
-offset_right = 420.0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 400.0
 mouse_filter = 2
+theme_override_constants/separation = 10
 
 [node name="RetryLevelButton" type="Button" parent="UI/TopLeftUI"]
 custom_minimum_size = Vector2(200, 48)
@@ -421,10 +423,12 @@ mouse_filter = 0
 text = "Retry Level"
 
 [node name="ResetButton" type="Button" parent="UI/TopLeftUI"]
-custom_minimum_size = Vector2(200, 48)
+custom_minimum_size = Vector2(156, 48)
 layout_mode = 2
+size_flags_horizontal = 0
 mouse_filter = 0
-text = "Reset Ball"
+theme_type_variation = &"HudButton"
+text = "RESET BALL"
 
 [node name="ResetOkLabel" type="Label" parent="UI/TopLeftUI"]
 visible = false
@@ -433,7 +437,14 @@ mouse_filter = 2
 text = "RESET OK"
 label_settings = SubResource("LabelSettings_debug")
 
+[node name="InstructionKicker" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "SHOT NOTE  /  OPEN RANGE"
+theme_type_variation = &"SectionLabel"
+
 [node name="InstructionLabel" type="Label" parent="UI/TopLeftUI"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 mouse_filter = 2
 text = "Swipe toward the goal. Flick up at release to chip. Curve sideways to bend."
@@ -472,13 +483,14 @@ label_settings = SubResource("LabelSettings_debug")
 
 [node name="PowerBarContainer" type="Control" parent="UI"]
 anchors_preset = 12
+anchor_left = 0.5
 anchor_top = 1.0
-anchor_right = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = -56.0
-offset_right = -24.0
-offset_bottom = -16.0
+offset_left = -240.0
+offset_top = -42.0
+offset_right = 240.0
+offset_bottom = -22.0
 grow_horizontal = 2
 mouse_filter = 2
 

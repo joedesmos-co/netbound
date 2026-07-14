@@ -5,17 +5,21 @@ const FONT_BODY: FontFile = preload("res://assets/fonts/LiberationSans-Regular.t
 const FONT_BOLD: FontFile = preload("res://assets/fonts/LiberationSans-Bold.ttf")
 const FONT_DISPLAY: FontFile = preload("res://assets/fonts/LiberationSansNarrow-Bold.ttf")
 
-const INK := Color("081218")
-const FIELD_INK := Color("102a27")
-const SURFACE := Color("162329")
-const SURFACE_HIGH := Color("22343a")
-const CHALK := Color("f4f2e8")
-const MUTED := Color("9aa9a7")
-const SIGNAL := Color("f2d22e")
-const SUCCESS := Color("69db7c")
-const FAILURE := Color("ff665e")
-const LOCKED := Color("526166")
-const CURVE := Color("4bc7d8")
+const INK := Color("0b2942")
+const FIELD_INK := Color("0f4f54")
+const SURFACE := Color("174d68")
+const SURFACE_HIGH := Color("216882")
+const CHALK := Color("fff9e8")
+const PAPER := Color("fff3d6")
+const MUTED := Color("a9c2c8")
+const SIGNAL := Color("ffd84a")
+const SUCCESS := Color("43c878")
+const FAILURE := Color("ff625f")
+const LOCKED := Color("718a91")
+const CURVE := Color("43d2e3")
+const CORAL := Color("ff765e")
+const SKY := Color("55b9ef")
+const GRASS := Color("31bf72")
 
 const SPACE_1 := 4
 const SPACE_2 := 8
@@ -58,6 +62,19 @@ static func transparent_style(content_margin := Vector2(12.0, 8.0)) -> StyleBoxF
 	return style(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0, content_margin)
 
 
+static func edge_style(
+	background: Color,
+	border: Color,
+	left_width: int,
+	right_width: int = 0,
+	content_margin := Vector2(18.0, 12.0)
+) -> StyleBoxFlat:
+	var box := style(background, border, 0, 0, content_margin)
+	box.border_width_left = left_width
+	box.border_width_right = right_width
+	return box
+
+
 static func _build_theme() -> Theme:
 	var theme := Theme.new()
 	theme.default_font = FONT_BODY
@@ -86,6 +103,12 @@ static func _register_label_variations(theme: Theme) -> void:
 	_register_label(theme, "NumericLabel", FONT_DISPLAY, 28, CHALK)
 	_register_label(theme, "SuccessLabel", FONT_BOLD, 17, SUCCESS)
 	_register_label(theme, "FailureLabel", FONT_BOLD, 17, FAILURE)
+	_register_label(theme, "LightResultTitle", FONT_DISPLAY, 78, INK)
+	_register_label(theme, "LightSectionLabel", FONT_BOLD, 15, Color("b44732"))
+	_register_label(theme, "LightBodyLabel", FONT_BODY, 18, INK)
+	_register_label(theme, "LightMetaLabel", FONT_BODY, 15, Color("55707a"))
+	_register_label(theme, "LightNumericLabel", FONT_DISPLAY, 28, INK)
+	_register_label(theme, "LightSuccessLabel", FONT_BOLD, 17, Color("188d4a"))
 
 
 static func _register_label(
@@ -128,10 +151,10 @@ static func _register_button_variations(theme: Theme) -> void:
 		theme,
 		"SecondaryButton",
 		18,
-		CHALK,
-		style(SURFACE, Color(CHALK, 0.36), 1),
-		style(SURFACE_HIGH, CHALK, 1),
-		style(FIELD_INK, SIGNAL, 2)
+		INK,
+		style(PAPER, INK, 2, 3),
+		style(CHALK, CORAL, 2, 3),
+		style(CURVE, INK, 2, 3)
 	)
 	_register_button(
 		theme,
@@ -159,6 +182,24 @@ static func _register_button_variations(theme: Theme) -> void:
 		style(Color(FAILURE, 0.12), FAILURE, 1),
 		style(Color(FAILURE, 0.22), FAILURE, 2),
 		style(Color(FAILURE, 0.32), CHALK, 2)
+	)
+	_register_button(
+		theme,
+		"HudButton",
+		15,
+		CHALK,
+		style(Color(INK, 0.78), Color(CHALK, 0.24), 1, 1, Vector2(14.0, 9.0)),
+		style(Color(SURFACE_HIGH, 0.92), CHALK, 1, 1, Vector2(14.0, 9.0)),
+		style(Color(SIGNAL, 0.92), SIGNAL, 2, 1, Vector2(14.0, 9.0))
+	)
+	_register_button(
+		theme,
+		"LightQuietButton",
+		16,
+		INK,
+		transparent_style(),
+		style(Color(CORAL, 0.12), CORAL, 1, 1, Vector2(12.0, 8.0)),
+		style(SIGNAL, INK, 2, 1, Vector2(12.0, 8.0))
 	)
 
 
@@ -189,13 +230,27 @@ static func _register_button(
 static func _register_panel_variations(theme: Theme) -> void:
 	theme.set_stylebox("panel", "PanelContainer", style(SURFACE, Color(CHALK, 0.18), 1, 2))
 	theme.set_type_variation("RailPanel", "PanelContainer")
-	theme.set_stylebox("panel", "RailPanel", style(Color(INK, 0.96), Color(CHALK, 0.22), 1, 0))
+	theme.set_stylebox(
+		"panel",
+		"RailPanel",
+		edge_style(Color(INK, 0.95), CORAL, 7, 0, Vector2(0.0, 0.0))
+	)
 	theme.set_type_variation("ResultPanel", "PanelContainer")
 	theme.set_stylebox("panel", "ResultPanel", style(Color(INK, 0.96), SIGNAL, 0, 0))
 	theme.set_type_variation("SuccessPanel", "PanelContainer")
-	theme.set_stylebox("panel", "SuccessPanel", style(Color(INK, 0.96), SUCCESS, 2, 0))
+	theme.set_stylebox(
+		"panel",
+		"SuccessPanel",
+		edge_style(PAPER, SUCCESS, 8, 0, Vector2(0.0, 0.0))
+	)
 	theme.set_type_variation("FailurePanel", "PanelContainer")
-	theme.set_stylebox("panel", "FailurePanel", style(Color(INK, 0.96), FAILURE, 2, 0))
+	theme.set_stylebox(
+		"panel",
+		"FailurePanel",
+		edge_style(Color(INK, 0.96), FAILURE, 6, 0, Vector2(0.0, 0.0))
+	)
+	theme.set_type_variation("HudBadge", "PanelContainer")
+	theme.set_stylebox("panel", "HudBadge", style(Color(INK, 0.82), Color(CHALK, 0.22), 1, 1, Vector2(18.0, 8.0)))
 
 
 static func _register_range_controls(theme: Theme) -> void:

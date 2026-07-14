@@ -7,6 +7,7 @@ const TEST_SAVE := "user://ui_audit_capture.json"
 const TEST_TMP := "user://ui_audit_capture.tmp"
 const TEST_BAK := "user://ui_audit_capture.bak"
 const TEST_CORRUPT := "user://ui_audit_capture.corrupt"
+const DESIGN_SIZE := Vector2i(1280, 720)
 
 var app: NetboundApp
 var service: NetboundSaveService
@@ -19,7 +20,8 @@ var fixture_name: String = "fresh"
 func _initialize() -> void:
 	_parse_arguments()
 	get_root().size = viewport_size
-	get_root().content_scale_size = viewport_size
+	# Preserve production canvas scaling while varying the physical window size.
+	get_root().content_scale_size = DESIGN_SIZE
 	service = get_root().get_node("SaveService") as NetboundSaveService
 	service.configure_storage_paths(TEST_SAVE, TEST_TMP, TEST_BAK, TEST_CORRUPT)
 	service.recording_enabled = true
