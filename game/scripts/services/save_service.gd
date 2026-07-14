@@ -474,6 +474,8 @@ func _create_default_save() -> Dictionary:
 			"music_volume": 1.0,
 			"sfx_volume": 1.0,
 			"haptics_enabled": true,
+			"reduced_motion_enabled": false,
+			"camera_effects_intensity": 1.0,
 			"developer_debug": false,
 		},
 	}
@@ -623,6 +625,8 @@ func _normalize_settings(raw: Dictionary) -> Dictionary:
 		"music_volume": clampf(float(raw.get("music_volume", 1.0)), 0.0, 1.0),
 		"sfx_volume": clampf(float(raw.get("sfx_volume", 1.0)), 0.0, 1.0),
 		"haptics_enabled": bool(raw.get("haptics_enabled", true)),
+		"reduced_motion_enabled": bool(raw.get("reduced_motion_enabled", false)),
+		"camera_effects_intensity": clampf(float(raw.get("camera_effects_intensity", 1.0)), 0.0, 1.0),
 		"developer_debug": bool(raw.get("developer_debug", false)),
 	}
 

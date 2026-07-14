@@ -20,6 +20,7 @@ Startup
 ### Main Menu
 
 - Shows the Netbound title, Play/Continue, Level Select, Cosmetics, Settings, and a subtle build label.
+- Starts the lightweight menu music loop through `AudioService`.
 - Resolves Play/Continue from `SaveService`:
   - first unlocked incomplete level
   - highest unlocked level if unlocked levels are complete but later levels remain locked
@@ -47,6 +48,12 @@ Startup
 - Restart calls the level's authoritative retry path.
 - Level Select and Main Menu unload the level after cancelling stale callbacks.
 - Settings can be opened from Pause and returns to the pause overlay.
+
+### Settings
+
+- Settings apply immediately through `SaveService`, `AudioService`, and `HapticsService`.
+- Master, Music, SFX, Haptics, Reduced Motion, and Camera Effects are player-facing controls.
+- Developer Debug remains debug-build-only.
 
 ### Results
 

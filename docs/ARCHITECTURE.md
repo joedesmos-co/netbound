@@ -208,12 +208,34 @@ Developer-only utilities live on `SaveService`:
 
 They are not exposed in normal production UI.
 
+## Phase 7 Presentation Service Update
+
+Phase 7 starts a presentation layer for audio, haptics, motion, and feel. Presentation systems observe semantic gameplay events; they do not own gameplay outcomes.
+
+New service layer:
+
+- `AudioService` (`res://scripts/services/audio_service.gd`) is an Autoload responsible for generated audio assets, bus setup, music state, one-shot playback, cooldowns, bounded player pools, and settings application.
+- `HapticsService` (`res://scripts/services/haptics_service.gd`) is an Autoload responsible for semantic haptic events, settings compliance, platform-safe no-ops, and impact rate limits.
+
+Runtime audio buses:
+
+- `Master`
+- `Music`
+- `SFX`
+- `UI` routed to `SFX`
+
+Presentation documentation:
+
+- `docs/PRESENTATION.md`
+- `docs/AUDIO.md`
+
 Settings integration:
 
 - Settings read and write Phase 4 `SaveService` keys.
 - Master volume is applied to the `Master` bus when present.
-- `Music` and `SFX` settings are persisted and applied if those buses are later added.
-- Haptics is persisted for later mobile feedback work.
+- `Music`, `SFX`, and `UI` settings are applied through `AudioService`.
+- Haptics is applied through `HapticsService`.
+- Reduced motion and camera effects intensity are persisted for Phase 7 feedback systems.
 - Developer debug is shown only in debug builds.
 
 Proof scene:

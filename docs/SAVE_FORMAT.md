@@ -43,6 +43,8 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "music_volume": 1.0,
     "sfx_volume": 1.0,
     "haptics_enabled": true,
+    "reduced_motion_enabled": false,
+    "camera_effects_intensity": 1.0,
     "developer_debug": false
   }
 }
@@ -173,6 +175,15 @@ The Phase 5 Settings screen reads and writes the existing `settings` object thro
 - `developer_debug` is exposed only in debug builds and toggles gameplay debug labels for levels loaded through the app shell.
 
 No new save-version migration was required for Phase 5.
+
+## Phase 7 Settings Integration
+
+No save-version bump is required for Phase 7. The existing `settings` dictionary is normalized with safe defaults for missing keys:
+
+- `reduced_motion_enabled`: default `false`
+- `camera_effects_intensity`: default `1.0`, clamped to `0..1`
+
+`AudioService` applies Master/Music/SFX/UI bus volumes from the existing volume fields. `HapticsService` applies `haptics_enabled`.
 
 ## Phase 6 Cosmetic Integration
 

@@ -149,9 +149,11 @@ func request_continue() -> bool:
 func request_level_launch(level_id: String) -> bool:
 	if not LevelRegistryScript.has_level_id(level_id):
 		_set_status("That level is not registered.")
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
 		return false
 	if not _get_save_service().is_level_unlocked(level_id):
 		_set_status("Complete earlier levels to unlock this one.")
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
 		return false
 	return load_level(level_id)
 
@@ -190,6 +192,7 @@ func load_level(level_id: String) -> bool:
 	level_root.add_child(current_level)
 	_apply_developer_debug_to_level()
 	_build_gameplay_overlay()
+	_play_gameplay_music(level_id)
 	return true
 
 
@@ -286,6 +289,7 @@ func _show_main_menu_internal() -> void:
 	current_screen_name = "main_menu"
 	_clear_screen()
 	_clear_gameplay_overlay()
+	_play_menu_music()
 
 	var screen := _new_screen("MainMenu")
 	var backdrop := MenuBackdropScript.new()
@@ -366,6 +370,7 @@ func _show_level_select_internal() -> void:
 	current_screen_name = "level_select"
 	_clear_screen()
 	_clear_gameplay_overlay()
+	_play_menu_music()
 	level_card_buttons.clear()
 
 	var screen := _new_screen("LevelSelect")
@@ -429,6 +434,8 @@ func _show_level_select_internal() -> void:
 func _show_settings_internal() -> void:
 	current_screen_name = "settings"
 	_clear_screen()
+	if previous_menu_screen != "pause":
+		_play_menu_music()
 	if pause_overlay:
 		pause_overlay.queue_free()
 		pause_overlay = null
@@ -455,6 +462,8 @@ func _show_settings_internal() -> void:
 	_add_volume_setting(outer, "Music Volume", "music_volume")
 	_add_volume_setting(outer, "SFX Volume", "sfx_volume")
 	_add_toggle_setting(outer, "Haptics", "haptics_enabled")
+	_add_toggle_setting(outer, "Reduced Motion", "reduced_motion_enabled")
+	_add_volume_setting(outer, "Camera Effects", "camera_effects_intensity")
 	if OS.is_debug_build():
 		_add_toggle_setting(outer, "Developer Debug", "developer_debug")
 
@@ -469,6 +478,8 @@ func _show_settings_internal() -> void:
 func _show_cosmetics_internal() -> void:
 	current_screen_name = "cosmetics"
 	_clear_screen()
+	if previous_menu_screen != "pause":
+		_play_menu_music()
 	cosmetic_category_buttons.clear()
 	cosmetic_card_buttons.clear()
 
@@ -607,11 +618,14 @@ func _equip_previewed_cosmetic() -> void:
 	var service := _get_save_service()
 	if not service.is_cosmetic_unlocked(previewed_cosmetic_id):
 		cosmetic_status_label.text = "Locked"
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
 		return
 	if service.set_selected_cosmetic(current_cosmetic_category, previewed_cosmetic_id):
 		cosmetic_status_label.text = "Equipped"
+		_play_ui_feedback("ui_confirm", "ui_tap", 0.65)
 	else:
 		cosmetic_status_label.text = "Unable to equip"
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
 	_refresh_cosmetics_screen()
 
 
@@ -757,6 +771,7 @@ func _build_pause_overlay() -> Control:
 func _show_success_result(level_result: LevelResult, progression_update: RefCounted) -> void:
 	_clear_result_overlay()
 	current_screen_name = "result"
+	_play_sfx("result_success")
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("ResultOverlay")
 	var panel := _new_center_panel(Vector2(620.0, 620.0))
@@ -825,6 +840,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 
 	var cosmetic_unlock_ids := _get_update_string_array(progression_update, "unlocked_cosmetic_ids")
 	if not cosmetic_unlock_ids.is_empty():
+		_play_sfx("cosmetic_unlock")
 		var cosmetic_unlock_label := Label.new()
 		cosmetic_unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cosmetic_unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -861,6 +877,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 func _show_failure_result(level_result: LevelResult) -> void:
 	_clear_result_overlay()
 	current_screen_name = "result"
+	_play_sfx("result_failure")
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("FailureOverlay")
 	var panel := _new_center_panel(Vector2(500.0, 420.0))
@@ -943,6 +960,9 @@ func _handle_back_navigation() -> void:
 func _leave_current_level() -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
+	var audio_service := get_node_or_null("/root/AudioService")
+	if audio_service and audio_service.has_method("cleanup_scene_audio"):
+		audio_service.call("cleanup_scene_audio")
 	_clear_gameplay_overlay()
 	if current_level:
 		if current_level.has_method("prepare_for_unload"):
@@ -1103,6 +1123,13 @@ func _apply_saved_settings() -> void:
 	_apply_bus_volume("Master", float(service.get_setting_value("master_volume", 1.0)))
 	_apply_bus_volume("Music", float(service.get_setting_value("music_volume", 1.0)))
 	_apply_bus_volume("SFX", float(service.get_setting_value("sfx_volume", 1.0)))
+	_apply_bus_volume("UI", float(service.get_setting_value("sfx_volume", 1.0)))
+	var audio_service := get_node_or_null("/root/AudioService")
+	if audio_service and audio_service.has_method("apply_settings_from_save"):
+		audio_service.call("apply_settings_from_save", service)
+	var haptics_service := get_node_or_null("/root/HapticsService")
+	if haptics_service and haptics_service.has_method("apply_settings_from_save"):
+		haptics_service.call("apply_settings_from_save", service)
 	_apply_developer_debug_to_level()
 
 
@@ -1127,6 +1154,51 @@ func _set_status(message: String) -> void:
 	last_status_message = message
 	if status_label:
 		status_label.text = message
+
+
+func _play_menu_music() -> void:
+	if _is_headless_run():
+		return
+	var audio_service := get_node_or_null("/root/AudioService")
+	if audio_service and audio_service.has_method("play_music"):
+		audio_service.call("play_music", "music_menu_loop")
+
+
+func _play_gameplay_music(level_id: String) -> void:
+	if _is_headless_run():
+		return
+	var audio_service := get_node_or_null("/root/AudioService")
+	if not audio_service or not audio_service.has_method("play_music"):
+		return
+	var music_id := "music_final_loop" if level_id == "level_10" else "music_gameplay_loop"
+	audio_service.call("play_music", music_id)
+
+
+func _play_sfx(sound_id: String, volume_scale: float = 1.0) -> void:
+	if _is_headless_run():
+		return
+	var audio_service := get_node_or_null("/root/AudioService")
+	if audio_service and audio_service.has_method("play_sfx"):
+		audio_service.call("play_sfx", sound_id, volume_scale)
+
+
+func _play_ui_feedback(
+	sound_id: String = "ui_tap",
+	haptic_event: String = "ui_tap",
+	haptic_strength: float = 0.55
+) -> void:
+	if _is_headless_run():
+		return
+	var audio_service := get_node_or_null("/root/AudioService")
+	if audio_service and audio_service.has_method("play_ui"):
+		audio_service.call("play_ui", sound_id)
+	var haptics_service := get_node_or_null("/root/HapticsService")
+	if haptics_service and haptics_service.has_method("emit_event"):
+		haptics_service.call("emit_event", haptic_event, haptic_strength)
+
+
+func _is_headless_run() -> bool:
+	return DisplayServer.get_name() == "headless"
 
 
 func _build_level_card(level_id: String, index: int) -> Button:
@@ -1207,6 +1279,7 @@ func _new_menu_button(text_value: String, primary: bool = false) -> Button:
 	button.custom_minimum_size = Vector2(360.0, 54.0)
 	button.focus_mode = Control.FOCUS_ALL
 	button.add_theme_font_size_override("font_size", 22 if primary else 20)
+	_connect_button_feedback(button, "ui_confirm" if primary else "ui_tap")
 	return button
 
 
@@ -1216,7 +1289,12 @@ func _new_small_button(text_value: String) -> Button:
 	button.custom_minimum_size = TOUCH_MINIMUM
 	button.focus_mode = Control.FOCUS_ALL
 	button.add_theme_font_size_override("font_size", 18)
+	_connect_button_feedback(button, "ui_tap")
 	return button
+
+
+func _connect_button_feedback(button: Button, sound_id: String) -> void:
+	button.pressed.connect(func() -> void: _play_ui_feedback(sound_id))
 
 
 func _new_modal_overlay(node_name: String) -> Control:

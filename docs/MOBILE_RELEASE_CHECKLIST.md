@@ -2,7 +2,7 @@
 
 This checklist tracks what must be true before the vertical slice is mobile-ready.
 
-## Current Status Through Phase 6
+## Current Status Through Phase 7
 
 - Godot 4.7 stable is available and verified.
 - Project imports in headless mode.
@@ -12,6 +12,8 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Offline progression, star ratings, app shell menus, level select, pause, result overlays, basic settings, and earnable cosmetics now exist.
 - Cosmetics are offline-only, gameplay-earned, and persisted locally through `SaveService`.
 - Cosmetic visuals are material overrides, bounded trail points, and transient goal effects; they do not alter physics or scoring.
+- Original generated audio assets, runtime audio buses, bounded AudioService players, and HapticsService now exist.
+- Reduced Motion and Camera Effects settings exist and persist.
 - Export presets and platform packaging are not configured yet.
 
 ## Project Settings
@@ -80,6 +82,7 @@ Audit and optimize:
 - Curve calculations.
 - Particles.
 - Cosmetic trail point count and goal effect node cleanup.
+- Audio player pool counts and impact cooldowns.
 - Transparent net materials.
 - Draw calls.
 - Console logging.
@@ -120,9 +123,8 @@ Required:
 
 Current gaps:
 
-- No audio system exists.
-- No haptics abstraction exists.
-- Phase 5 settings persist volume and haptics values; Phase 7 will connect real feedback.
+- Audio and haptics are connected at the service layer.
+- Physical mobile audio focus and haptic feel still require device testing.
 
 ## Final QA Matrix
 

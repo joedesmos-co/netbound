@@ -18,6 +18,8 @@ config/icon="res://icon.svg"
 [autoload]
 
 SaveService="*res://scripts/services/save_service.gd"
+AudioService="*res://scripts/services/audio_service.gd"
+HapticsService="*res://scripts/services/haptics_service.gd"
 
 [display]
 
