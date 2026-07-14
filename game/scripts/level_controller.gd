@@ -57,6 +57,7 @@ var external_navigation_ui_enabled: bool = false
 var selected_ball_skin_id: String = "ball_classic"
 var selected_trail_id: String = "trail_none"
 var selected_goal_effect_id: String = "goal_classic"
+var near_miss_presented_shot_id: int = -1
 
 
 func _ready() -> void:
@@ -250,6 +251,7 @@ func _restart_level() -> void:
 	last_level_result = null
 	last_progression_update = null
 	active_shot_id = 0
+	near_miss_presented_shot_id = -1
 	shots_remaining = max_shots
 	shots_used = 0
 	shot_time_remaining = 0.0
@@ -304,6 +306,7 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 	if level_state != LevelState.SHOT_ACTIVE:
 		return
 
+	_maybe_present_near_miss(shot_id)
 	shot_time_remaining = 0.0
 	shot_active_elapsed = 0.0
 	_clear_active_curve()
@@ -498,6 +501,8 @@ func _is_ball_out_of_bounds() -> bool:
 
 func _show_goal_feedback() -> void:
 	_refresh_selected_cosmetics()
+	if gameplay_feedback:
+		gameplay_feedback.on_goal_scored()
 	CosmeticVisualsScript.trigger_goal_effect(
 		self,
 		goal_root,
@@ -561,3 +566,43 @@ func _refresh_selected_cosmetics() -> void:
 func _clear_cosmetic_feedback() -> void:
 	CosmeticVisualsScript.reset_ball_trail(ball)
 	CosmeticVisualsScript.clear_goal_effects(self)
+
+
+func _present_ball_impact(kind: String, strength: float, body: Node) -> void:
+	super._present_ball_impact(kind, strength, body)
+	if kind == "post":
+		_maybe_present_near_miss(active_shot_id)
+
+
+func _maybe_present_near_miss(shot_id: int) -> void:
+	if shot_id != active_shot_id or shot_id == near_miss_presented_shot_id:
+		return
+	if level_state == LevelState.GOAL:
+		return
+	if not _is_near_goal_miss_position():
+		return
+	near_miss_presented_shot_id = shot_id
+	if gameplay_feedback:
+		gameplay_feedback.on_near_miss()
+
+
+func _is_near_goal_miss_position() -> bool:
+	var target_root := goal_root
+	var half_width := goal_clear_half_width
+	var crossbar := goal_crossbar_height
+	var depth := goal_interior_depth
+	if not goal_targets.is_empty():
+		target_root = goal_targets[0]
+		half_width = goal_targets[0].opening_half_width
+		crossbar = goal_targets[0].crossbar_height
+		depth = goal_targets[0].interior_depth
+	if not target_root:
+		return false
+	var local := target_root.to_local(ball.global_position)
+	var near_goal_plane := local.z <= 1.4 and local.z >= -depth - 1.4
+	if not near_goal_plane:
+		return false
+	var side_gap := absf(absf(local.x) - half_width)
+	var just_wide := side_gap <= 1.1 and local.y >= ball_radius and local.y <= crossbar + 0.8
+	var just_high := absf(local.x) <= half_width + 0.8 and local.y > crossbar and local.y <= crossbar + 1.2
+	return just_wide or just_high

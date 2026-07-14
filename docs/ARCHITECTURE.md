@@ -216,6 +216,8 @@ New service layer:
 
 - `AudioService` (`res://scripts/services/audio_service.gd`) is an Autoload responsible for generated audio assets, bus setup, music state, one-shot playback, cooldowns, bounded player pools, and settings application.
 - `HapticsService` (`res://scripts/services/haptics_service.gd`) is an Autoload responsible for semantic haptic events, settings compliance, platform-safe no-ops, and impact rate limits.
+- `NetboundGameplayFeedback` (`res://scripts/presentation/gameplay_feedback_controller.gd`) is a per-level observer that presents aim preview, shot release, impact, goal, and near-miss feedback from semantic gameplay state.
+- `NetboundCameraFeedback` (`res://scripts/presentation/camera_feedback.gd`) supplies deterministic camera offsets that are applied after normal follow logic and cleared on Reset/Retry/navigation.
 
 Runtime audio buses:
 
@@ -237,6 +239,15 @@ Settings integration:
 - Haptics is applied through `HapticsService`.
 - Reduced motion and camera effects intensity are persisted for Phase 7 feedback systems.
 - Developer debug is shown only in debug builds.
+
+Gameplay presentation flow:
+
+1. `prototype_controller.gd` computes the canonical launch velocity exactly as in Phase 1.
+2. While aiming, it passes that velocity, shot category, power ratio, and signed curve value into `GameplayFeedback` for a visual-only trajectory/readout.
+3. On launch, the ball velocity is assigned first; shot audio, haptics, launch ring, camera offset, and mesh squash/stretch observe the result.
+4. Ball impacts route through one semantic impact method and are rate-limited by the audio/haptics services.
+5. `level_controller.gd` may present a guarded near miss once per active shot, but valid swept goal detection and final-shot goal priority remain authoritative.
+6. Reset, Retry, and unload clear aim dots, tweens, transient nodes, near-miss labels, and camera feedback without refunding attempts or changing level state rules.
 
 Proof scene:
 

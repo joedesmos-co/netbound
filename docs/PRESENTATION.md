@@ -67,6 +67,39 @@ Responsibilities:
 - rate-limit repeated impact haptics
 - keep platform vibration calls out of gameplay scripts
 
+### GameplayFeedback
+
+Component: `GameplayFeedback`
+Script: `res://scripts/presentation/gameplay_feedback_controller.gd`
+
+The gameplay controller owns the stable shot calculation, then passes the current launch velocity and curve values to `GameplayFeedback` for display only. The component creates:
+
+- a bounded 14-dot aim preview derived from the current canonical launch values
+- a bottom shot readout for category, power, and curve strength
+- visual-only ball anticipation and release squash/stretch on mesh children
+- launch ring, impact, goal, and near-miss presentation hooks
+- audio and haptic semantic event calls
+
+The component never writes `linear_velocity`, collision shapes, ball mass, goal state, shot counts, progression, or save data.
+
+### CameraFeedback
+
+Component: child of `GameplayFeedback`
+Script: `res://scripts/presentation/camera_feedback.gd`
+
+`CameraFeedback` returns a deterministic per-frame offset for shot, impact/post, and goal events. `prototype_controller.gd` applies it after normal camera follow and subtracts the previous offset before the next smoothing step, so feedback does not drift the authored setup framing. Reset, Retry, and level unload clear all camera feedback state.
+
+### Near Miss Presentation
+
+Near-miss feedback is presentation-only and lives in `level_controller.gd`. It may fire once per active shot when:
+
+- the shot is still the active generation
+- the level is not already in `GOAL`
+- the ball is close to the registered goal plane
+- the ball is just outside a post or just over the crossbar
+
+Post/crossbar impacts can also request the same guarded feedback. Valid swept goal detection still resolves first and remains authoritative.
+
 ## Settings
 
 Phase 7 extends the existing version `1` settings dictionary with:
@@ -86,11 +119,14 @@ Initial presentation budgets:
 - trail points per ball: 16
 - cosmetic confetti pieces: 24
 - cosmetic shockwave rings: 1 transient node
+- aim preview dots per active level: 14
+- gameplay camera feedback: one reusable component per level
+- launch rings/near-miss labels: transient and cleared on Reset/Retry
 - impact cooldown: 0.08-0.14 seconds depending on type
 - no unbounded presentation arrays
 - no production debug spam
 
-Later Phase 7 subsystems must keep these budgets current as camera, UI, near-miss, and level polish are added.
+Later Phase 7 subsystems must keep these budgets current as UI motion, world polish, and level presentation are added.
 
 ## Physical Checks Still Required
 

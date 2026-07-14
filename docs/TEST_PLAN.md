@@ -481,9 +481,13 @@ Current coverage:
 - haptics setting disables requests
 - repeated haptics are rate-limited
 - reduced-motion and camera-effects settings normalize safely
+- aim preview derives from the current canonical launch velocity
+- preview clears on release and release feedback does not alter launch velocity
+- camera feedback is deterministic, intensity-controlled, and clearable
+- near-miss feedback is generation-guarded and does not set `GOAL`
 - all 10 production levels start
 
-Additional Phase 7 gameplay presentation, UI motion, camera, near-miss, and performance checks will be added as those subsystems land.
+Additional Phase 7 UI motion, world polish, and performance checks will be added as those subsystems land.
 
 ## Trajectory Acceptance Targets
 

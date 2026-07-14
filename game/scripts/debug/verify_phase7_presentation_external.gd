@@ -1,6 +1,7 @@
 extends SceneTree
 
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
+const CameraFeedbackScript := preload("res://scripts/presentation/camera_feedback.gd")
 
 const TEST_SAVE := "user://phase7_presentation_test.json"
 const TEST_TMP := "user://phase7_presentation_test.tmp"
@@ -31,6 +32,8 @@ func _run() -> void:
 	passed = await _test_audio_playback_controls() and passed
 	passed = _test_haptics() and passed
 	passed = _test_save_settings_defaults() and passed
+	passed = await _test_shot_presentation_does_not_change_launch() and passed
+	passed = await _test_near_miss_and_camera_feedback() and passed
 	passed = await _test_all_production_level_startups() and passed
 	_cleanup_test_files()
 	print("PHASE7 verify=", "PASS" if passed else "FAIL")
@@ -108,6 +111,96 @@ func _test_save_settings_defaults() -> bool:
 	return passed
 
 
+func _test_shot_presentation_does_not_change_launch() -> bool:
+	var scene: PackedScene = load("res://levels/level_01.tscn")
+	var level := scene.instantiate()
+	get_root().add_child(level)
+	await process_frame
+	await process_frame
+	await physics_frame
+	await level.call("_restart_level")
+	var ball: RigidBody3D = level.get_node("Ball") as RigidBody3D
+	var camera: Camera3D = level.get_node("Camera3D") as Camera3D
+	var feedback = level.get_node_or_null("GameplayFeedback")
+	var passed := feedback != null
+
+	var start := camera.unproject_position(ball.global_position)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = start
+	level._unhandled_input(press)
+	for point in _line_offsets(Vector2(0.0, -220.0), 8):
+		var motion := InputEventMouseMotion.new()
+		motion.position = start + point
+		level._unhandled_input(motion)
+	await process_frame
+	var visible_dots := 0
+	for child in feedback.get_children():
+		if child is MeshInstance3D and child.name.begins_with("AimPreviewDot") and child.visible:
+			visible_dots += 1
+	passed = visible_dots > 4 and passed
+
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = start + Vector2(0.0, -220.0)
+	level._unhandled_input(release)
+	await physics_frame
+	var last_launch: Vector3 = level.get("last_launch_velocity")
+	passed = ball.linear_velocity.distance_to(last_launch) <= 0.08 and passed
+	passed = is_equal_approx(ball.mass, float(level.get("ball_mass"))) and passed
+	if level.has_method("prepare_for_unload"):
+		level.call("prepare_for_unload")
+	level.queue_free()
+	await process_frame
+	print("PHASE7 shot_presentation ok=", passed)
+	return passed
+
+
+func _test_near_miss_and_camera_feedback() -> bool:
+	var camera_feedback = CameraFeedbackScript.new()
+	get_root().add_child(camera_feedback)
+	camera_feedback.configure(false, 1.0)
+	camera_feedback.add_impulse("goal", 1.0)
+	var offset := camera_feedback.get_offset(0.016)
+	var passed := offset.length() > 0.0
+	camera_feedback.clear()
+	passed = camera_feedback.get_offset(0.016).length() == 0.0 and passed
+	camera_feedback.configure(false, 0.0)
+	camera_feedback.add_impulse("goal", 1.0)
+	passed = camera_feedback.get_offset(0.016).length() == 0.0 and passed
+	camera_feedback.queue_free()
+
+	var scene: PackedScene = load("res://levels/level_01.tscn")
+	var level := scene.instantiate()
+	get_root().add_child(level)
+	await process_frame
+	await process_frame
+	await physics_frame
+	await level.call("_restart_level")
+	var ball: RigidBody3D = level.get_node("Ball") as RigidBody3D
+	var goal: GoalTarget = level.get_node("Goal") as GoalTarget
+	var shot_id := 7
+	level.set("active_shot_id", shot_id)
+	level.set("level_state", level.LevelState.SHOT_ACTIVE)
+	level.set("shots_remaining", 1)
+	ball.global_position = goal.global_position + Vector3(goal.opening_half_width + 0.35, 2.8, 0.0)
+	level.call("_resolve_miss", shot_id, "presentation_test")
+	await process_frame
+	passed = int(level.get("near_miss_presented_shot_id")) == shot_id and passed
+	var first_presented := int(level.get("near_miss_presented_shot_id"))
+	level.call("_maybe_present_near_miss", shot_id)
+	passed = int(level.get("near_miss_presented_shot_id")) == first_presented and passed
+	passed = int(level.get("level_state")) != level.LevelState.GOAL and passed
+	if level.has_method("prepare_for_unload"):
+		level.call("prepare_for_unload")
+	level.queue_free()
+	await process_frame
+	print("PHASE7 near_miss_camera ok=", passed)
+	return passed
+
+
 func _test_all_production_level_startups() -> bool:
 	var passed := true
 	for level_id in LevelRegistryScript.get_level_ids():
@@ -123,6 +216,13 @@ func _test_all_production_level_startups() -> bool:
 		await process_frame
 	print("PHASE7 level_startups ok=", passed)
 	return passed
+
+
+func _line_offsets(offset: Vector2, count: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in count:
+		points.append(offset * (float(i + 1) / float(count)))
+	return points
 
 
 func _cleanup_test_files() -> void:

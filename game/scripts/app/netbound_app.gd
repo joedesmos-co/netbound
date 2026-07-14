@@ -191,6 +191,7 @@ func load_level(level_id: String) -> bool:
 		current_level.connect("level_failed", _on_level_failed)
 	level_root.add_child(current_level)
 	_apply_developer_debug_to_level()
+	_apply_presentation_settings_to_level()
 	_build_gameplay_overlay()
 	_play_gameplay_music(level_id)
 	return true
@@ -1131,6 +1132,7 @@ func _apply_saved_settings() -> void:
 	if haptics_service and haptics_service.has_method("apply_settings_from_save"):
 		haptics_service.call("apply_settings_from_save", service)
 	_apply_developer_debug_to_level()
+	_apply_presentation_settings_to_level()
 
 
 func _apply_bus_volume(bus_name: String, value: float) -> void:
@@ -1148,6 +1150,13 @@ func _apply_developer_debug_to_level() -> void:
 	current_level.set("developer_debug_enabled", enabled)
 	if current_level.has_method("_update_debug_ui"):
 		current_level.call("_update_debug_ui")
+
+
+func _apply_presentation_settings_to_level() -> void:
+	if not current_level:
+		return
+	if current_level.has_method("_apply_presentation_settings"):
+		current_level.call("_apply_presentation_settings")
 
 
 func _set_status(message: String) -> void:

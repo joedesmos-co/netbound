@@ -1,5 +1,6 @@
 extends Node3D
 
+const GameplayFeedbackScript := preload("res://scripts/presentation/gameplay_feedback_controller.gd")
 const MOUSE_POINTER_ID: int = -2
 
 @export var minimum_swipe_distance: float = 24.0
@@ -114,6 +115,8 @@ var last_launch_direction: Vector3 = Vector3.ZERO
 var last_launch_velocity: Vector3 = Vector3.ZERO
 var last_curve_heading_degrees: float = 0.0
 var last_post_shot_y_velocity: float = 0.0
+var gameplay_feedback
+var last_camera_feedback_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -122,6 +125,7 @@ func _ready() -> void:
 	_configure_swipe_distance()
 	get_viewport().size_changed.connect(_configure_swipe_distance)
 	_apply_ball_tuning()
+	_setup_gameplay_feedback()
 	_update_instruction_visibility()
 	_update_debug_ui()
 	_clear_swipe_visuals()
@@ -194,6 +198,10 @@ func _setup_camera() -> void:
 
 
 func _update_camera(delta: float) -> void:
+	if last_camera_feedback_offset != Vector3.ZERO:
+		camera.global_position -= last_camera_feedback_offset
+		last_camera_feedback_offset = Vector3.ZERO
+
 	var desired_position := camera_position
 	var desired_look_at := camera_look_at
 	var smoothing := camera_setup_smoothing
@@ -239,6 +247,9 @@ func _update_camera(delta: float) -> void:
 
 	var blend := 1.0 - exp(-maxf(smoothing, 0.001) * delta)
 	camera.global_position = camera.global_position.lerp(desired_position, blend)
+	if gameplay_feedback:
+		last_camera_feedback_offset = gameplay_feedback.get_camera_offset(delta)
+		camera.global_position += last_camera_feedback_offset
 	camera.look_at(desired_look_at, Vector3.UP)
 
 
@@ -358,6 +369,9 @@ func _apply_physics_safe_reset() -> void:
 	ball.freeze = false
 	ball.sleeping = true
 	_apply_ball_tuning()
+	if gameplay_feedback:
+		gameplay_feedback.clear_all()
+	last_camera_feedback_offset = Vector3.ZERO
 
 
 func _ensure_ball_ready_for_play() -> void:
@@ -384,6 +398,8 @@ func _begin_swipe(screen_position: Vector2, pointer_id: int) -> void:
 	active_pointer_id = pointer_id
 	is_swiping = true
 	swipe_screen_points = PackedVector2Array([screen_position])
+	if gameplay_feedback:
+		gameplay_feedback.on_aim_started()
 	_update_swipe(screen_position)
 	get_viewport().set_input_as_handled()
 
@@ -503,6 +519,8 @@ func _fire_shot() -> bool:
 	)
 	ball.linear_velocity = launch_velocity
 	last_post_shot_y_velocity = launch_velocity.y
+	if gameplay_feedback:
+		gameplay_feedback.on_shot_fired(current_power_ratio, launch_velocity, current_shot_category)
 	_debug_log(
 		"RELEASE_FIRE vel_set=%s pos_y=%.2f freeze_after=%s sleeping_after=%s" % [
 			ball.linear_velocity,
@@ -756,6 +774,8 @@ func _clear_swipe() -> void:
 	current_curve_amount = 0.0
 	_clear_swipe_visuals()
 	_hide_aim_guide()
+	if gameplay_feedback:
+		gameplay_feedback.clear_aim_preview()
 
 
 func _add_swipe_sample(screen_position: Vector2) -> void:
@@ -890,6 +910,7 @@ func _update_swipe_visuals() -> void:
 			clampf(absf(current_curve_amount), 0.0, maximum_curve_amount),
 			true
 	)
+	_update_presentation_aim_preview()
 
 
 func _clear_swipe_visuals() -> void:
@@ -927,6 +948,80 @@ func _update_aim_guide() -> void:
 
 func _hide_aim_guide() -> void:
 	aim_guide.visible = false
+
+
+func _setup_gameplay_feedback() -> void:
+	if gameplay_feedback:
+		return
+	gameplay_feedback = GameplayFeedbackScript.new()
+	gameplay_feedback.name = "GameplayFeedback"
+	add_child(gameplay_feedback)
+	gameplay_feedback.setup(ball, get_node_or_null("UI"))
+	_apply_presentation_settings()
+	if not ball.body_entered.is_connected(_on_ball_body_entered):
+		ball.body_entered.connect(_on_ball_body_entered)
+
+
+func _apply_presentation_settings() -> void:
+	if not gameplay_feedback:
+		return
+	var service := get_node_or_null("/root/SaveService")
+	if service:
+		gameplay_feedback.configure_from_save(service)
+
+
+func _update_presentation_aim_preview() -> void:
+	if not gameplay_feedback or not is_swiping or not is_swipe_valid:
+		return
+	var launch_velocity := _current_preview_launch_velocity()
+	gameplay_feedback.show_aim_preview(
+		ball.global_position + Vector3.UP * aim_guide_height_offset,
+		launch_velocity,
+		current_curve_amount,
+		maximum_curve_heading_degrees,
+		curve_duration,
+		current_shot_category,
+		current_power_ratio
+	)
+
+
+func _current_preview_launch_velocity() -> Vector3:
+	var horizontal_dir := current_shot_direction.normalized()
+	if horizontal_dir.length() <= 0.001:
+		return Vector3.ZERO
+	var elevation_rad := deg_to_rad(current_elevation_degrees)
+	var launch_dir := (
+		horizontal_dir * cos(elevation_rad) + Vector3.UP * sin(elevation_rad)
+	).normalized()
+	return launch_dir * current_launch_speed
+
+
+func _on_ball_body_entered(body: Node) -> void:
+	if not gameplay_feedback or not body:
+		return
+	var speed := ball.linear_velocity.length()
+	if speed < 1.2:
+		return
+	var kind := _impact_kind_for_body(body)
+	var strength := clampf(speed / maxf(maximum_launch_speed, 0.001), 0.25, 1.0)
+	_present_ball_impact(kind, strength, body)
+
+
+func _present_ball_impact(kind: String, strength: float, _body: Node) -> void:
+	if gameplay_feedback:
+		gameplay_feedback.on_ball_impact(kind, strength)
+
+
+func _impact_kind_for_body(body: Node) -> String:
+	var body_name := body.name.to_lower()
+	var parent_name := body.get_parent().name.to_lower() if body.get_parent() else ""
+	if body == ground or body_name.contains("ground"):
+		return "ground"
+	if body_name.contains("post") or body_name.contains("crossbar") or parent_name.contains("post"):
+		return "post"
+	if body_name.contains("bounce") or parent_name.contains("bounce"):
+		return "bounce"
+	return "obstacle"
 
 
 func _is_ball_stopped() -> bool:
