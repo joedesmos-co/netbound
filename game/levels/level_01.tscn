@@ -1,0 +1,599 @@
+[gd_scene load_steps=33 format=3]
+
+[ext_resource type="Script" path="res://scripts/level_controller.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/swipe_overlay.gd" id="2_swipe_overlay"]
+[ext_resource type="Script" path="res://scripts/goal_detector.gd" id="3_goal"]
+
+[sub_resource type="Environment" id="Environment_level"]
+background_mode = 1
+background_color = Color(0.42, 0.58, 0.82, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.85, 0.9, 1, 1)
+ambient_light_energy = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.12, 0.62, 0.18, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+material = SubResource("StandardMaterial3D_ground")
+size = Vector3(48, 0.2, 42)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(48, 0.2, 42)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball"]
+albedo_color = Color(1, 1, 1, 1)
+emission_enabled = true
+emission = Color(0.2, 0.2, 0.2, 1)
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball_black"]
+albedo_color = Color(0.05, 0.05, 0.05, 1)
+roughness = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_ball"]
+material = SubResource("StandardMaterial3D_ball")
+radius = 0.49
+height = 0.98
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
+radius = 0.49
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_band"]
+material = SubResource("StandardMaterial3D_ball_black")
+top_radius = 0.5
+bottom_radius = 0.5
+height = 0.09
+
+[sub_resource type="BoxMesh" id="BoxMesh_patch"]
+material = SubResource("StandardMaterial3D_ball_black")
+size = Vector3(0.21, 0.14, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_goal"]
+albedo_color = Color(1, 1, 1, 1)
+emission_enabled = true
+emission = Color(0.15, 0.15, 0.15, 1)
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_net"]
+transparency = 1
+albedo_color = Color(0.07, 0.1, 0.16, 0.58)
+roughness = 0.95
+cull_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_net_support"]
+albedo_color = Color(0.82, 0.84, 0.88, 1)
+roughness = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_post"]
+material = SubResource("StandardMaterial3D_goal")
+top_radius = 0.28
+bottom_radius = 0.28
+height = 8.4
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_post"]
+radius = 0.28
+height = 8.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_crossbar"]
+material = SubResource("StandardMaterial3D_goal")
+size = Vector3(22.56, 0.28, 0.28)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crossbar"]
+size = Vector3(22.56, 0.28, 0.28)
+
+[sub_resource type="BoxMesh" id="BoxMesh_net_side"]
+material = SubResource("StandardMaterial3D_net")
+size = Vector3(0.08, 8.4, 5.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_net_top"]
+material = SubResource("StandardMaterial3D_net")
+size = Vector3(22.0, 0.08, 5.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_net_rear"]
+material = SubResource("StandardMaterial3D_net")
+size = Vector3(22.0, 8.4, 0.08)
+
+[sub_resource type="BoxMesh" id="BoxMesh_net_floor"]
+material = SubResource("StandardMaterial3D_net")
+size = Vector3(22.0, 0.06, 5.0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_support"]
+material = SubResource("StandardMaterial3D_net_support")
+top_radius = 0.1
+bottom_radius = 0.1
+height = 4.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_rear_top_bar"]
+material = SubResource("StandardMaterial3D_net_support")
+size = Vector3(22.56, 0.14, 0.14)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goal_mouth"]
+size = Vector3(22.0, 8.4, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goal_interior"]
+size = Vector3(22.0, 8.4, 5.0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_debug_mouth"]
+transparency = 1
+albedo_color = Color(0.2, 1, 0.35, 0.22)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_debug_interior"]
+transparency = 1
+albedo_color = Color(0.2, 0.55, 1, 0.18)
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="BoxMesh_debug_mouth"]
+material = SubResource("StandardMaterial3D_debug_mouth")
+size = Vector3(22.0, 8.4, 0.45)
+
+[sub_resource type="BoxMesh" id="BoxMesh_debug_interior"]
+material = SubResource("StandardMaterial3D_debug_interior")
+size = Vector3(22.0, 8.4, 5.0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_obstacle"]
+albedo_color = Color(0.82, 0.28, 0.18, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_obstacle"]
+material = SubResource("StandardMaterial3D_obstacle")
+size = Vector3(1.0, 0.75, 0.28)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_obstacle"]
+size = Vector3(1.0, 0.75, 0.28)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_aim"]
+transparency = 1
+albedo_color = Color(1, 0.85, 0.1, 0.95)
+emission_enabled = true
+emission = Color(1, 0.7, 0.05, 1)
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="BoxMesh_aim_shaft"]
+material = SubResource("StandardMaterial3D_aim")
+size = Vector3(0.12, 0.12, 1.0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_aim_head"]
+material = SubResource("StandardMaterial3D_aim")
+top_radius = 0.0
+bottom_radius = 0.22
+height = 0.45
+
+[sub_resource type="LabelSettings" id="LabelSettings_debug"]
+font_size = 18
+font_color = Color(1, 1, 1, 1)
+outline_size = 3
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_instruction"]
+font_size = 20
+font_color = Color(1, 0.98, 0.85, 1)
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font_size = 42
+font_color = Color(1, 0.95, 0.2, 1)
+outline_size = 6
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_power_bg"]
+bg_color = Color(0, 0, 0, 0.55)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_power_fill"]
+bg_color = Color(1, 0.78, 0.12, 0.95)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.05, 0.08, 0.12, 0.88)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="Level01" type="Node3D"]
+script = ExtResource("1_level")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_level")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 10, 0)
+light_energy = 1.6
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, 14)
+current = true
+fov = 68.0
+
+[node name="BallSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0)
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -2)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("BoxMesh_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Obstacle" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 0.38, -3.8)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Obstacle"]
+mesh = SubResource("BoxMesh_obstacle")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Obstacle"]
+shape = SubResource("BoxShape3D_obstacle")
+
+[node name="Goal" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.0)
+
+[node name="LeftPost" type="StaticBody3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.28, 4.2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Goal/LeftPost"]
+mesh = SubResource("CylinderMesh_post")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Goal/LeftPost"]
+shape = SubResource("CylinderShape3D_post")
+
+[node name="RightPost" type="StaticBody3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.28, 4.2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Goal/RightPost"]
+mesh = SubResource("CylinderMesh_post")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Goal/RightPost"]
+shape = SubResource("CylinderShape3D_post")
+
+[node name="Crossbar" type="StaticBody3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.54, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Goal/Crossbar"]
+mesh = SubResource("BoxMesh_crossbar")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Goal/Crossbar"]
+shape = SubResource("BoxShape3D_crossbar")
+
+[node name="LeftRearSupport" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.28, 2.1, -5.0)
+mesh = SubResource("CylinderMesh_support")
+
+[node name="RightRearSupport" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.28, 2.1, -5.0)
+mesh = SubResource("CylinderMesh_support")
+
+[node name="RearTopBar" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8, -5.0)
+mesh = SubResource("BoxMesh_rear_top_bar")
+
+[node name="NetLeftSide" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 4.2, -2.5)
+mesh = SubResource("BoxMesh_net_side")
+
+[node name="NetRightSide" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 4.2, -2.5)
+mesh = SubResource("BoxMesh_net_side")
+
+[node name="NetTop" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 5.4, -2.5)
+mesh = SubResource("BoxMesh_net_top")
+
+[node name="NetRear" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, -4.96)
+mesh = SubResource("BoxMesh_net_rear")
+
+[node name="NetFloor" type="MeshInstance3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -2.5)
+mesh = SubResource("BoxMesh_net_floor")
+
+[node name="GoalDetection" type="Node3D" parent="Goal"]
+goal_line_z = -10.0
+post_half_width = 11.0
+crossbar_height = 8.4
+interior_depth = 5.0
+ball_radius = 0.49
+debug_goal_detection = true
+show_debug_volumes = false
+script = ExtResource("3_goal")
+
+[node name="GoalMouthTrigger" type="Area3D" parent="Goal/GoalDetection"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, 0)
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Goal/GoalDetection/GoalMouthTrigger"]
+shape = SubResource("BoxShape3D_goal_mouth")
+
+[node name="GoalInteriorTrigger" type="Area3D" parent="Goal/GoalDetection"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, -2.5)
+monitoring = false
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Goal/GoalDetection/GoalInteriorTrigger"]
+shape = SubResource("BoxShape3D_goal_interior")
+
+[node name="DebugMouthVisual" type="MeshInstance3D" parent="Goal/GoalDetection"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, 0)
+mesh = SubResource("BoxMesh_debug_mouth")
+
+[node name="DebugInteriorVisual" type="MeshInstance3D" parent="Goal/GoalDetection"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, -2.5)
+mesh = SubResource("BoxMesh_debug_interior")
+
+[node name="GoalParticles" type="CPUParticles3D" parent="Goal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0.6)
+emitting = false
+amount = 64
+lifetime = 0.8
+one_shot = true
+explosiveness = 0.9
+spread = 60.0
+initial_velocity_min = 2.0
+initial_velocity_max = 5.0
+gravity = Vector3(0, -4, 0)
+color = Color(1, 0.9, 0.2, 1)
+
+[node name="Ball" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0)
+mass = 0.43
+linear_damp = 0.1
+angular_damp = 0.3
+contact_monitor = true
+max_contacts_reported = 8
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ball"]
+mesh = SubResource("SphereMesh_ball")
+
+[node name="Band" type="MeshInstance3D" parent="Ball"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
+mesh = SubResource("CylinderMesh_band")
+
+[node name="PatchFront" type="MeshInstance3D" parent="Ball"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0.44)
+mesh = SubResource("BoxMesh_patch")
+
+[node name="PatchBack" type="MeshInstance3D" parent="Ball"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, -0.09, -0.44)
+mesh = SubResource("BoxMesh_patch")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ball"]
+shape = SubResource("SphereShape3D_ball")
+
+[node name="AimGuide" type="Node3D" parent="."]
+visible = false
+
+[node name="Shaft" type="MeshInstance3D" parent="AimGuide"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.5)
+mesh = SubResource("BoxMesh_aim_shaft")
+
+[node name="Head" type="MeshInstance3D" parent="AimGuide"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 1)
+mesh = SubResource("CylinderMesh_aim_head")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="UI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 16.0
+offset_right = 120.0
+offset_bottom = 56.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="ShotsLabel" type="Label" parent="UI/TopBar"]
+layout_mode = 2
+text = "Shots: 3"
+label_settings = SubResource("LabelSettings_instruction")
+horizontal_alignment = 1
+
+[node name="TopLeftUI" type="VBoxContainer" parent="UI"]
+offset_left = 16.0
+offset_top = 64.0
+offset_right = 420.0
+mouse_filter = 2
+
+[node name="RetryLevelButton" type="Button" parent="UI/TopLeftUI"]
+custom_minimum_size = Vector2(200, 48)
+layout_mode = 2
+mouse_filter = 0
+text = "Retry Level"
+
+[node name="ResetButton" type="Button" parent="UI/TopLeftUI"]
+custom_minimum_size = Vector2(200, 48)
+layout_mode = 2
+mouse_filter = 0
+text = "Reset Ball"
+
+[node name="ResetOkLabel" type="Label" parent="UI/TopLeftUI"]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+text = "RESET OK"
+label_settings = SubResource("LabelSettings_debug")
+
+[node name="InstructionLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "Swipe toward the goal. Flick up at release to chip. Curve sideways to bend."
+label_settings = SubResource("LabelSettings_instruction")
+autowrap_mode = 2
+
+[node name="PowerLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "Shot Power: 0.00"
+label_settings = SubResource("LabelSettings_debug")
+
+[node name="DirectionLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "Direction: (0.00, 0.00, 0.00)"
+label_settings = SubResource("LabelSettings_debug")
+
+[node name="CurveLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "Curve: 0.00"
+label_settings = SubResource("LabelSettings_debug")
+
+[node name="LoftCategoryLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "DRIVEN"
+label_settings = SubResource("LabelSettings_instruction")
+
+[node name="ShotDebugLabel" type="Label" parent="UI/TopLeftUI"]
+layout_mode = 2
+mouse_filter = 2
+text = "H: 0.00  Lift: 0.00  PeakY: 0.00"
+label_settings = SubResource("LabelSettings_debug")
+
+[node name="PowerBarContainer" type="Control" parent="UI"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -56.0
+offset_right = -24.0
+offset_bottom = -16.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="PowerBar" type="ProgressBar" parent="UI/PowerBarContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_power_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_power_fill")
+max_value = 1.0
+show_percentage = false
+
+[node name="GoalFlash" type="ColorRect" parent="UI"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0.92, 0.2, 0.85)
+
+[node name="WinPanel" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -140.0
+offset_right = 220.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/WinPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="UI/WinPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="UI/WinPanel/MarginContainer/VBox"]
+layout_mode = 2
+text = "GOAL!"
+label_settings = SubResource("LabelSettings_title")
+horizontal_alignment = 1
+
+[node name="ShotsUsedLabel" type="Label" parent="UI/WinPanel/MarginContainer/VBox"]
+layout_mode = 2
+text = "Shots used: 1 / 3"
+label_settings = SubResource("LabelSettings_instruction")
+horizontal_alignment = 1
+
+[node name="RetryButton" type="Button" parent="UI/WinPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Retry"
+
+[node name="ContinueButton" type="Button" parent="UI/WinPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Continue"
+
+[node name="FailPanel" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/FailPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="UI/FailPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="UI/FailPanel/MarginContainer/VBox"]
+layout_mode = 2
+text = "OUT OF SHOTS"
+label_settings = SubResource("LabelSettings_title")
+horizontal_alignment = 1
+
+[node name="RetryButton" type="Button" parent="UI/FailPanel/MarginContainer/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Retry"
+
+[node name="SwipeOverlay" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_swipe_overlay")
+
+[connection signal="pressed" from="UI/TopLeftUI/ResetButton" to="." method="_on_reset_button_pressed"]
