@@ -6,7 +6,6 @@ const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
 
-const APP_VERSION_LABEL := "Vertical Slice P9"
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
 const SAFE_AREA_GROUP := "netbound_safe_area_margin"
@@ -291,16 +290,24 @@ func get_play_resolution() -> Dictionary:
 			highest_unlocked = level_id
 			if not completed:
 				var definition := LevelRegistryScript.load_definition(level_id)
+				var is_fresh_start: bool = service.get_completed_level_count() == 0 \
+					and level_id == LevelRegistryScript.get_first_level_id()
 				return {
 					"action": "level",
 					"level_id": level_id,
-					"subtitle": "Continue: %s" % definition.display_name,
+					"button_text": "Play" if is_fresh_start else "Continue",
+					"subtitle": (
+						"Level 1: %s" % definition.display_name
+						if is_fresh_start
+						else "Continue: %s" % definition.display_name
+					),
 				}
 
 	if not any_incomplete:
 		return {
 			"action": "level_select",
 			"level_id": "",
+			"button_text": "Level Select",
 			"subtitle": "All levels complete",
 		}
 
@@ -309,6 +316,7 @@ func get_play_resolution() -> Dictionary:
 		return {
 			"action": "level",
 			"level_id": highest_unlocked,
+			"button_text": "Replay",
 			"subtitle": "Replay: %s" % fallback_definition.display_name,
 		}
 
@@ -317,8 +325,16 @@ func get_play_resolution() -> Dictionary:
 	return {
 		"action": "level",
 		"level_id": first_id,
+		"button_text": "Play",
 		"subtitle": "Play Level 1: %s" % first_definition.display_name,
 	}
+
+
+func get_app_version_label() -> String:
+	var version := String(ProjectSettings.get_setting("application/config/version", "0.9.0"))
+	if version.ends_with("-rc"):
+		version = "%s RC" % version.trim_suffix("-rc")
+	return "v%s" % version
 
 
 func get_registered_level_card_count() -> int:
@@ -401,7 +417,7 @@ func _show_main_menu_internal() -> void:
 	layout.add_child(status_label)
 
 	var build := Label.new()
-	build.text = APP_VERSION_LABEL
+	build.text = get_app_version_label()
 	build.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	build.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	build.add_theme_font_size_override("font_size", 14)
@@ -1580,7 +1596,7 @@ func _refresh_main_menu_play_state() -> void:
 	if play_subtitle_label:
 		play_subtitle_label.text = String(resolution.get("subtitle", ""))
 	if play_button:
-		play_button.text = "Continue" if String(resolution.get("action", "")) == "level" else "Level Select"
+		play_button.text = String(resolution.get("button_text", "Play"))
 
 
 func _refresh_level_select_state() -> void:
@@ -2006,6 +2022,7 @@ func _new_menu_button(text_value: String, primary: bool = false) -> Button:
 	var button := Button.new()
 	button.text = text_value
 	button.custom_minimum_size = Vector2(360.0, 54.0)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.focus_mode = Control.FOCUS_ALL
 	button.add_theme_font_size_override("font_size", 22 if primary else 20)
 	_connect_button_feedback(button, "ui_confirm" if primary else "ui_tap")

@@ -54,15 +54,28 @@ func _test_play_resolution() -> bool:
 	service.reset_to_defaults()
 	await process_frame
 	var first := app.get_play_resolution()
-	var passed := String(first.get("action", "")) == "level" and String(first.get("level_id", "")) == "level_01"
+	app.show_main_menu()
+	await process_frame
+	var passed := String(first.get("action", "")) == "level" \
+		and String(first.get("level_id", "")) == "level_01" \
+		and String(first.get("button_text", "")) == "Play" \
+		and not String(first.get("subtitle", "")).begins_with("Continue") \
+		and app.play_button.text == "Play" \
+		and app.play_button.size.x <= 400.0 \
+		and app.get_app_version_label() == "v0.9.0 RC"
 	_record_completion("level_01", 1)
 	var second := app.get_play_resolution()
-	passed = String(second.get("action", "")) == "level" and String(second.get("level_id", "")) == "level_02" and passed
+	passed = String(second.get("action", "")) == "level" \
+		and String(second.get("level_id", "")) == "level_02" \
+		and String(second.get("button_text", "")) == "Continue" \
+		and passed
 	for level_id in LevelRegistryScript.get_level_ids():
 		if not service.is_level_completed(level_id):
 			_record_completion(level_id, LevelRegistryScript.load_definition(level_id).par_shots)
 	var complete := app.get_play_resolution()
-	passed = String(complete.get("action", "")) == "level_select" and passed
+	passed = String(complete.get("action", "")) == "level_select" \
+		and String(complete.get("button_text", "")) == "Level Select" \
+		and passed
 	if not passed:
 		print("PHASE5 play_resolution detail first=", first, " second=", second, " complete=", complete)
 	service.reset_to_defaults()
