@@ -6,9 +6,10 @@ const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
 
-const APP_VERSION_LABEL := "Vertical Slice P8"
+const APP_VERSION_LABEL := "Vertical Slice P9"
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
+const SAFE_AREA_GROUP := "netbound_safe_area_margin"
 const RESULT_REVEAL_DELAY := 0.35
 const TOUCH_MINIMUM := Vector2(48.0, 48.0)
 const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
@@ -66,6 +67,7 @@ var store_remove_ads_button: Button
 var store_starter_pack_button: Button
 var store_restore_button: Button
 var store_product_buttons: Dictionary = {}
+var gameplay_pause_button: Button
 var store_request_in_progress: bool = false
 var store_pending_product_id: String = ""
 var rewarded_continue_button: Button
@@ -102,15 +104,21 @@ func _ready() -> void:
 
 	_get_save_service().load_or_create()
 	_connect_monetization_service()
+	_connect_mobile_runtime_service()
 	_apply_saved_settings()
 	_show_main_menu_internal()
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and current_screen_name == "gameplay":
-		show_pause_menu()
-	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+	if not is_inside_tree():
+		return
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		_handle_back_navigation()
+	elif (
+		(what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED)
+		and not _get_mobile_runtime_service()
+	):
+		_on_mobile_app_backgrounded("app_notification")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -224,8 +232,10 @@ func load_level(level_id: String) -> bool:
 	if current_level.has_signal("level_failed"):
 		current_level.connect("level_failed", _on_level_failed)
 	level_root.add_child(current_level)
+	_apply_safe_area_to_level()
 	_apply_developer_debug_to_level()
 	_apply_presentation_settings_to_level()
+	_apply_quality_settings_to_level()
 	_build_gameplay_overlay()
 	_play_gameplay_music(level_id)
 	return true
@@ -236,6 +246,7 @@ func show_pause_menu() -> bool:
 		return false
 	if pause_overlay and pause_overlay.visible:
 		return true
+	_cancel_active_level_gesture()
 	get_tree().paused = true
 	current_screen_name = "pause"
 	pause_overlay = _build_pause_overlay()
@@ -261,6 +272,8 @@ func restart_current_level() -> void:
 		result_overlay = null
 	if current_level.has_method("_restart_level"):
 		await current_level.call("_restart_level")
+	_apply_safe_area_to_level()
+	_apply_quality_settings_to_level()
 
 
 func get_play_resolution() -> Dictionary:
@@ -394,10 +407,7 @@ func _show_main_menu_internal() -> void:
 	build.add_theme_font_size_override("font_size", 14)
 	build.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.58))
 	build.set_anchors_preset(Control.PRESET_FULL_RECT)
-	build.offset_left = 0.0
-	build.offset_top = 0.0
-	build.offset_right = -16.0
-	build.offset_bottom = -10.0
+	_position_bottom_right_label(build)
 	screen.add_child(build)
 
 	screen_root.add_child(screen)
@@ -505,7 +515,8 @@ func _show_settings_internal() -> void:
 	_add_toggle_setting(outer, "Haptics", "haptics_enabled")
 	_add_toggle_setting(outer, "Reduced Motion", "reduced_motion_enabled")
 	_add_volume_setting(outer, "Camera Effects", "camera_effects_intensity")
-	if OS.is_debug_build():
+	_add_quality_setting(outer)
+	if _development_controls_allowed():
 		_add_toggle_setting(outer, "Developer Debug", "developer_debug")
 
 	var back_button := _new_menu_button("Back", true)
@@ -811,7 +822,7 @@ func _show_store_internal() -> void:
 	header.add_child(title)
 
 	var note := Label.new()
-	note.text = "Development build: purchases are simulated. Core levels stay free and offline."
+	note.text = _store_note_text()
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_font_size_override("font_size", 17)
@@ -982,15 +993,12 @@ func _build_gameplay_overlay() -> void:
 	layer_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	gameplay_overlay_root.add_child(layer_control)
 
-	var pause_button := _new_small_button("Pause")
-	pause_button.name = "PauseButton"
-	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	pause_button.offset_left = -156.0
-	pause_button.offset_top = 18.0
-	pause_button.offset_right = -18.0
-	pause_button.offset_bottom = 66.0
-	pause_button.pressed.connect(show_pause_menu)
-	layer_control.add_child(pause_button)
+	gameplay_pause_button = _new_small_button("Pause")
+	gameplay_pause_button.name = "PauseButton"
+	gameplay_pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	gameplay_pause_button.pressed.connect(show_pause_menu)
+	layer_control.add_child(gameplay_pause_button)
+	_position_gameplay_pause_button()
 
 
 func _build_pause_overlay() -> Control:
@@ -1419,6 +1427,11 @@ func _leave_current_level() -> void:
 	current_level_id = ""
 
 
+func _cancel_active_level_gesture() -> void:
+	if current_level and current_level.has_method("cancel_active_gesture_for_lifecycle"):
+		current_level.call("cancel_active_gesture_for_lifecycle")
+
+
 func _clear_screen() -> void:
 	_kill_ui_tweens()
 	for child in screen_root.get_children():
@@ -1449,6 +1462,7 @@ func _clear_gameplay_overlay() -> void:
 		child.queue_free()
 	pause_overlay = null
 	result_overlay = null
+	gameplay_pause_button = null
 	rewarded_continue_button = null
 	rewarded_continue_status_label = null
 
@@ -1474,11 +1488,21 @@ func _release_navigation_lock() -> void:
 
 
 func _get_save_service() -> Node:
+	if not is_inside_tree():
+		return null
 	return get_node("/root/SaveService")
 
 
 func _get_monetization_service() -> Node:
+	if not is_inside_tree():
+		return null
 	return get_node_or_null("/root/MonetizationService")
+
+
+func _get_mobile_runtime_service() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/MobileRuntimeService")
 
 
 func _connect_monetization_service() -> void:
@@ -1498,6 +1522,57 @@ func _connect_monetization_service() -> void:
 		var callback := connections[signal_name] as Callable
 		if monetization.has_signal(String(signal_name)) and not monetization.is_connected(String(signal_name), callback):
 			monetization.connect(String(signal_name), callback)
+
+
+func _connect_mobile_runtime_service() -> void:
+	var mobile_runtime := _get_mobile_runtime_service()
+	if not mobile_runtime:
+		return
+	var connections := {
+		"safe_area_changed": Callable(self, "_on_safe_area_changed"),
+		"app_backgrounded": Callable(self, "_on_mobile_app_backgrounded"),
+		"app_foregrounded": Callable(self, "_on_mobile_app_foregrounded"),
+		"app_quit_requested": Callable(self, "_on_mobile_app_quit_requested"),
+	}
+	for signal_name in connections.keys():
+		var callback := connections[signal_name] as Callable
+		if mobile_runtime.has_signal(String(signal_name)) and not mobile_runtime.is_connected(String(signal_name), callback):
+			mobile_runtime.connect(String(signal_name), callback)
+	var viewport := get_viewport()
+	if viewport and not viewport.size_changed.is_connected(_on_viewport_size_changed):
+		viewport.size_changed.connect(_on_viewport_size_changed)
+
+
+func _on_safe_area_changed(_margins: Dictionary) -> void:
+	_refresh_safe_area_layout()
+
+
+func _on_viewport_size_changed() -> void:
+	_refresh_safe_area_layout()
+	_refresh_level_grid_columns()
+
+
+func _on_mobile_app_backgrounded(_reason: String) -> void:
+	_cancel_active_level_gesture()
+	if current_level and current_level.has_method("handle_app_backgrounded"):
+		current_level.call("handle_app_backgrounded", _reason)
+	if current_screen_name == "gameplay":
+		show_pause_menu()
+	var save_service := _get_save_service()
+	if save_service and save_service.has_method("flush_if_dirty"):
+		save_service.call("flush_if_dirty")
+
+
+func _on_mobile_app_foregrounded(_reason: String) -> void:
+	if current_level and current_level.has_method("handle_app_foregrounded"):
+		current_level.call("handle_app_foregrounded", _reason)
+	_refresh_safe_area_layout()
+
+
+func _on_mobile_app_quit_requested(_reason: String) -> void:
+	var save_service := _get_save_service()
+	if save_service and save_service.has_method("flush_if_dirty"):
+		save_service.call("flush_if_dirty")
 
 
 func _refresh_main_menu_play_state() -> void:
@@ -1543,7 +1618,12 @@ func _refresh_level_select_state() -> void:
 func _refresh_level_grid_columns() -> void:
 	if not level_grid:
 		return
-	var width := get_viewport().get_visible_rect().size.x
+	var margins := _safe_area_margins()
+	var width := (
+		get_viewport().get_visible_rect().size.x
+		- float(margins.get("left", SAFE_MARGIN))
+		- float(margins.get("right", SAFE_MARGIN))
+	)
 	if width >= 1100.0:
 		level_grid.columns = 5
 	elif width >= 780.0:
@@ -1591,6 +1671,36 @@ func _add_toggle_setting(parent: VBoxContainer, title: String, setting_name: Str
 	toggle.toggled.connect(func(value: bool) -> void: set_setting_value(setting_name, value))
 
 
+func _add_quality_setting(parent: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	parent.add_child(row)
+
+	var label := Label.new()
+	label.text = "Quality"
+	label.custom_minimum_size = Vector2(170.0, 48.0)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+
+	var option := OptionButton.new()
+	option.custom_minimum_size = Vector2(280.0, 52.0)
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var values := ["auto", "low", "medium", "high"]
+	var display_names := ["Auto", "Low", "Medium", "High"]
+	var selected_value := String(_get_save_service().get_setting_value("quality_tier", "auto"))
+	var selected_index := 0
+	for i in values.size():
+		option.add_item(display_names[i], i)
+		if values[i] == selected_value:
+			selected_index = i
+	option.select(selected_index)
+	row.add_child(option)
+	settings_widgets["quality_tier"] = {"option": option, "values": values}
+	option.item_selected.connect(func(index: int) -> void:
+		set_setting_value("quality_tier", values[index])
+	)
+
+
 func _refresh_settings_labels() -> void:
 	for setting_name in settings_widgets.keys():
 		var widgets: Dictionary = settings_widgets[setting_name]
@@ -1598,6 +1708,13 @@ func _refresh_settings_labels() -> void:
 			var slider := widgets.slider as HSlider
 			var label := widgets.label as Label
 			label.text = "%d%%" % roundi(slider.value * 100.0)
+		elif widgets.has("option") and widgets.has("values"):
+			var option := widgets.option as OptionButton
+			var values := widgets.values as Array
+			var selected_value := String(_get_save_service().get_setting_value(String(setting_name), "auto"))
+			var selected_index := values.find(selected_value)
+			if option and selected_index >= 0:
+				option.select(selected_index)
 
 
 func _apply_saved_settings() -> void:
@@ -1615,8 +1732,15 @@ func _apply_saved_settings() -> void:
 	var monetization_service := _get_monetization_service()
 	if monetization_service and monetization_service.has_method("apply_config_from_save"):
 		monetization_service.call("apply_config_from_save", service)
+	var mobile_runtime := _get_mobile_runtime_service()
+	if mobile_runtime:
+		if mobile_runtime.has_method("apply_quality_from_save"):
+			mobile_runtime.call("apply_quality_from_save", service)
+		if mobile_runtime.has_method("apply_release_configuration"):
+			mobile_runtime.call("apply_release_configuration", monetization_service)
 	_apply_developer_debug_to_level()
 	_apply_presentation_settings_to_level()
+	_apply_quality_settings_to_level()
 
 
 func _apply_bus_volume(bus_name: String, value: float) -> void:
@@ -1630,7 +1754,10 @@ func _apply_bus_volume(bus_name: String, value: float) -> void:
 func _apply_developer_debug_to_level() -> void:
 	if not current_level:
 		return
-	var enabled := bool(_get_save_service().get_setting_value("developer_debug", false))
+	var enabled := (
+		bool(_get_save_service().get_setting_value("developer_debug", false))
+		and _development_controls_allowed()
+	)
 	current_level.set("developer_debug_enabled", enabled)
 	if current_level.has_method("_update_debug_ui"):
 		current_level.call("_update_debug_ui")
@@ -1641,6 +1768,14 @@ func _apply_presentation_settings_to_level() -> void:
 		return
 	if current_level.has_method("_apply_presentation_settings"):
 		current_level.call("_apply_presentation_settings")
+
+
+func _apply_quality_settings_to_level() -> void:
+	if not current_level:
+		return
+	var mobile_runtime := _get_mobile_runtime_service()
+	if mobile_runtime and mobile_runtime.has_method("apply_quality_to_node"):
+		mobile_runtime.call("apply_quality_to_node", current_level)
 
 
 func _set_status(message: String) -> void:
@@ -1767,6 +1902,19 @@ func _friendly_monetization_reason(reason: String) -> String:
 			return reason if not reason.is_empty() else "Unavailable."
 
 
+func _store_note_text() -> String:
+	if _development_controls_allowed():
+		return "Development build: purchases are simulated. Core levels stay free and offline."
+	return "Purchases are unavailable in this offline build. Core levels stay free and playable."
+
+
+func _development_controls_allowed() -> bool:
+	var mobile_runtime := _get_mobile_runtime_service()
+	if mobile_runtime and mobile_runtime.has_method("allow_development_controls"):
+		return bool(mobile_runtime.call("allow_development_controls"))
+	return OS.is_debug_build()
+
+
 func _new_screen(node_name: String) -> Control:
 	var screen := Control.new()
 	screen.name = node_name
@@ -1779,11 +1927,71 @@ func _new_screen(node_name: String) -> Control:
 func _new_margin_container() -> MarginContainer:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", SAFE_MARGIN)
-	margin.add_theme_constant_override("margin_top", SAFE_MARGIN)
-	margin.add_theme_constant_override("margin_right", SAFE_MARGIN)
-	margin.add_theme_constant_override("margin_bottom", SAFE_MARGIN)
+	margin.add_to_group(SAFE_AREA_GROUP)
+	_apply_safe_area_to_margin(margin)
 	return margin
+
+
+func _safe_area_margins() -> Dictionary:
+	var mobile_runtime := _get_mobile_runtime_service()
+	if mobile_runtime and mobile_runtime.has_method("get_safe_area_margins"):
+		return mobile_runtime.call("get_safe_area_margins", float(SAFE_MARGIN)) as Dictionary
+	return {
+		"left": float(SAFE_MARGIN),
+		"top": float(SAFE_MARGIN),
+		"right": float(SAFE_MARGIN),
+		"bottom": float(SAFE_MARGIN),
+	}
+
+
+func _apply_safe_area_to_margin(margin: MarginContainer) -> void:
+	if not margin:
+		return
+	var margins := _safe_area_margins()
+	margin.add_theme_constant_override("margin_left", roundi(float(margins.get("left", SAFE_MARGIN))))
+	margin.add_theme_constant_override("margin_top", roundi(float(margins.get("top", SAFE_MARGIN))))
+	margin.add_theme_constant_override("margin_right", roundi(float(margins.get("right", SAFE_MARGIN))))
+	margin.add_theme_constant_override("margin_bottom", roundi(float(margins.get("bottom", SAFE_MARGIN))))
+
+
+func _refresh_safe_area_layout() -> void:
+	if screen_root:
+		for node in screen_root.find_children("*", "MarginContainer", true, false):
+			var margin := node as MarginContainer
+			if margin and margin.is_in_group(SAFE_AREA_GROUP):
+				_apply_safe_area_to_margin(margin)
+	if gameplay_overlay_root:
+		for node in gameplay_overlay_root.find_children("*", "MarginContainer", true, false):
+			var margin := node as MarginContainer
+			if margin and margin.is_in_group(SAFE_AREA_GROUP):
+				_apply_safe_area_to_margin(margin)
+	_position_gameplay_pause_button()
+	_apply_safe_area_to_level()
+
+
+func _apply_safe_area_to_level() -> void:
+	if current_level and current_level.has_method("apply_safe_area_margins"):
+		current_level.call("apply_safe_area_margins", _safe_area_margins())
+
+
+func _position_gameplay_pause_button() -> void:
+	if not gameplay_pause_button:
+		return
+	var margins := _safe_area_margins()
+	gameplay_pause_button.offset_left = -156.0 - float(margins.get("right", SAFE_MARGIN))
+	gameplay_pause_button.offset_top = 18.0 + float(margins.get("top", SAFE_MARGIN))
+	gameplay_pause_button.offset_right = -18.0 - float(margins.get("right", SAFE_MARGIN))
+	gameplay_pause_button.offset_bottom = 66.0 + float(margins.get("top", SAFE_MARGIN))
+
+
+func _position_bottom_right_label(label: Control) -> void:
+	if not label:
+		return
+	var margins := _safe_area_margins()
+	label.offset_left = 0.0
+	label.offset_top = 0.0
+	label.offset_right = -(16.0 + float(margins.get("right", SAFE_MARGIN)))
+	label.offset_bottom = -(10.0 + float(margins.get("bottom", SAFE_MARGIN)))
 
 
 func _new_flat_backdrop() -> ColorRect:
@@ -1940,13 +2148,20 @@ func _first_panel_child(root: Node) -> Control:
 
 
 func _new_center_panel(size: Vector2) -> PanelContainer:
+	var margins := _safe_area_margins()
+	var viewport_size := get_viewport().get_visible_rect().size
+	var available_size := Vector2(
+		maxf(320.0, viewport_size.x - float(margins.get("left", SAFE_MARGIN)) - float(margins.get("right", SAFE_MARGIN)) - 24.0),
+		maxf(300.0, viewport_size.y - float(margins.get("top", SAFE_MARGIN)) - float(margins.get("bottom", SAFE_MARGIN)) - 24.0)
+	)
+	var panel_size := Vector2(minf(size.x, available_size.x), minf(size.y, available_size.y))
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = size
+	panel.custom_minimum_size = panel_size
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -size.x * 0.5
-	panel.offset_top = -size.y * 0.5
-	panel.offset_right = size.x * 0.5
-	panel.offset_bottom = size.y * 0.5
+	panel.offset_left = -panel_size.x * 0.5
+	panel.offset_top = -panel_size.y * 0.5
+	panel.offset_right = panel_size.x * 0.5
+	panel.offset_bottom = panel_size.y * 0.5
 	return panel
 
 

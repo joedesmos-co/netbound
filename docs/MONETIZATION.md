@@ -142,6 +142,17 @@ Development/test methods:
 
 Modes support success, cancel/failure, unavailable, delay, and duplicate callbacks. These controls are not exposed in normal production UI.
 
+## Phase 9 Release-Mode Guard
+
+Phase 9 keeps monetization architecture local/simulated but separates development and release behavior:
+
+- Android/iOS export presets tag development builds with `netbound_development`.
+- Android/iOS export presets tag release builds with `netbound_release`.
+- `MobileRuntimeService` detects release mode and calls `MonetizationService.set_release_mode_enabled(true)`.
+- Release mode clears active simulated requests and makes rewarded ads, interstitials, and purchases unavailable.
+- Store UI remains reachable but shows unavailable/offline messaging until real SDKs are intentionally integrated in a later phase.
+- No real ad SDK, purchase SDK, analytics SDK, consent SDK, online account, or cloud service is integrated in Phase 9.
+
 ## Verification
 
 Primary Phase 8 verifier:

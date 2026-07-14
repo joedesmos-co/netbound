@@ -2,7 +2,7 @@
 
 This checklist tracks what must be true before the vertical slice is mobile-ready.
 
-## Current Status Through Phase 8
+## Current Status Through Phase 9
 
 - Godot 4.7 stable is available and verified.
 - Project imports in headless mode.
@@ -17,8 +17,11 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Gameplay aim preview, launch/impact/goal feedback, near-miss presentation, level visual polish, contact shadows, and UI motion now exist.
 - Phase 7 presentation nodes are bounded, visual-only, and covered by headless regression checks.
 - Phase 8 simulated monetization architecture now exists with rewarded continue, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling.
+- Phase 9 mobile runtime now handles lifecycle, safe-area margins, dirty save flush, quality tiers, release/development feature tags, and audio pause/resume.
+- Android and iOS export presets exist with placeholder package/bundle ID `com.netbound.game`.
+- Landscape viewport defaults and Forward Mobile renderer settings are configured in `project.godot`.
+- Automated safe-area/responsive checks cover representative landscape phone/tablet shapes with simulated safe margins.
 - No real ad SDK, purchase SDK, analytics SDK, online account, cloud save, or consent SDK is integrated.
-- Export presets and platform packaging are not configured yet.
 
 ## Project Settings
 
@@ -37,10 +40,9 @@ Before release-ready vertical slice:
 
 Current gaps:
 
-- Orientation is not configured in `project.godot`.
-- Safe-area handling uses conservative margins in the Phase 5 UI, but physical notch/home-indicator validation is still required.
-- Export presets are absent.
-- App focus loss requests pause through the app shell, but physical mobile suspend/resume still requires testing.
+- Physical notch/home-indicator validation is still required on real devices.
+- App suspend/resume still requires physical iOS/Android testing.
+- Export presets are not signed with production credentials and real platform templates/toolchains may be missing locally.
 
 ## Input And UX
 
@@ -56,7 +58,7 @@ Current gaps:
 
 - Controller navigation is only basic Godot focus support.
 - Physical touch testing is still required for Level Select scrolling and gameplay finger occlusion.
-- Physical touch testing is still required for Cosmetics screen scrolling and Equip flow comfort.
+- Physical touch testing is still required for Cosmetics, Store, and Settings scrolling/selection comfort.
 
 ## Gameplay Readability
 
@@ -92,9 +94,9 @@ Audit and optimize:
 
 Current gaps:
 
-- No mobile profiling has been done.
-- Swipe samples are not currently bounded by an explicit maximum.
-- Desktop/headless budget checks cover audio pools, trail points, visual polish node counts, and presentation cleanup, but device GPU/thermal checks remain open.
+- Swipe samples are now bounded by an explicit maximum.
+- Desktop/headless budget checks cover audio pools, trail points, visual polish node counts, quality tiers, safe-area layout, and presentation cleanup.
+- Device GPU/thermal checks remain open.
 
 ## Offline Requirements
 
@@ -114,6 +116,7 @@ Current gaps:
 
 - Cloud sync is intentionally absent.
 - Physical persistence checks across app kill/relaunch remain required.
+- SaveService dirty flush is covered by scripted background/quit checks, but real mobile process-kill timing still requires device validation.
 
 ## Monetization Readiness
 

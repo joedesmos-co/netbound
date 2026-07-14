@@ -55,8 +55,9 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 ### Settings
 
 - Settings apply immediately through `SaveService`, `AudioService`, and `HapticsService`.
-- Master, Music, SFX, Haptics, Reduced Motion, and Camera Effects are player-facing controls.
-- Developer Debug remains debug-build-only.
+- Master, Music, SFX, Haptics, Reduced Motion, Camera Effects, and Quality are player-facing controls.
+- Quality choices are Auto, Low, Medium, and High. They only affect presentation budgets.
+- Developer Debug remains development-build-only and is hidden when the runtime is in release mode.
 
 ### Results
 
@@ -75,7 +76,8 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 - Store is reachable from Main Menu and from locked supporter cosmetics in the Cosmetics screen.
 - Store shows Remove Ads, Starter Pack, Restore Purchases, owned states, unavailable states, pending state, and concise status feedback.
-- Store uses simulated providers only in Phase 8 and labels the build accordingly.
+- Store uses simulated providers only in development builds and labels the build accordingly.
+- Release-mode builds disable simulated providers and show offline/unavailable messaging until real SDKs are integrated in a later phase.
 - Remove Ads disables interstitials but keeps voluntary rewarded continues available.
 - Starter Pack includes Remove Ads plus Supporter Ball, Supporter Trail, and Supporter Goal Effect.
 - Purchase/restore failures return control immediately and do not corrupt save data.
@@ -113,7 +115,10 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 ## Responsive Layout
 
 - Screens use full-rect anchors, containers, scroll views, and conservative margins.
+- Main Menu, Level Select, Settings, Cosmetics, Store, Pause, Results, and Gameplay HUD now read safe-area margins from `MobileRuntimeService`.
+- The fallback safe margin is `28px`; device safe-area values are used when available.
 - Buttons and level cards use touch-sized minimums.
 - Level Select adjusts grid columns based on viewport width.
 - Cosmetics uses touch-sized tabs, scrollable item cards, and a separate Equip button to avoid accidental selection while scrolling.
-- Physical iOS/Android safe-area validation is still required in mobile hardening/release work.
+- Automated Phase 9 checks cover representative landscape phone/tablet aspect ratios with simulated safe-area margins.
+- Physical iOS/Android safe-area validation is still required before release submission.

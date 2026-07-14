@@ -8,6 +8,7 @@ const SAMPLE_DISTANCE := 0.22
 const SPEED_THRESHOLD := 0.8
 
 var trail_id: String = "trail_none"
+var point_limit: int = MAX_POINTS
 var _points: Array[MeshInstance3D] = []
 var _positions: Array[Vector3] = []
 var _materials: Array[StandardMaterial3D] = []
@@ -35,6 +36,19 @@ func configure(new_trail_id: String) -> void:
 	set_physics_process(trail_id != "trail_none")
 
 
+func configure_quality(config: Dictionary) -> void:
+	point_limit = clampi(int(config.get("trail_point_limit", MAX_POINTS)), 0, MAX_POINTS)
+	while _positions.size() > point_limit:
+		_positions.pop_back()
+	for i in _points.size():
+		if i >= point_limit:
+			_points[i].visible = false
+
+
+func get_point_limit() -> int:
+	return point_limit
+
+
 func reset_trail() -> void:
 	_positions.clear()
 	_last_sample_position = _ball_position()
@@ -59,15 +73,15 @@ func _physics_process(_delta: float) -> void:
 	if _positions.is_empty() or position.distance_to(_last_sample_position) >= SAMPLE_DISTANCE:
 		_positions.push_front(position)
 		_last_sample_position = position
-		while _positions.size() > MAX_POINTS:
+		while _positions.size() > point_limit:
 			_positions.pop_back()
 
 	for i in _points.size():
 		var point := _points[i]
-		if i >= _positions.size():
+		if i >= point_limit or i >= _positions.size():
 			point.visible = false
 			continue
-		var age_ratio := float(i) / float(maxi(MAX_POINTS - 1, 1))
+		var age_ratio := float(i) / float(maxi(point_limit - 1, 1))
 		var speed_scale := clampf(speed / 18.0, 0.55, 1.35)
 		point.visible = true
 		point.global_position = _positions[i]

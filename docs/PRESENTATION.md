@@ -115,6 +115,8 @@ Each production level creates one visual-only polish node at runtime. It owns:
 
 The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
 
+Phase 9 quality tiers can disable decorative geometry, contact shadows, and dynamic shadows through `apply_quality_settings(config)`. These changes are visual-only and do not alter level geometry, collision, moving obstacle timing, or scoring geometry.
+
 ### UI Motion
 
 `NetboundApp` owns screen and modal motion. It adds:
@@ -156,7 +158,14 @@ Initial presentation budgets:
 - no unbounded presentation arrays
 - no production debug spam
 
-Later Phase 7 subsystems must keep these budgets current as any final QA instrumentation is added.
+Phase 9 quality budgets:
+
+- Low: decorative level geometry off, contact shadows off, dynamic shadows off, trail limit `8`, particle multiplier `0.45`.
+- Medium: decorative geometry on, contact shadows on, dynamic shadows off, trail limit `12`, particle multiplier `0.7`.
+- High: decorative geometry on, contact shadows on, dynamic shadows on, trail limit `16`, particle multiplier `1.0`.
+- Auto: Medium on mobile feature builds, High on desktop development builds.
+
+Later presentation work must keep these budgets current as any final QA instrumentation is added.
 
 ## Physical Checks Still Required
 

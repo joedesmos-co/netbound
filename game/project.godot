@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="Netbound"
+config/version="0.9.0-phase9"
 run/main_scene="res://app/netbound_app.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
@@ -21,15 +22,22 @@ SaveService="*res://scripts/services/save_service.gd"
 AudioService="*res://scripts/services/audio_service.gd"
 HapticsService="*res://scripts/services/haptics_service.gd"
 MonetizationService="*res://scripts/services/monetization_service.gd"
+MobileRuntimeService="*res://scripts/services/mobile_runtime_service.gd"
 
 [display]
 
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/handheld/orientation=4
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
 [physics]
 
 3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
 
 [rendering]
 

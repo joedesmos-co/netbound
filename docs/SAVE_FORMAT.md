@@ -45,6 +45,7 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "haptics_enabled": true,
     "reduced_motion_enabled": false,
     "camera_effects_intensity": 1.0,
+    "quality_tier": "auto",
     "developer_debug": false
   },
   "monetization": {
@@ -92,6 +93,7 @@ The save service validates every loaded save:
 - `total_stars` is recalculated from `best_stars`.
 - Missing progression, cosmetic, or settings fields are filled with defaults.
 - Volumes are clamped to `0..1`.
+- `quality_tier` normalizes to `auto`, `low`, `medium`, or `high`.
 - Selected cosmetics fall back to defaults if they are not unlocked.
 - Cosmetic IDs are validated against `CosmeticRegistry`.
 - Invalid entitlements and products are ignored.
@@ -131,6 +133,15 @@ If `par_shots` exceeds `shot_limit`, the service clamps the effective par to the
 
 Malformed JSON is copied to `user://netbound_save.corrupt`, then defaults are recreated and saved.
 
+Phase 9 adds a dirty flag without changing the atomic write format:
+
+- Successful saves clear the dirty flag.
+- Failed writes leave the dirty flag set.
+- `flush_if_dirty()` is called during mobile background and quit handling.
+- Existing gameplay/progression/cosmetic/settings setters still save immediately, so no per-frame or debounced save writer was introduced.
+
+No save-version bump was required for Phase 9 because the new `quality_tier` key is optional within the existing settings dictionary and is safely normalized when missing.
+
 ## Public API
 
 Primary service: Autoload `SaveService`, script class `NetboundSaveService`.
@@ -158,6 +169,9 @@ Important methods:
 - `set_selected_ball(ball_id)`
 - `set_selected_trail(trail_id)`
 - `set_selected_goal_effect(effect_id)`
+- `flush_if_dirty()`
+- `is_dirty()`
+- `get_last_successful_save_msec()`
 - `unlock_all_cosmetics_for_development()`
 - `reset_cosmetics_to_defaults_for_development()`
 - `print_cosmetic_registry_validation()`

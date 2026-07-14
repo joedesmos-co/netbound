@@ -39,6 +39,7 @@ var session_completed_levels_for_ads: int = 0
 var interstitial_shown_this_session: bool = false
 var last_interstitial_msec: int = -999999999
 var last_status_message: String = ""
+var release_mode_enabled: bool = false
 
 var _next_request_id: int = 1
 var _active_rewarded_request: Dictionary = {}
@@ -71,6 +72,8 @@ func configure_simulated_ads(
 	delay_frames: int = 1,
 	duplicate_callback: bool = false
 ) -> void:
+	if release_mode_enabled:
+		return
 	if ad_provider and ad_provider.has_method("configure"):
 		ad_provider.call("configure", available, rewarded_mode, interstitial_mode, delay_frames, duplicate_callback)
 
@@ -82,11 +85,15 @@ func configure_simulated_purchases(
 	delay_frames: int = 1,
 	duplicate_callback: bool = false
 ) -> void:
+	if release_mode_enabled:
+		return
 	if purchase_provider and purchase_provider.has_method("configure"):
 		purchase_provider.call("configure", available, purchase_mode, restore_mode, delay_frames, duplicate_callback)
 
 
 func set_simulated_restore_products(product_ids: Array[String]) -> void:
+	if release_mode_enabled:
+		return
 	if purchase_provider and purchase_provider.has_method("set_restored_products"):
 		purchase_provider.call("set_restored_products", product_ids)
 
@@ -99,16 +106,33 @@ func apply_config_from_save(save_service: Node) -> void:
 	purchases_enabled = bool(config.get("purchases_enabled", true))
 
 
+func set_release_mode_enabled(enabled: bool) -> void:
+	release_mode_enabled = enabled
+	if release_mode_enabled:
+		_active_rewarded_request.clear()
+		_active_interstitial_request.clear()
+		_active_purchase_request.clear()
+		last_status_message = "Real mobile providers are not configured for this build."
+
+
+func is_release_mode_enabled() -> bool:
+	return release_mode_enabled
+
+
 func has_entitlement(entitlement_id: String) -> bool:
 	var service := _save_service()
 	return bool(service and service.has_method("has_entitlement") and service.call("has_entitlement", entitlement_id))
 
 
 func is_rewarded_ad_available() -> bool:
+	if release_mode_enabled:
+		return false
 	return ads_enabled and ad_provider != null and ad_provider.is_rewarded_available()
 
 
 func is_purchase_available() -> bool:
+	if release_mode_enabled:
+		return false
 	return purchases_enabled and purchase_provider != null and purchase_provider.is_available()
 
 
@@ -179,6 +203,8 @@ func get_product_info(product_id: String) -> Dictionary:
 
 
 func should_show_interstitial(context: String) -> bool:
+	if release_mode_enabled:
+		return false
 	if not ads_enabled or not ad_provider or not ad_provider.is_interstitial_available():
 		return false
 	if has_entitlement(ENTITLEMENT_REMOVE_ADS) or has_entitlement(ENTITLEMENT_STARTER_PACK):

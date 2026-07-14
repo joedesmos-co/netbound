@@ -27,6 +27,11 @@ const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
 const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
+const QUALITY_AUTO := "auto"
+const QUALITY_LOW := "low"
+const QUALITY_MEDIUM := "medium"
+const QUALITY_HIGH := "high"
+const VALID_QUALITY_TIERS := [QUALITY_AUTO, QUALITY_LOW, QUALITY_MEDIUM, QUALITY_HIGH]
 const SUPPORTER_COSMETICS := [
 	"ball_supporter",
 	"trail_supporter",
@@ -52,6 +57,8 @@ var _save_data: Dictionary = {}
 var _loaded: bool = false
 var _diagnostics: PackedStringArray = PackedStringArray()
 var _simulate_next_write_failure: bool = false
+var _dirty: bool = false
+var _last_successful_save_msec: int = 0
 
 
 func _ready() -> void:
@@ -72,6 +79,7 @@ func configure_storage_paths(
 	_corrupt_path = corrupt_path if not corrupt_path.is_empty() else "%s.corrupt" % primary_path
 	_save_data = {}
 	_loaded = false
+	_dirty = false
 
 
 func get_save_path() -> String:
@@ -146,6 +154,7 @@ func load_or_create() -> bool:
 func save() -> bool:
 	_ensure_loaded_without_saving()
 	_save_data = _normalize_save(_save_data)
+	_dirty = true
 	var text := JSON.stringify(_save_data, "\t", true)
 	if _simulate_next_write_failure:
 		_simulate_next_write_failure = false
@@ -166,7 +175,24 @@ func save() -> bool:
 	var replaced := _replace_primary_with_temp()
 	if not replaced:
 		save_failed.emit("failed to replace primary save")
+	else:
+		_dirty = false
+		_last_successful_save_msec = Time.get_ticks_msec()
 	return replaced
+
+
+func flush_if_dirty() -> bool:
+	if not _dirty:
+		return true
+	return save()
+
+
+func is_dirty() -> bool:
+	return _dirty
+
+
+func get_last_successful_save_msec() -> int:
+	return _last_successful_save_msec
 
 
 func reset_to_defaults(save_to_disk: bool = true) -> bool:
@@ -562,6 +588,7 @@ func _create_default_save() -> Dictionary:
 			"haptics_enabled": true,
 			"reduced_motion_enabled": false,
 			"camera_effects_intensity": 1.0,
+			"quality_tier": QUALITY_AUTO,
 			"developer_debug": false,
 		},
 		"monetization": _default_monetization(),
@@ -842,8 +869,14 @@ func _normalize_settings(raw: Dictionary) -> Dictionary:
 		"haptics_enabled": bool(raw.get("haptics_enabled", true)),
 		"reduced_motion_enabled": bool(raw.get("reduced_motion_enabled", false)),
 		"camera_effects_intensity": clampf(float(raw.get("camera_effects_intensity", 1.0)), 0.0, 1.0),
+		"quality_tier": _normalize_quality_tier(raw.get("quality_tier", QUALITY_AUTO)),
 		"developer_debug": bool(raw.get("developer_debug", false)),
 	}
+
+
+func _normalize_quality_tier(value: Variant) -> String:
+	var tier := String(value).to_lower()
+	return tier if VALID_QUALITY_TIERS.has(tier) else QUALITY_AUTO
 
 
 func _sum_best_stars(best_stars: Dictionary) -> int:

@@ -61,6 +61,7 @@ var selected_goal_effect_id: String = "goal_classic"
 var near_miss_presented_shot_id: int = -1
 var level_visual_polish
 var rewarded_continue_used: bool = false
+var current_quality_config: Dictionary = {}
 
 
 func _ready() -> void:
@@ -70,6 +71,7 @@ func _ready() -> void:
 	_apply_level_definition_ui_values()
 	_setup_goal_targets()
 	_setup_level_visual_polish()
+	_apply_quality_from_runtime()
 	retry_button.pressed.connect(_on_retry_level_pressed)
 	win_retry_button.pressed.connect(_on_retry_level_pressed)
 	win_continue_button.pressed.connect(_on_continue_pressed)
@@ -101,6 +103,23 @@ func prepare_for_unload() -> void:
 	_reset_all_goal_tracking()
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
+
+
+func handle_app_backgrounded(_reason: String = "") -> void:
+	cancel_active_gesture_for_lifecycle()
+
+
+func handle_app_foregrounded(_reason: String = "") -> void:
+	_update_instruction_visibility()
+	_update_debug_ui()
+
+
+func apply_quality_settings(config: Dictionary) -> void:
+	current_quality_config = config.duplicate(true)
+	if level_visual_polish and level_visual_polish.has_method("apply_quality_settings"):
+		level_visual_polish.call("apply_quality_settings", current_quality_config)
+	_apply_quality_to_ball_trail()
+	_apply_quality_to_goal_particles()
 
 
 func is_gameplay_input_allowed() -> bool:
@@ -580,6 +599,9 @@ func _show_goal_feedback() -> void:
 		goal_particles,
 		selected_goal_effect_id
 	)
+	if goal_particles:
+		goal_particles.set_meta("phase9_base_amount", goal_particles.amount)
+	_apply_quality_to_goal_particles()
 	goal_flash.visible = true
 	goal_flash.modulate.a = 0.85
 	Engine.time_scale = goal_slow_motion_scale
@@ -632,6 +654,7 @@ func _refresh_selected_cosmetics() -> void:
 		if service.has_method("get_selected_goal_effect"):
 			selected_goal_effect_id = String(service.call("get_selected_goal_effect"))
 	CosmeticVisualsScript.apply_to_ball(ball, selected_ball_skin_id, selected_trail_id)
+	_apply_quality_to_ball_trail()
 
 
 func _clear_cosmetic_feedback() -> void:
@@ -645,6 +668,30 @@ func _setup_level_visual_polish() -> void:
 	level_visual_polish = LevelVisualPolishScript.new()
 	add_child(level_visual_polish)
 	level_visual_polish.setup(self)
+	if not current_quality_config.is_empty() and level_visual_polish.has_method("apply_quality_settings"):
+		level_visual_polish.call("apply_quality_settings", current_quality_config)
+
+
+func _apply_quality_from_runtime() -> void:
+	var runtime := get_node_or_null("/root/MobileRuntimeService")
+	if runtime and runtime.has_method("get_quality_config"):
+		apply_quality_settings(runtime.call("get_quality_config"))
+
+
+func _apply_quality_to_ball_trail() -> void:
+	var trail := ball.get_node_or_null("NetboundBallTrail") if ball else null
+	if trail and trail.has_method("configure_quality"):
+		trail.call("configure_quality", current_quality_config)
+
+
+func _apply_quality_to_goal_particles() -> void:
+	if not goal_particles or current_quality_config.is_empty():
+		return
+	if not goal_particles.has_meta("phase9_base_amount"):
+		goal_particles.set_meta("phase9_base_amount", goal_particles.amount)
+	var base_amount := int(goal_particles.get_meta("phase9_base_amount"))
+	var multiplier := clampf(float(current_quality_config.get("particle_multiplier", 1.0)), 0.1, 1.0)
+	goal_particles.amount = maxi(1, roundi(float(base_amount) * multiplier))
 
 
 func _clear_level_presentation_feedback() -> void:

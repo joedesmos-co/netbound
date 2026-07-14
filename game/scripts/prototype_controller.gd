@@ -5,6 +5,7 @@ const MOUSE_POINTER_ID: int = -2
 
 @export var minimum_swipe_distance: float = 24.0
 @export var maximum_swipe_distance: float = 320.0
+@export var maximum_swipe_samples: int = 48
 @export var max_swipe_screen_height_ratio: float = 0.32
 @export var minimum_launch_speed: float = 5.0
 @export var maximum_launch_speed: float = 25.0
@@ -64,6 +65,8 @@ const MOUSE_POINTER_ID: int = -2
 @onready var aim_shaft: MeshInstance3D = $AimGuide/Shaft
 @onready var aim_head: MeshInstance3D = $AimGuide/Head
 @onready var reset_button: Button = $UI/TopLeftUI/ResetButton
+@onready var top_left_ui: Control = $UI/TopLeftUI
+@onready var top_bar: Control = $UI/TopBar
 @onready var reset_ok_label: Label = $UI/TopLeftUI/ResetOkLabel
 @onready var instruction_label: Label = $UI/TopLeftUI/InstructionLabel
 @onready var power_label: Label = $UI/TopLeftUI/PowerLabel
@@ -72,6 +75,7 @@ const MOUSE_POINTER_ID: int = -2
 @onready var shot_debug_label: Label = $UI/TopLeftUI/ShotDebugLabel
 @onready var loft_category_label: Label = $UI/TopLeftUI/LoftCategoryLabel
 @onready var power_bar: ProgressBar = $UI/PowerBarContainer/PowerBar
+@onready var power_bar_container: Control = $UI/PowerBarContainer
 @onready var swipe_overlay: SwipeOverlay = $UI/SwipeOverlay
 
 var spawn_transform: Transform3D
@@ -136,6 +140,8 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_MOUSE_EXIT and is_swiping and active_pointer_id == MOUSE_POINTER_ID:
 		_cancel_swipe()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		cancel_active_gesture_for_lifecycle()
 
 
 func _physics_process(delta: float) -> void:
@@ -290,7 +296,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	elif event is InputEventScreenTouch:
 		var screen_touch := event as InputEventScreenTouch
-		if screen_touch.pressed:
+		if screen_touch.canceled:
+			if is_swiping and active_pointer_id == screen_touch.index:
+				_cancel_swipe()
+				get_viewport().set_input_as_handled()
+		elif screen_touch.pressed:
 			_begin_swipe(screen_touch.position, screen_touch.index)
 		else:
 			_end_swipe(screen_touch.position, screen_touch.index)
@@ -390,6 +400,9 @@ func _begin_swipe(screen_position: Vector2, pointer_id: int) -> void:
 	if not is_gameplay_input_allowed():
 		return
 	if is_swiping or reset_in_progress or not _is_ball_stopped() or not _is_screen_position_in_viewport(screen_position):
+		return
+
+	if _is_screen_position_over_gameplay_ui(screen_position):
 		return
 
 	if not _is_screen_position_on_ball(screen_position):
@@ -756,6 +769,11 @@ func _cancel_swipe() -> void:
 	_update_debug_ui()
 
 
+func cancel_active_gesture_for_lifecycle() -> void:
+	if is_swiping:
+		_cancel_swipe()
+
+
 func _clear_swipe() -> void:
 	is_swiping = false
 	is_swipe_valid = false
@@ -787,6 +805,8 @@ func _add_swipe_sample(screen_position: Vector2) -> void:
 	var smoothed := last_point.lerp(screen_position, swipe_sample_smoothing)
 	if smoothed.distance_to(last_point) >= 2.0:
 		swipe_screen_points.append(smoothed)
+		while swipe_screen_points.size() > maximum_swipe_samples:
+			swipe_screen_points.remove_at(1)
 
 
 func _recalculate_swipe_state() -> void:
@@ -1036,9 +1056,39 @@ func _is_screen_position_in_viewport(screen_position: Vector2) -> bool:
 	return viewport_rect.has_point(screen_position)
 
 
+func _is_screen_position_over_gameplay_ui(screen_position: Vector2) -> bool:
+	var ui_root := get_node_or_null("UI")
+	if not ui_root:
+		return false
+	for node in ui_root.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button and button.is_visible_in_tree() and button.get_global_rect().has_point(screen_position):
+			return true
+	return false
+
+
 func _is_screen_position_on_ball(screen_position: Vector2) -> bool:
 	var ball_screen_position := camera.unproject_position(ball.global_position)
 	return screen_position.distance_to(ball_screen_position) <= ball_hit_radius
+
+
+func apply_safe_area_margins(margins: Dictionary) -> void:
+	var left := float(margins.get("left", 16.0))
+	var top := float(margins.get("top", 16.0))
+	var right := float(margins.get("right", 16.0))
+	var bottom := float(margins.get("bottom", 16.0))
+	if top_bar:
+		top_bar.offset_top = top + 8.0
+		top_bar.offset_bottom = top + 48.0
+	if top_left_ui:
+		top_left_ui.offset_left = left + 16.0
+		top_left_ui.offset_top = top + 58.0
+		top_left_ui.offset_right = left + 420.0
+	if power_bar_container:
+		power_bar_container.offset_left = left + 24.0
+		power_bar_container.offset_right = -(right + 24.0)
+		power_bar_container.offset_bottom = -(bottom + 16.0)
+		power_bar_container.offset_top = power_bar_container.offset_bottom - 40.0
 
 
 func _apply_ball_tuning() -> void:

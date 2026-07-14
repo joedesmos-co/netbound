@@ -58,6 +58,7 @@ var _last_play_time: Dictionary = {}
 var _master_volume: float = 1.0
 var _music_volume: float = 1.0
 var _sfx_volume: float = 1.0
+var _music_paused_for_lifecycle: bool = false
 
 
 func _ready() -> void:
@@ -84,6 +85,8 @@ func apply_settings_from_save(save_service: Node) -> void:
 
 func play_music(music_id: String) -> bool:
 	if music_id == _current_music_id and _music_player and _music_player.playing:
+		_music_player.stream_paused = false
+		_music_paused_for_lifecycle = false
 		return true
 	var stream := _streams.get(music_id) as AudioStream
 	if not stream or not _music_player:
@@ -92,7 +95,9 @@ func play_music(music_id: String) -> bool:
 	_music_player.stop()
 	_music_player.stream = stream
 	_music_player.volume_db = -8.0
+	_music_player.stream_paused = false
 	_music_player.play()
+	_music_paused_for_lifecycle = false
 	_current_music_id = music_id
 	return true
 
@@ -141,6 +146,19 @@ func cleanup_scene_audio() -> void:
 	_last_play_time.clear()
 
 
+func handle_app_backgrounded() -> void:
+	cleanup_scene_audio()
+	if _music_player and _music_player.playing and not _music_player.stream_paused:
+		_music_player.stream_paused = true
+		_music_paused_for_lifecycle = true
+
+
+func handle_app_foregrounded() -> void:
+	if _music_player and _music_paused_for_lifecycle:
+		_music_player.stream_paused = false
+		_music_paused_for_lifecycle = false
+
+
 func validate_assets() -> Dictionary:
 	var missing: Array[String] = []
 	for sound_id in AUDIO_PATHS.keys():
@@ -167,6 +185,26 @@ func get_ui_player_count() -> int:
 
 func get_current_music_id() -> String:
 	return _current_music_id
+
+
+func is_music_paused_for_lifecycle() -> bool:
+	return _music_paused_for_lifecycle
+
+
+func get_active_sfx_count() -> int:
+	var count := 0
+	for player in _sfx_players:
+		if player.playing:
+			count += 1
+	return count
+
+
+func get_active_ui_count() -> int:
+	var count := 0
+	for player in _ui_players:
+		if player.playing:
+			count += 1
+	return count
 
 
 func _ensure_audio_buses() -> void:

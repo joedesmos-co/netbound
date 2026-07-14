@@ -590,6 +590,63 @@ Outcomes:
 - Visible configured app launch passed on `Metal 4.0 - Forward Mobile`.
 - Strict parser checks passed for touched production and test scripts.
 
+## Phase 9 Mobile Hardening Regression
+
+Primary Phase 9 script:
+
+- `verify_phase9_mobile_external.gd`
+
+Coverage:
+
+- mobile project settings and export preset sanity
+- `MobileRuntimeService` safe-area, lifecycle, quality, and release-mode behavior
+- dirty save write failure and lifecycle flush behavior
+- simulated release mode disables development monetization providers
+- safe-area layout across Main Menu, Level Select, Settings, Cosmetics, Store, Gameplay HUD, Pause, and Results where applicable
+- touch UI-guarding, canceled touches, multi-touch ownership, and background gesture clearing
+- audio background/foreground pause/resume without duplicate music players
+- quality tiers affect only presentation budgets and preserve gameplay signatures
+- all 10 production levels still start
+
+Commands run for Phase 9 regression:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase9_mobile_external.gd
+```
+
+Outcome: all Phase 1 through Phase 9 regression scripts passed after the mobile runtime changes.
+
+Export/toolchain checks run for Phase 9:
+
+```sh
+java -version
+adb version
+xcodebuild -version
+xcrun --find xcodebuild
+which sdkmanager
+which apksigner
+which jarsigner
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "Android Debug" /tmp/netbound-phase9/android/netbound-debug.apk
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "iOS Debug" /tmp/netbound-phase9/ios/netbound-debug
+```
+
+Export/toolchain outcomes:
+
+- Java exists: `25.0.2`.
+- `adb`, `sdkmanager`, and `apksigner` are not installed/on `PATH`.
+- `jarsigner` exists at `/usr/bin/jarsigner`.
+- `xcodebuild` is unavailable because only Command Line Tools are selected, not full Xcode.
+- Android export preset is visible to Godot but cannot export because Android templates, Android SDK platform-tools/build-tools, adb, apksigner, and configured Java SDK path are missing.
+- iOS export preset is visible to Godot but cannot export because Godot `4.7.stable` `ios.zip` template is missing.
+
 ## Trajectory Acceptance Targets
 
 Approximate peak height above field:

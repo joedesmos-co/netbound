@@ -11,6 +11,11 @@ var _trim_material: StandardMaterial3D
 var _shadow: MeshInstance3D
 var _active_tweens: Array[Tween] = []
 var _palette: Dictionary = {}
+var _quality_config: Dictionary = {
+	"decorative_geometry_enabled": true,
+	"contact_shadow_enabled": true,
+	"dynamic_shadows_enabled": true,
+}
 
 
 func setup(level: Node) -> void:
@@ -24,6 +29,7 @@ func setup(level: Node) -> void:
 	_apply_material_language()
 	_build_decorative_geometry()
 	_build_contact_shadow()
+	_apply_quality_settings_to_nodes()
 	set_process(_ball != null)
 
 
@@ -65,7 +71,13 @@ func get_budget_snapshot() -> Dictionary:
 		"visual_nodes": visual_nodes,
 		"collision_nodes": collision_nodes,
 		"active_tweens": _active_tweens.size(),
+		"quality": _quality_config.duplicate(true),
 	}
+
+
+func apply_quality_settings(config: Dictionary) -> void:
+	_quality_config = config.duplicate(true)
+	_apply_quality_settings_to_nodes()
 
 
 func _apply_environment() -> void:
@@ -83,7 +95,7 @@ func _apply_environment() -> void:
 	if sun:
 		sun.light_color = _palette.get("sun", Color(1.0, 0.96, 0.86, 1.0))
 		sun.light_energy = float(_palette.get("sun_energy", 1.55))
-		sun.shadow_enabled = true
+		sun.shadow_enabled = bool(_quality_config.get("dynamic_shadows_enabled", true))
 
 
 func _apply_material_language() -> void:
@@ -175,7 +187,20 @@ func _update_contact_shadow() -> void:
 	var scale_value := clampf(1.0 + height * 0.08, 0.72, 1.75)
 	_shadow.global_position = Vector3(_ball.global_position.x, 0.028, _ball.global_position.z)
 	_shadow.scale = Vector3(scale_value, 1.0, scale_value)
-	_shadow.visible = _ball.global_position.y > -0.4
+	_shadow.visible = bool(_quality_config.get("contact_shadow_enabled", true)) and _ball.global_position.y > -0.4
+
+
+func _apply_quality_settings_to_nodes() -> void:
+	var deck := get_node_or_null("VisualDeck") as Node3D
+	if deck:
+		deck.visible = bool(_quality_config.get("decorative_geometry_enabled", true))
+	if _shadow:
+		_shadow.visible = bool(_quality_config.get("contact_shadow_enabled", true))
+	var sun: DirectionalLight3D = null
+	if _level:
+		sun = _level.get_node_or_null("DirectionalLight3D") as DirectionalLight3D
+	if sun:
+		sun.shadow_enabled = bool(_quality_config.get("dynamic_shadows_enabled", true))
 
 
 func _add_box(

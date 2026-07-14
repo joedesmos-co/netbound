@@ -718,6 +718,55 @@ Debug scene data:
 - Goal debug volume meshes exist in Level 01.
 - `debug_goal_detection = false` in `level_01.tscn`.
 
+## Phase 9 Mobile Runtime Update
+
+Phase 9 adds mobile hardening without changing the stable shooting, level, progression, cosmetic, or monetization rules.
+
+New autoload:
+
+- `MobileRuntimeService` (`res://scripts/services/mobile_runtime_service.gd`)
+
+Responsibilities:
+
+- central application lifecycle signals for background, foreground, and quit requests
+- safe-area margin calculation with a conservative `28px` fallback
+- presentation-only quality tier normalization and effective tier selection
+- release/development mode detection through export feature tags
+- lifecycle save flush and audio pause/resume coordination
+
+Lifecycle flow:
+
+1. Godot focus/pause notifications enter `MobileRuntimeService`.
+2. The service flushes dirty save state, pauses one-shot audio/music safely, and emits semantic app lifecycle signals.
+3. `NetboundApp` clears incomplete aim gestures, asks the active level to handle backgrounding, and opens Pause when gameplay is active.
+4. Foreground restore reapplies safe-area layout and lets audio resume its existing music player.
+
+Safe-area flow:
+
+- `NetboundApp` uses `_new_margin_container()` for Main Menu, Level Select, Settings, Cosmetics, and Store. The helper now reads safe-area margins from `MobileRuntimeService`.
+- Pause/result modal panels clamp to the visible safe-area bounds.
+- The gameplay Pause button and level HUD are repositioned through the same margin dictionary.
+- `prototype_controller.gd` exposes `apply_safe_area_margins()` so direct level startup and app-loaded levels share the same HUD behavior.
+
+Quality flow:
+
+- `SaveService.settings.quality_tier` stores `auto`, `low`, `medium`, or `high`.
+- `MobileRuntimeService` converts `auto` to a platform-sensitive effective tier.
+- `LevelController.apply_quality_settings()` passes the visual budget to `LevelVisualPolish`, active ball trails, and goal particle counts.
+- Quality settings affect only decorative geometry, shadows, trail point limits, particle multipliers, and camera/presentation multipliers. They do not affect ball physics, shot math, level timing, scoring, progression, or monetization rewards.
+
+Release/development separation:
+
+- Export presets use `netbound_development` or `netbound_release` feature tags.
+- In release mode, simulated ad/purchase providers are disabled by `MonetizationService.set_release_mode_enabled(true)`.
+- Developer Debug and simulated-provider controls are not exposed through normal release UI.
+
+Save durability:
+
+- `SaveService` now tracks a dirty flag. Existing setters still use immediate atomic writes, but failed writes remain dirty.
+- `flush_if_dirty()` is called during app background/quit handling.
+- No save-version bump was required because the new quality setting is an optional settings key normalized into save version `1`.
+
 ## External Verification Scripts
 
 Scripts under `game/scripts/debug/`:

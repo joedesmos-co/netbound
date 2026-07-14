@@ -84,6 +84,8 @@ Important methods:
 - `play_shot(power_ratio)`
 - `play_impact(kind, strength)`
 - `cleanup_scene_audio()`
+- `handle_app_backgrounded()`
+- `handle_app_foregrounded()`
 - `validate_assets()`
 - `get_registered_sound_ids()`
 
@@ -95,6 +97,8 @@ Important methods:
 - No new `AudioStreamPlayer` is created per sound event.
 - Rapid impacts are cooldown-protected.
 - Scene navigation stops one-shot audio.
+- App backgrounding stops one-shot audio and pauses the reusable music player.
+- App foregrounding resumes the existing music player instead of creating a duplicate.
 - Music changes by replacing the reusable music stream.
 - Zero volume settings set buses to silence.
 
