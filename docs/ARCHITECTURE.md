@@ -258,6 +258,59 @@ UI motion:
 - Active UI tweens are killed on screen or gameplay overlay clear.
 - UI motion does not own navigation or progression state.
 
+## Phase 8 Simulated Monetization Update
+
+Phase 8 adds player-friendly monetization architecture without real SDKs, analytics, accounts, cloud services, or online requirements. The layer is simulated and testable; it is intentionally ready for later iOS/Android providers without letting providers own gameplay.
+
+New service layer:
+
+- `MonetizationService` (`res://scripts/services/monetization_service.gd`) is an Autoload responsible for semantic ad/purchase requests, request tokens, entitlements, interstitial policy, provider callbacks, and save integration.
+- `NetboundAdProvider` and `NetboundPurchaseProvider` define provider interfaces under `res://scripts/monetization/`.
+- `NetboundSimulatedAdProvider` supports available/unavailable, success/cancel/failure, delayed callbacks, and duplicate callback simulation.
+- `NetboundSimulatedPurchaseProvider` supports success/cancel/failure/already-owned/restore, delayed callbacks, and duplicate callback simulation.
+
+Product and entitlement IDs:
+
+- `netbound_remove_ads` grants `entitlement_remove_ads`.
+- `netbound_starter_pack` grants `entitlement_remove_ads` and `entitlement_starter_pack`.
+- Starter Pack also unlocks `ball_supporter`, `trail_supporter`, and `goal_supporter`.
+
+Ownership boundaries:
+
+1. UI and gameplay call semantic methods such as `request_rewarded_ad()`, `request_interstitial()`, `purchase_remove_ads()`, `purchase_starter_pack()`, and `restore_purchases()`.
+2. Providers return simulated payloads only. They never mutate shot counts, progression, cosmetics, or save data directly.
+3. `MonetizationService` validates request IDs and duplicate callbacks before emitting rewards or recording purchases.
+4. `SaveService` is the authority for entitlements, owned products, supporter cosmetic unlocks, selections, and persisted monetization config.
+
+Rewarded continue flow:
+
+- Failure result can offer “Watch Ad for 1 Extra Shot”.
+- The offer is voluntary, unavailable offline/provider-unavailable, and guarded by a request token plus the current level instance ID.
+- The level grants exactly one extra shot through `grant_rewarded_continue()` only while in `FAILED`, with no normal shots remaining and no prior rewarded continue for that attempt.
+- The level returns to deterministic `READY` through the same physics-safe ball reset and resettable-element reset path; it does not refund shots or alter physics.
+- Completing after a rewarded continue records `LevelResult.rewarded_continue_used = true`.
+- `SaveService.calculate_stars()` caps ad-continued completions at a maximum of `1` star while still allowing level completion/unlock progression.
+
+Interstitial policy:
+
+- Centralized in `MonetizationService.should_show_interstitial(context)`.
+- Never requested during gameplay, aiming, or failure.
+- Requires at least three completed levels in the save and three completed-level events in the current session.
+- At most one interstitial per app session, with a minimum time spacing.
+- Disabled by either Remove Ads or Starter Pack.
+- Unavailable/offline providers skip silently and navigation continues.
+
+Store/UI flow:
+
+- `NetboundApp` adds a Store screen reachable from Main Menu.
+- Store cards show Remove Ads, Starter Pack, Restore Purchases, owned/unavailable/pending states, and simulated-development status.
+- Cosmetics screen shows supporter cosmetics as locked preview items until Starter Pack entitlement exists and provides an Open Store route.
+- Normal UI exposes no simulated-provider controls.
+
+Monetization must never alter:
+
+- launch speed, elevation, curve, damping, mass, collision radius, goal detection, level access rules, obstacle timing, difficulty, or non-ad star rules.
+
 Proof scene:
 
 - `res://levels/debug/level_architecture_test.tscn`
@@ -294,7 +347,7 @@ How to create a new configured level without changing core shooting:
 - Stretch aspect: `expand`.
 - No custom input actions are configured. Gameplay reads mouse and touch events directly in `_unhandled_input`.
 - No explicit mobile orientation, export preset, or platform packaging settings are present yet.
-- Phase 5 app UI uses conservative margins and pauses on focus loss where practical; physical safe-area and suspend/resume validation remain Phase 8 work.
+- Phase 5 app UI uses conservative margins and pauses on focus loss where practical; physical safe-area and suspend/resume validation remain mobile hardening/release work.
 
 ## Current Scene Structure
 

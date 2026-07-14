@@ -6,11 +6,18 @@ const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
 
-const APP_VERSION_LABEL := "Vertical Slice P7"
+const APP_VERSION_LABEL := "Vertical Slice P8"
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
 const RESULT_REVEAL_DELAY := 0.35
 const TOUCH_MINIMUM := Vector2(48.0, 48.0)
+const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
+const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
+const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
+const PRODUCT_STARTER_PACK := "netbound_starter_pack"
+const CONTEXT_REWARDED_CONTINUE := "rewarded_continue"
+const CONTEXT_NEXT_LEVEL := "next_level"
+const CONTEXT_LEVEL_SELECT_AFTER_SUCCESS := "level_select_after_success"
 const COSMETIC_CATEGORIES := [
 	CosmeticRegistryScript.CATEGORY_BALL,
 	CosmeticRegistryScript.CATEGORY_TRAIL,
@@ -53,6 +60,18 @@ var cosmetic_description_label: Label
 var cosmetic_requirement_label: Label
 var cosmetic_status_label: Label
 var cosmetic_equip_button: Button
+var cosmetic_store_button: Button
+var store_status_label: Label
+var store_remove_ads_button: Button
+var store_starter_pack_button: Button
+var store_restore_button: Button
+var store_product_buttons: Dictionary = {}
+var store_request_in_progress: bool = false
+var store_pending_product_id: String = ""
+var rewarded_continue_button: Button
+var rewarded_continue_status_label: Label
+var rewarded_continue_request_in_progress: bool = false
+var rewarded_continue_level_instance_id: int = -1
 var active_ui_tweens: Array[Tween] = []
 
 
@@ -82,6 +101,7 @@ func _ready() -> void:
 	screen_root.add_child(fade_rect)
 
 	_get_save_service().load_or_create()
+	_connect_monetization_service()
 	_apply_saved_settings()
 	_show_main_menu_internal()
 
@@ -122,7 +142,7 @@ func show_settings(return_screen: String = "") -> bool:
 		return false
 	if not return_screen.is_empty():
 		previous_menu_screen = return_screen
-	elif current_screen_name in ["main_menu", "level_select", "cosmetics"]:
+	elif current_screen_name in ["main_menu", "level_select", "cosmetics", "store"]:
 		previous_menu_screen = current_screen_name
 	_show_settings_internal()
 	return true
@@ -133,6 +153,19 @@ func show_cosmetics() -> bool:
 		return false
 	previous_menu_screen = current_screen_name if current_screen_name != "cosmetics" else "main_menu"
 	_show_cosmetics_internal()
+	return true
+
+
+func show_store(return_screen: String = "") -> bool:
+	if not _begin_navigation():
+		return false
+	if not return_screen.is_empty():
+		previous_menu_screen = return_screen
+	elif current_screen_name in ["main_menu", "level_select", "cosmetics", "pause"]:
+		previous_menu_screen = current_screen_name
+	else:
+		previous_menu_screen = "main_menu"
+	_show_store_internal()
 	return true
 
 
@@ -335,6 +368,10 @@ func _show_main_menu_internal() -> void:
 	var cosmetics_button := _new_menu_button("Cosmetics")
 	cosmetics_button.pressed.connect(show_cosmetics)
 	layout.add_child(cosmetics_button)
+
+	var store_button := _new_menu_button("Store")
+	store_button.pressed.connect(func() -> void: show_store("main_menu"))
+	layout.add_child(store_button)
 
 	var settings_button := _new_menu_button("Settings")
 	settings_button.pressed.connect(func() -> void: show_settings("main_menu"))
@@ -564,6 +601,10 @@ func _show_cosmetics_internal() -> void:
 	cosmetic_equip_button.pressed.connect(_equip_previewed_cosmetic)
 	preview_box.add_child(cosmetic_equip_button)
 
+	cosmetic_store_button = _new_menu_button("Open Store")
+	cosmetic_store_button.pressed.connect(func() -> void: show_store("cosmetics"))
+	preview_box.add_child(cosmetic_store_button)
+
 	cosmetic_status_label = Label.new()
 	cosmetic_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cosmetic_status_label.add_theme_font_size_override("font_size", 16)
@@ -711,6 +752,13 @@ func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
 	if cosmetic_equip_button:
 		cosmetic_equip_button.disabled = not unlocked or selected
 		cosmetic_equip_button.text = "Selected" if selected else ("Equip" if unlocked else "Locked")
+	if cosmetic_store_button:
+		var requirement := definition.get("unlock_requirement", {}) as Dictionary
+		var requires_starter_pack := (
+			String(requirement.get("type", "")) == CosmeticRegistryScript.REQUIREMENT_ENTITLEMENT
+		)
+		cosmetic_store_button.visible = requires_starter_pack and not unlocked
+		cosmetic_store_button.disabled = not cosmetic_store_button.visible
 	if cosmetic_status_label:
 		if selected:
 			cosmetic_status_label.text = "Currently equipped"
@@ -718,6 +766,211 @@ func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
 			cosmetic_status_label.text = "Unlocked"
 		else:
 			cosmetic_status_label.text = "Preview only"
+
+
+func _show_store_internal() -> void:
+	current_screen_name = "store"
+	_clear_screen()
+	if previous_menu_screen != "pause":
+		_play_menu_music()
+	if pause_overlay:
+		pause_overlay.queue_free()
+		pause_overlay = null
+	gameplay_overlay_root.visible = previous_menu_screen == "pause"
+	store_product_buttons.clear()
+
+	var screen := _new_screen("Store")
+	screen.add_child(_new_flat_backdrop())
+	var margin := _new_margin_container()
+	screen.add_child(margin)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	margin.add_child(scroll)
+
+	var outer := VBoxContainer.new()
+	outer.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_theme_constant_override("separation", 14)
+	outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(outer)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	outer.add_child(header)
+
+	var back_button := _new_small_button("Back")
+	back_button.pressed.connect(_return_from_submenu)
+	header.add_child(back_button)
+
+	var title := Label.new()
+	title.text = "Store"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 40)
+	header.add_child(title)
+
+	var note := Label.new()
+	note.text = "Development build: purchases are simulated. Core levels stay free and offline."
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_font_size_override("font_size", 17)
+	outer.add_child(note)
+
+	var products := VBoxContainer.new()
+	products.add_theme_constant_override("separation", 12)
+	products.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(products)
+
+	store_remove_ads_button = _build_store_product_button(
+		PRODUCT_REMOVE_ADS,
+		"Remove Ads",
+		"Turns off interstitial ads permanently. Rewarded continues remain optional."
+	)
+	store_remove_ads_button.pressed.connect(_purchase_remove_ads)
+	products.add_child(store_remove_ads_button)
+
+	store_starter_pack_button = _build_store_product_button(
+		PRODUCT_STARTER_PACK,
+		"Starter Pack",
+		"Includes Remove Ads plus the Supporter ball, trail, and goal effect."
+	)
+	store_starter_pack_button.pressed.connect(_purchase_starter_pack)
+	products.add_child(store_starter_pack_button)
+
+	store_restore_button = _new_menu_button("Restore Purchases")
+	store_restore_button.pressed.connect(_restore_purchases)
+	outer.add_child(store_restore_button)
+
+	store_status_label = Label.new()
+	store_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	store_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	store_status_label.add_theme_font_size_override("font_size", 17)
+	outer.add_child(store_status_label)
+
+	screen_root.add_child(screen)
+	_refresh_store_screen()
+	_animate_screen_entrance(screen)
+
+
+func _build_store_product_button(product_id: String, display_name: String, description: String) -> Button:
+	var button := Button.new()
+	button.name = product_id
+	button.custom_minimum_size = Vector2(560.0, 112.0)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_ALL
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.set_meta("product_id", product_id)
+	button.set_meta("display_name", display_name)
+	button.set_meta("description", description)
+	store_product_buttons[product_id] = button
+	_connect_button_feedback(button, "ui_confirm")
+	return button
+
+
+func _refresh_store_screen() -> void:
+	var monetization := _get_monetization_service()
+	var save_service := _get_save_service()
+	var purchase_available := bool(
+		monetization
+		and monetization.has_method("is_purchase_available")
+		and monetization.call("is_purchase_available")
+	)
+	_refresh_store_product_button(
+		store_remove_ads_button,
+		save_service.has_entitlement(ENTITLEMENT_REMOVE_ADS),
+		purchase_available
+	)
+	_refresh_store_product_button(
+		store_starter_pack_button,
+		save_service.has_entitlement(ENTITLEMENT_STARTER_PACK),
+		purchase_available
+	)
+	if store_restore_button:
+		store_restore_button.disabled = store_request_in_progress or not purchase_available
+	if store_status_label:
+		if store_request_in_progress:
+			store_status_label.text = "Contacting simulated store..."
+		elif not purchase_available:
+			store_status_label.text = "Purchases unavailable. Offline play and owned items still work."
+		elif store_status_label.text.is_empty():
+			store_status_label.text = "Purchases are cosmetic/convenience only."
+
+
+func _refresh_store_product_button(button: Button, owned: bool, purchase_available: bool) -> void:
+	if not button:
+		return
+	var product_id := String(button.get_meta("product_id", ""))
+	var display_name := String(button.get_meta("display_name", product_id))
+	var description := String(button.get_meta("description", ""))
+	var monetization := _get_monetization_service()
+	var product_info := (
+		monetization.call("get_product_info", product_id)
+		if monetization and monetization.has_method("get_product_info")
+		else {"price_text": "Unavailable", "available": false}
+	) as Dictionary
+	var product_available := purchase_available and bool(product_info.get("available", false))
+	var action_text := "Owned" if owned else (
+		"Unavailable" if not product_available else "Purchase - %s" % String(product_info.get("price_text", ""))
+	)
+	if store_request_in_progress and product_id == store_pending_product_id:
+		action_text = "Processing..."
+	button.disabled = store_request_in_progress or owned or not product_available
+	button.text = "%s\n%s\n%s" % [display_name, description, action_text]
+
+
+func _purchase_remove_ads() -> void:
+	_start_store_purchase(PRODUCT_REMOVE_ADS)
+
+
+func _purchase_starter_pack() -> void:
+	_start_store_purchase(PRODUCT_STARTER_PACK)
+
+
+func _start_store_purchase(product_id: String) -> void:
+	if store_request_in_progress:
+		return
+	var monetization := _get_monetization_service()
+	if not monetization:
+		_set_store_status("Store unavailable.")
+		return
+	var result := {}
+	if product_id == PRODUCT_REMOVE_ADS:
+		result = monetization.call("purchase_remove_ads")
+	elif product_id == PRODUCT_STARTER_PACK:
+		result = monetization.call("purchase_starter_pack")
+	else:
+		result = {"accepted": false, "reason": "unknown product"}
+	if bool(result.get("accepted", false)):
+		store_request_in_progress = true
+		store_pending_product_id = product_id
+		_set_store_status("Purchase simulation in progress...")
+	else:
+		_set_store_status(String(result.get("reason", "Purchase unavailable.")))
+	_refresh_store_screen()
+
+
+func _restore_purchases() -> void:
+	if store_request_in_progress:
+		return
+	var monetization := _get_monetization_service()
+	if not monetization or not monetization.has_method("restore_purchases"):
+		_set_store_status("Restore unavailable.")
+		return
+	var result: Dictionary = monetization.call("restore_purchases")
+	if bool(result.get("accepted", false)):
+		store_request_in_progress = true
+		store_pending_product_id = "restore"
+		_set_store_status("Restore simulation in progress...")
+	else:
+		_set_store_status(String(result.get("reason", "Restore unavailable.")))
+	_refresh_store_screen()
+
+
+func _set_store_status(message: String) -> void:
+	last_status_message = message
+	if store_status_label:
+		store_status_label.text = message
 
 
 func _build_gameplay_overlay() -> void:
@@ -809,6 +1062,8 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 		_get_save_service().get_total_stars(),
 		MAX_STARS,
 	]
+	if level_result.rewarded_continue_used:
+		result_stars_label.text += "\nAd continue used: max 1 star"
 	result_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_stars_label.add_theme_font_size_override("font_size", 22)
 	box.add_child(result_stars_label)
@@ -861,7 +1116,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	result_next_button = _new_small_button("Next Level")
 	var next_id := definition.next_level_id if definition else ""
 	result_next_button.disabled = next_id.is_empty() or not _get_save_service().is_level_unlocked(next_id)
-	result_next_button.pressed.connect(func() -> void: load_level(next_id))
+	result_next_button.pressed.connect(func() -> void: _navigate_to_next_after_success(next_id))
 	actions.add_child(result_next_button)
 
 	var retry_button := _new_small_button("Retry")
@@ -869,7 +1124,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	actions.add_child(retry_button)
 
 	var select_button := _new_small_button("Level Select")
-	select_button.pressed.connect(show_level_select)
+	select_button.pressed.connect(_show_level_select_after_success)
 	actions.add_child(select_button)
 
 	var menu_button := _new_small_button("Main Menu")
@@ -888,7 +1143,7 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	_play_sfx("result_failure")
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("FailureOverlay")
-	var panel := _new_center_panel(Vector2(500.0, 420.0))
+	var panel := _new_center_panel(Vector2(540.0, 540.0))
 	overlay.add_child(panel)
 	var box := _panel_vbox(panel)
 
@@ -908,6 +1163,17 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	result_detail_label.add_theme_font_size_override("font_size", 22)
 	box.add_child(result_detail_label)
 
+	rewarded_continue_button = _new_menu_button("Watch Ad for 1 Extra Shot", true)
+	rewarded_continue_button.name = "RewardedContinueButton"
+	rewarded_continue_button.pressed.connect(_request_rewarded_continue)
+	box.add_child(rewarded_continue_button)
+
+	rewarded_continue_status_label = Label.new()
+	rewarded_continue_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rewarded_continue_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rewarded_continue_status_label.add_theme_font_size_override("font_size", 16)
+	box.add_child(rewarded_continue_status_label)
+
 	var retry_button := _new_menu_button("Retry", true)
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
 	box.add_child(retry_button)
@@ -922,11 +1188,15 @@ func _show_failure_result(level_result: LevelResult) -> void:
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
+	_refresh_rewarded_continue_button()
 	_animate_modal_entrance(result_overlay)
 	_animate_result_reveal(box)
 
 
 func _on_level_completed(level_result: LevelResult, progression_update: RefCounted) -> void:
+	var monetization := _get_monetization_service()
+	if monetization and monetization.has_method("record_level_completion_for_ads"):
+		monetization.call("record_level_completion_for_ads")
 	var expected_level := current_level
 	await get_tree().create_timer(RESULT_REVEAL_DELAY, false, false, true).timeout
 	if expected_level != current_level or not current_level:
@@ -938,11 +1208,176 @@ func _on_level_failed(level_result: LevelResult) -> void:
 	_show_failure_result(level_result)
 
 
+func _request_rewarded_continue() -> void:
+	if rewarded_continue_request_in_progress:
+		return
+	var availability := _rewarded_continue_availability()
+	if not bool(availability.get("available", false)):
+		_set_rewarded_continue_status(String(availability.get("reason", "Extra shot unavailable.")))
+		_refresh_rewarded_continue_button()
+		return
+	var monetization := _get_monetization_service()
+	rewarded_continue_request_in_progress = true
+	rewarded_continue_level_instance_id = current_level.get_instance_id() if current_level else -1
+	var request_result: Dictionary = monetization.call(
+		"request_rewarded_ad",
+		CONTEXT_REWARDED_CONTINUE,
+		{
+			"level_id": current_level_id,
+			"level_instance_id": rewarded_continue_level_instance_id,
+		}
+	)
+	if not bool(request_result.get("accepted", false)):
+		rewarded_continue_request_in_progress = false
+		_set_rewarded_continue_status(_friendly_monetization_reason(String(request_result.get("reason", ""))))
+	else:
+		_set_rewarded_continue_status("Watching simulated ad...")
+	_refresh_rewarded_continue_button()
+
+
+func _rewarded_continue_availability() -> Dictionary:
+	if not current_level or not current_level.has_method("can_use_rewarded_continue"):
+		return {"available": false, "reason": "No failed level to continue."}
+	if rewarded_continue_request_in_progress:
+		return {"available": false, "reason": "Ad already running."}
+	if not bool(current_level.call("can_use_rewarded_continue")):
+		return {"available": false, "reason": "Extra shot already used for this attempt."}
+	var monetization := _get_monetization_service()
+	if not monetization or not monetization.has_method("is_rewarded_ad_available"):
+		return {"available": false, "reason": "Ads unavailable."}
+	if not bool(monetization.call("is_rewarded_ad_available")):
+		return {"available": false, "reason": "Ads unavailable offline."}
+	return {"available": true, "reason": ""}
+
+
+func _refresh_rewarded_continue_button() -> void:
+	if not rewarded_continue_button:
+		return
+	var availability := _rewarded_continue_availability()
+	var available := bool(availability.get("available", false))
+	rewarded_continue_button.disabled = not available
+	if rewarded_continue_request_in_progress:
+		rewarded_continue_button.text = "Ad Running..."
+	elif available:
+		rewarded_continue_button.text = "Watch Ad for 1 Extra Shot"
+	else:
+		rewarded_continue_button.text = "Extra Shot Unavailable"
+	if rewarded_continue_status_label and not rewarded_continue_request_in_progress:
+		rewarded_continue_status_label.text = (
+			"Complete after an ad continue for up to 1 star."
+			if available
+			else String(availability.get("reason", "Extra shot unavailable."))
+		)
+
+
+func _set_rewarded_continue_status(message: String) -> void:
+	last_status_message = message
+	if rewarded_continue_status_label:
+		rewarded_continue_status_label.text = message
+
+
+func _navigate_to_next_after_success(next_id: String) -> void:
+	_maybe_request_interstitial(CONTEXT_NEXT_LEVEL)
+	load_level(next_id)
+
+
+func _show_level_select_after_success() -> void:
+	_maybe_request_interstitial(CONTEXT_LEVEL_SELECT_AFTER_SUCCESS)
+	show_level_select()
+
+
+func _maybe_request_interstitial(context: String) -> void:
+	var monetization := _get_monetization_service()
+	if monetization and monetization.has_method("request_interstitial"):
+		monetization.call("request_interstitial", context)
+
+
+func _on_monetization_reward_granted(
+	context: String,
+	_request_id: int,
+	metadata: Dictionary
+) -> void:
+	if context != CONTEXT_REWARDED_CONTINUE:
+		return
+	rewarded_continue_request_in_progress = false
+	var expected_instance_id := int(metadata.get("level_instance_id", -1))
+	if (
+		not current_level
+		or current_level.get_instance_id() != expected_instance_id
+		or not current_level.has_method("grant_rewarded_continue")
+	):
+		return
+	var granted: bool = await current_level.call("grant_rewarded_continue")
+	if granted:
+		_clear_result_overlay()
+		rewarded_continue_button = null
+		rewarded_continue_status_label = null
+		current_screen_name = "gameplay"
+	else:
+		_set_rewarded_continue_status("Extra shot unavailable now.")
+		_refresh_rewarded_continue_button()
+
+
+func _on_monetization_reward_failed(context: String, _request_id: int, reason: String) -> void:
+	if context != CONTEXT_REWARDED_CONTINUE:
+		return
+	rewarded_continue_request_in_progress = false
+	_set_rewarded_continue_status(_friendly_monetization_reason(reason))
+	_refresh_rewarded_continue_button()
+
+
+func _on_monetization_purchase_started(product_id: String, _request_id: int) -> void:
+	store_request_in_progress = true
+	store_pending_product_id = product_id
+	_set_store_status("Contacting simulated store...")
+	_refresh_store_screen()
+
+
+func _on_monetization_purchase_completed(product_id: String, _request_id: int) -> void:
+	store_request_in_progress = false
+	store_pending_product_id = ""
+	_set_store_status("%s owned." % _product_display_name(product_id))
+	_refresh_store_screen()
+	if current_screen_name == "cosmetics":
+		_refresh_cosmetics_screen()
+
+
+func _on_monetization_purchase_failed(product_id: String, _request_id: int, reason: String) -> void:
+	store_request_in_progress = false
+	store_pending_product_id = ""
+	_set_store_status("%s: %s" % [_product_display_name(product_id), _friendly_monetization_reason(reason)])
+	_refresh_store_screen()
+
+
+func _on_monetization_purchases_restored(product_ids: Array[String], _request_id: int) -> void:
+	store_request_in_progress = false
+	store_pending_product_id = ""
+	if product_ids.is_empty():
+		_set_store_status("No simulated purchases to restore.")
+	else:
+		var names: Array[String] = []
+		for product_id in product_ids:
+			names.append(_product_display_name(product_id))
+		_set_store_status("Restored: %s" % ", ".join(names))
+	_refresh_store_screen()
+	if current_screen_name == "cosmetics":
+		_refresh_cosmetics_screen()
+
+
+func _on_monetization_entitlement_changed(_entitlement_id: String) -> void:
+	if current_screen_name == "store":
+		_refresh_store_screen()
+	elif current_screen_name == "cosmetics":
+		_refresh_cosmetics_screen()
+
+
 func _return_from_submenu() -> void:
 	if previous_menu_screen == "level_select":
 		show_level_select()
 	elif previous_menu_screen == "pause":
 		_show_pause_return()
+	elif previous_menu_screen == "cosmetics":
+		show_cosmetics()
 	else:
 		show_main_menu()
 
@@ -959,7 +1394,7 @@ func _handle_back_navigation() -> void:
 		show_pause_menu()
 	elif current_screen_name == "pause":
 		resume_game()
-	elif current_screen_name == "settings" or current_screen_name == "cosmetics":
+	elif current_screen_name == "settings" or current_screen_name == "cosmetics" or current_screen_name == "store":
 		_return_from_submenu()
 	elif current_screen_name == "level_select":
 		show_main_menu()
@@ -970,6 +1405,8 @@ func _handle_back_navigation() -> void:
 func _leave_current_level() -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
+	rewarded_continue_request_in_progress = false
+	rewarded_continue_level_instance_id = -1
 	var audio_service := get_node_or_null("/root/AudioService")
 	if audio_service and audio_service.has_method("cleanup_scene_audio"):
 		audio_service.call("cleanup_scene_audio")
@@ -995,6 +1432,12 @@ func _clear_screen() -> void:
 	cosmetic_requirement_label = null
 	cosmetic_status_label = null
 	cosmetic_equip_button = null
+	cosmetic_store_button = null
+	store_status_label = null
+	store_remove_ads_button = null
+	store_starter_pack_button = null
+	store_restore_button = null
+	store_product_buttons.clear()
 	cosmetic_category_buttons.clear()
 	cosmetic_card_buttons.clear()
 
@@ -1006,12 +1449,16 @@ func _clear_gameplay_overlay() -> void:
 		child.queue_free()
 	pause_overlay = null
 	result_overlay = null
+	rewarded_continue_button = null
+	rewarded_continue_status_label = null
 
 
 func _clear_result_overlay() -> void:
 	if result_overlay:
 		result_overlay.queue_free()
 		result_overlay = null
+	rewarded_continue_button = null
+	rewarded_continue_status_label = null
 
 
 func _begin_navigation() -> bool:
@@ -1028,6 +1475,29 @@ func _release_navigation_lock() -> void:
 
 func _get_save_service() -> Node:
 	return get_node("/root/SaveService")
+
+
+func _get_monetization_service() -> Node:
+	return get_node_or_null("/root/MonetizationService")
+
+
+func _connect_monetization_service() -> void:
+	var monetization := _get_monetization_service()
+	if not monetization:
+		return
+	var connections := {
+		"reward_granted": Callable(self, "_on_monetization_reward_granted"),
+		"rewarded_ad_failed": Callable(self, "_on_monetization_reward_failed"),
+		"purchase_started": Callable(self, "_on_monetization_purchase_started"),
+		"purchase_completed": Callable(self, "_on_monetization_purchase_completed"),
+		"purchase_failed": Callable(self, "_on_monetization_purchase_failed"),
+		"purchases_restored": Callable(self, "_on_monetization_purchases_restored"),
+		"entitlement_changed": Callable(self, "_on_monetization_entitlement_changed"),
+	}
+	for signal_name in connections.keys():
+		var callback := connections[signal_name] as Callable
+		if monetization.has_signal(String(signal_name)) and not monetization.is_connected(String(signal_name), callback):
+			monetization.connect(String(signal_name), callback)
 
 
 func _refresh_main_menu_play_state() -> void:
@@ -1142,6 +1612,9 @@ func _apply_saved_settings() -> void:
 	var haptics_service := get_node_or_null("/root/HapticsService")
 	if haptics_service and haptics_service.has_method("apply_settings_from_save"):
 		haptics_service.call("apply_settings_from_save", service)
+	var monetization_service := _get_monetization_service()
+	if monetization_service and monetization_service.has_method("apply_config_from_save"):
+		monetization_service.call("apply_config_from_save", service)
 	_apply_developer_debug_to_level()
 	_apply_presentation_settings_to_level()
 
@@ -1264,6 +1737,34 @@ func _format_cosmetic_unlock_text(cosmetic_ids: Array[String]) -> String:
 			]
 		)
 	return "\n".join(lines)
+
+
+func _product_display_name(product_id: String) -> String:
+	match product_id:
+		PRODUCT_REMOVE_ADS:
+			return "Remove Ads"
+		PRODUCT_STARTER_PACK:
+			return "Starter Pack"
+		"restore":
+			return "Restore"
+		_:
+			return product_id
+
+
+func _friendly_monetization_reason(reason: String) -> String:
+	match reason:
+		"cancelled":
+			return "Cancelled."
+		"failed":
+			return "Request failed. Please try again."
+		"unavailable", "rewarded ad unavailable", "purchases unavailable":
+			return "Unavailable offline or in this build."
+		"already owned":
+			return "Already owned."
+		"rewarded ad already running", "purchase already running":
+			return "Already in progress."
+		_:
+			return reason if not reason.is_empty() else "Unavailable."
 
 
 func _new_screen(node_name: String) -> Control:

@@ -185,4 +185,4 @@ Desktop/headless instrumentation checks currently verify:
 - material reuse: repeated ball skin and same-trail refreshes reuse existing materials
 - cleanup: Reset/Retry/unload clears camera feedback, goal pulses, cosmetic effects, and UI tweens
 
-This is not a substitute for physical mobile profiling. GPU cost, thermal behavior, safe-area comfort, haptic feel, and audio focus still need iOS/Android hardware validation in Phase 8.
+This is not a substitute for physical mobile profiling. GPU cost, thermal behavior, safe-area comfort, haptic feel, and audio focus still need iOS/Android hardware validation in the mobile hardening/release phase.

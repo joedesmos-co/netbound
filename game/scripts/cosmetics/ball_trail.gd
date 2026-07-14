@@ -122,6 +122,13 @@ func _color_for_index(index: int) -> Color:
 			return Color(1.0, lerpf(0.95, 0.55, ratio), lerpf(0.18, 0.04, ratio), 1.0)
 		"trail_rainbow":
 			return Color.from_hsv(fmod(ratio * 0.9 + 0.58, 1.0), 0.82, 1.0, 1.0)
+		"trail_supporter":
+			return Color(
+				lerpf(0.1, 1.0, ratio),
+				lerpf(1.0, 0.72, ratio),
+				lerpf(0.78, 0.18, ratio),
+				1.0
+			)
 		_:
 			return Color(0.0, 0.0, 0.0, 0.0)
 

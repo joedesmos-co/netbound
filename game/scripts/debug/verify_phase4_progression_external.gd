@@ -280,7 +280,8 @@ func _test_corruption() -> bool:
 	passed = normalized.is_level_completed("level_02") and passed
 	passed = not normalized.is_level_unlocked("level_99") and passed
 	passed = normalized.get_best_stars("level_02") == 3 and passed
-	passed = normalized.get_fewest_shots("level_02") == 3 and passed
+	var level_02_limit := LevelRegistryScript.load_definition("level_02").shot_limit
+	passed = normalized.get_fewest_shots("level_02") == level_02_limit + 1 and passed
 	passed = normalized.get_selected_ball() == "ball_classic" and passed
 	passed = is_equal_approx(float(normalized.get_setting_value("master_volume", 0.0)), 1.0) and passed
 	passed = is_equal_approx(float(normalized.get_setting_value("music_volume", 1.0)), 0.0) and passed

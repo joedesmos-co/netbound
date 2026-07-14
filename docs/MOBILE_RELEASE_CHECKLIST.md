@@ -2,7 +2,7 @@
 
 This checklist tracks what must be true before the vertical slice is mobile-ready.
 
-## Current Status Through Phase 7
+## Current Status Through Phase 8
 
 - Godot 4.7 stable is available and verified.
 - Project imports in headless mode.
@@ -16,6 +16,8 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Reduced Motion and Camera Effects settings exist and persist.
 - Gameplay aim preview, launch/impact/goal feedback, near-miss presentation, level visual polish, contact shadows, and UI motion now exist.
 - Phase 7 presentation nodes are bounded, visual-only, and covered by headless regression checks.
+- Phase 8 simulated monetization architecture now exists with rewarded continue, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling.
+- No real ad SDK, purchase SDK, analytics SDK, online account, cloud save, or consent SDK is integrated.
 - Export presets and platform packaging are not configured yet.
 
 ## Project Settings
@@ -101,16 +103,39 @@ Required:
 - No network requirement.
 - No accounts.
 - No analytics.
-- No ads.
-- No purchases.
+- No real ads or purchase SDKs.
+- Simulated ads/purchases are local and optional; all 10 levels remain playable offline without payment or ads.
 - Versioned local save.
 - Corrupted-save fallback.
 - Settings persistence.
+- Purchased/owned simulated entitlements remain usable offline.
 
 Current gaps:
 
 - Cloud sync is intentionally absent.
 - Physical persistence checks across app kill/relaunch remain required.
+
+## Monetization Readiness
+
+Phase 8 is architecture-only for monetization providers.
+
+Ready:
+
+- Provider interfaces and simulated providers.
+- Rewarded extra-shot continue guarded by request IDs and level instance IDs.
+- One-star cap for ad-continued completions.
+- Central interstitial policy, disabled by Remove Ads/Starter Pack.
+- Local entitlements and restore simulation.
+- Store UI with unavailable/offline handling.
+
+Deferred:
+
+- Real App Store / Google Play product setup.
+- Real ad network SDK integration.
+- Platform purchase receipt validation.
+- Legal consent/privacy SDKs or dialogs.
+- Analytics and attribution.
+- Country/storefront localization.
 
 ## Audio And Haptics
 

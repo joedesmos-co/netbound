@@ -8,12 +8,14 @@ extends Resource
 @export var shot_limit: int = 0
 @export var par_shots: int = 0
 @export var result_state: String = ""
+@export var rewarded_continue_used: bool = false
 
 
 static func completed_result(
 	level_definition: LevelDefinition,
 	used_shots: int,
-	remaining_shots: int = -1
+	remaining_shots: int = -1,
+	used_rewarded_continue: bool = false
 ) -> LevelResult:
 	var result := LevelResult.new()
 	result.level_id = level_definition.level_id if level_definition else ""
@@ -27,13 +29,15 @@ static func completed_result(
 	)
 	result.par_shots = level_definition.par_shots if level_definition else 0
 	result.result_state = "completed"
+	result.rewarded_continue_used = used_rewarded_continue
 	return result
 
 
 static func failed_result(
 	level_definition: LevelDefinition,
 	used_shots: int,
-	remaining_shots: int = 0
+	remaining_shots: int = 0,
+	used_rewarded_continue: bool = false
 ) -> LevelResult:
 	var result := LevelResult.new()
 	result.level_id = level_definition.level_id if level_definition else ""
@@ -43,4 +47,5 @@ static func failed_result(
 	result.shot_limit = level_definition.shot_limit if level_definition else 0
 	result.par_shots = level_definition.par_shots if level_definition else 0
 	result.result_state = "failed"
+	result.rewarded_continue_used = used_rewarded_continue
 	return result

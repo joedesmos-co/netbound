@@ -77,7 +77,7 @@ static func trigger_goal_effect(
 		goal_particles.emitting = true
 	if effect_id == "goal_confetti":
 		_spawn_confetti(level_root, goal_root)
-	elif effect_id == "goal_shockwave":
+	elif effect_id == "goal_shockwave" or effect_id == "goal_supporter":
 		_spawn_shockwave(level_root, goal_root)
 
 
@@ -118,6 +118,12 @@ static func _ball_main_material(skin_id: String) -> StandardMaterial3D:
 			material.roughness = 0.22
 			material.emission_enabled = true
 			material.emission = Color(0.28, 0.16, 0.02, 1.0)
+		"ball_supporter":
+			material.albedo_color = Color(0.02, 0.22, 0.2, 1.0)
+			material.metallic = 0.35
+			material.roughness = 0.24
+			material.emission_enabled = true
+			material.emission = Color(0.0, 0.32, 0.28, 1.0)
 		_:
 			material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 			material.emission_enabled = true
@@ -153,6 +159,12 @@ static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
 			material.metallic = 0.4
 			material.emission_enabled = true
 			material.emission = Color(0.75, 0.42, 0.04, 1.0)
+		"ball_supporter":
+			material.albedo_color = Color(1.0, 0.72, 0.18, 1.0)
+			material.metallic = 0.55
+			material.roughness = 0.2
+			material.emission_enabled = true
+			material.emission = Color(0.28, 0.72, 0.55, 1.0)
 		_:
 			material.albedo_color = Color(0.035, 0.035, 0.035, 1.0)
 	_ball_accent_material_cache[skin_id] = material
@@ -167,6 +179,8 @@ static func _configure_goal_flash(goal_flash: ColorRect, effect_id: String) -> v
 			goal_flash.color = Color(0.2, 1.0, 0.55, 1.0)
 		"goal_shockwave":
 			goal_flash.color = Color(0.22, 0.82, 1.0, 1.0)
+		"goal_supporter":
+			goal_flash.color = Color(0.08, 0.95, 0.72, 1.0)
 		_:
 			goal_flash.color = Color(1.0, 0.9, 0.22, 1.0)
 
@@ -187,6 +201,12 @@ static func _configure_goal_particles(goal_particles: CPUParticles3D, effect_id:
 			goal_particles.color = Color(0.25, 0.9, 1.0, 1.0)
 			goal_particles.initial_velocity_min = 1.5
 			goal_particles.initial_velocity_max = 3.0
+		"goal_supporter":
+			goal_particles.amount = 72
+			goal_particles.lifetime = 0.72
+			goal_particles.color = Color(0.16, 1.0, 0.72, 1.0)
+			goal_particles.initial_velocity_min = 2.0
+			goal_particles.initial_velocity_max = 4.5
 		_:
 			goal_particles.amount = 64
 			goal_particles.lifetime = 0.8

@@ -23,6 +23,23 @@ const DEFAULT_UNLOCKED_COSMETICS := [
 	"trail_none",
 	"goal_classic",
 ]
+const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
+const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
+const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
+const PRODUCT_STARTER_PACK := "netbound_starter_pack"
+const SUPPORTER_COSMETICS := [
+	"ball_supporter",
+	"trail_supporter",
+	"goal_supporter",
+]
+const VALID_ENTITLEMENTS := [
+	ENTITLEMENT_REMOVE_ADS,
+	ENTITLEMENT_STARTER_PACK,
+]
+const VALID_PRODUCTS := [
+	PRODUCT_REMOVE_ADS,
+	PRODUCT_STARTER_PACK,
+]
 
 var recording_enabled: bool = true
 var developer_diagnostics_enabled: bool = false
@@ -193,6 +210,11 @@ func get_total_stars() -> int:
 	return total
 
 
+func get_completed_level_count() -> int:
+	_ensure_loaded()
+	return (_save_data.progression as Dictionary).completed_levels.size()
+
+
 func calculate_stars(level_result: LevelResult, level_definition: LevelDefinition) -> int:
 	var shot_limit := level_definition.shot_limit if level_definition else level_result.shot_limit
 	var par_shots := level_definition.par_shots if level_definition else level_result.par_shots
@@ -208,7 +230,8 @@ func calculate_stars(level_result: LevelResult, level_definition: LevelDefinitio
 		level_result.completed,
 		level_result.shots_used,
 		shot_limit,
-		par_shots
+		par_shots,
+		bool(level_result.get("rewarded_continue_used"))
 	)
 
 
@@ -216,7 +239,8 @@ static func calculate_stars_for_values(
 	completed: bool,
 	shots_used: int,
 	shot_limit: int,
-	par_shots: int
+	par_shots: int,
+	rewarded_continue_used: bool = false
 ) -> int:
 	if not completed:
 		return 0
@@ -225,9 +249,9 @@ static func calculate_stars_for_values(
 	var safe_par := mini(par_shots, shot_limit)
 	var safe_shots := clampi(shots_used, 1, shot_limit)
 	if safe_shots <= safe_par:
-		return 3
+		return 1 if rewarded_continue_used else 3
 	if safe_shots == safe_par + 1 and safe_shots <= shot_limit:
-		return 2
+		return 1 if rewarded_continue_used else 2
 	return 1
 
 
@@ -448,6 +472,68 @@ func set_setting_value(setting_name: String, value: Variant) -> bool:
 	return save()
 
 
+func has_entitlement(entitlement_id: String) -> bool:
+	_ensure_loaded()
+	return _string_array_contains((_save_data.monetization as Dictionary).entitlements as Array, entitlement_id)
+
+
+func get_entitlements() -> Array[String]:
+	_ensure_loaded()
+	var result: Array[String] = []
+	for entitlement_id in (_save_data.monetization as Dictionary).entitlements as Array:
+		result.append(String(entitlement_id))
+	return result
+
+
+func get_monetization_config() -> Dictionary:
+	_ensure_loaded()
+	return ((_save_data.monetization as Dictionary).config as Dictionary).duplicate(true)
+
+
+func is_product_owned(product_id: String) -> bool:
+	_ensure_loaded()
+	var purchases := (_save_data.monetization as Dictionary).purchases as Dictionary
+	var purchase := _dict_or_empty(purchases.get(product_id, {}))
+	return bool(purchase.get("owned", false))
+
+
+func record_purchase(
+	product_id: String,
+	transaction_id: String = "",
+	provider_name: String = "simulated"
+) -> bool:
+	_ensure_loaded()
+	if not VALID_PRODUCTS.has(product_id):
+		return false
+	var monetization := _save_data.monetization as Dictionary
+	var purchases := monetization.purchases as Dictionary
+	var purchase := _dict_or_empty(purchases.get(product_id, {}))
+	var changed := not bool(purchase.get("owned", false))
+	purchase.owned = true
+	purchase.state = "owned"
+	purchase.product_id = product_id
+	purchase.provider = provider_name
+	purchase.transaction_id = transaction_id
+	purchase.last_updated_unix = Time.get_unix_time_from_system()
+	purchases[product_id] = purchase
+
+	for entitlement_id in _entitlements_for_product(product_id):
+		if _grant_entitlement_in_memory(entitlement_id, product_id):
+			changed = true
+	if product_id == PRODUCT_STARTER_PACK:
+		for cosmetic_id in SUPPORTER_COSMETICS:
+			if _unlock_cosmetic_in_memory(cosmetic_id):
+				changed = true
+
+	_save_data = _normalize_save(_save_data)
+	save()
+	return changed
+
+
+func restore_purchase(product_id: String, transaction_id: String = "") -> bool:
+	return record_purchase(product_id, transaction_id, "simulated_restore")
+
+
 func simulate_next_write_failure_for_tests() -> void:
 	_simulate_next_write_failure = true
 
@@ -478,6 +564,7 @@ func _create_default_save() -> Dictionary:
 			"camera_effects_intensity": 1.0,
 			"developer_debug": false,
 		},
+		"monetization": _default_monetization(),
 	}
 
 
@@ -523,6 +610,8 @@ func _normalize_save(raw: Dictionary) -> Dictionary:
 	var cosmetics := _normalize_cosmetics(_dict_or_empty(raw.get("cosmetics", {})))
 	normalized.cosmetics = cosmetics
 	normalized.settings = _normalize_settings(_dict_or_empty(raw.get("settings", {})))
+	normalized.monetization = _normalize_monetization(_dict_or_empty(raw.get("monetization", {})))
+	_apply_entitlement_cosmetic_unlocks(normalized)
 	return normalized
 
 
@@ -562,7 +651,7 @@ func _normalized_fewest_shots(value: Variant) -> Dictionary:
 			continue
 		var definition := LevelRegistryScript.load_definition(level_id)
 		var shot_limit := definition.shot_limit if definition else 99
-		var shots := clampi(int(source[level_id]), 1, max(shot_limit, 1))
+		var shots := clampi(int(source[level_id]), 1, max(shot_limit + 1, 1))
 		result[level_id] = shots
 	return result
 
@@ -617,6 +706,132 @@ func _normalize_cosmetics(raw: Dictionary) -> Dictionary:
 		"selected_goal_effect": selected_goal_effect,
 		"unlocked": unlocked,
 	}
+
+
+func _default_monetization() -> Dictionary:
+	return {
+		"entitlements": [],
+		"purchases": {
+			PRODUCT_REMOVE_ADS: _default_purchase_record(PRODUCT_REMOVE_ADS),
+			PRODUCT_STARTER_PACK: _default_purchase_record(PRODUCT_STARTER_PACK),
+		},
+		"config": {
+			"ads_enabled": true,
+			"purchases_enabled": true,
+			"child_directed_treatment": false,
+			"privacy_consent_status": "unknown",
+			"personalized_ads_allowed": false,
+		},
+	}
+
+
+func _default_purchase_record(product_id: String) -> Dictionary:
+	return {
+		"product_id": product_id,
+		"owned": false,
+		"state": "not_purchased",
+		"provider": "",
+		"transaction_id": "",
+		"last_updated_unix": 0.0,
+	}
+
+
+func _normalize_monetization(raw: Dictionary) -> Dictionary:
+	var entitlements: Array = []
+	var raw_entitlements: Variant = raw.get("entitlements", [])
+	if typeof(raw_entitlements) == TYPE_ARRAY:
+		for item in raw_entitlements as Array:
+			var entitlement_id := String(item)
+			if VALID_ENTITLEMENTS.has(entitlement_id) and not _string_array_contains(entitlements, entitlement_id):
+				entitlements.append(entitlement_id)
+
+	var raw_purchases := _dict_or_empty(raw.get("purchases", {}))
+	var purchases := {}
+	for product_id in VALID_PRODUCTS:
+		var purchase := _normalize_purchase_record(String(product_id), _dict_or_empty(raw_purchases.get(product_id, {})))
+		purchases[product_id] = purchase
+		if bool(purchase.get("owned", false)):
+			for entitlement_id in _entitlements_for_product(product_id):
+				if not _string_array_contains(entitlements, entitlement_id):
+					entitlements.append(entitlement_id)
+
+	var config := _normalize_monetization_config(_dict_or_empty(raw.get("config", {})))
+	return {
+		"entitlements": entitlements,
+		"purchases": purchases,
+		"config": config,
+	}
+
+
+func _normalize_purchase_record(product_id: String, raw: Dictionary) -> Dictionary:
+	var record := _default_purchase_record(product_id)
+	record.owned = bool(raw.get("owned", false))
+	record.state = "owned" if bool(record.owned) else "not_purchased"
+	record.provider = String(raw.get("provider", ""))
+	record.transaction_id = String(raw.get("transaction_id", ""))
+	record.last_updated_unix = maxf(float(raw.get("last_updated_unix", 0.0)), 0.0)
+	return record
+
+
+func _normalize_monetization_config(raw: Dictionary) -> Dictionary:
+	return {
+		"ads_enabled": bool(raw.get("ads_enabled", true)),
+		"purchases_enabled": bool(raw.get("purchases_enabled", true)),
+		"child_directed_treatment": bool(raw.get("child_directed_treatment", false)),
+		"privacy_consent_status": String(raw.get("privacy_consent_status", "unknown")),
+		"personalized_ads_allowed": bool(raw.get("personalized_ads_allowed", false)),
+	}
+
+
+func _apply_entitlement_cosmetic_unlocks(save_data: Dictionary) -> void:
+	var monetization := save_data.monetization as Dictionary
+	var entitlements := monetization.entitlements as Array
+	if not _string_array_contains(entitlements, ENTITLEMENT_STARTER_PACK):
+		return
+	var cosmetics := save_data.cosmetics as Dictionary
+	var unlocked := cosmetics.unlocked as Array
+	for cosmetic_id in SUPPORTER_COSMETICS:
+		if CosmeticRegistryScript.has_cosmetic(cosmetic_id) and not _string_array_contains(unlocked, cosmetic_id):
+			unlocked.append(cosmetic_id)
+	cosmetics.unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
+	save_data.cosmetics = cosmetics
+
+
+func _grant_entitlement_in_memory(entitlement_id: String, _source: String = "") -> bool:
+	if not VALID_ENTITLEMENTS.has(entitlement_id):
+		return false
+	var monetization := _save_data.monetization as Dictionary
+	var entitlements := monetization.entitlements as Array
+	if _string_array_contains(entitlements, entitlement_id):
+		return false
+	entitlements.append(entitlement_id)
+	monetization.entitlements = entitlements
+	_save_data.monetization = monetization
+	return true
+
+
+func _unlock_cosmetic_in_memory(cosmetic_id: String) -> bool:
+	var normalized := CosmeticRegistryScript.normalize_any_id(cosmetic_id)
+	if not CosmeticRegistryScript.has_cosmetic(normalized):
+		return false
+	var cosmetics := _save_data.cosmetics as Dictionary
+	var unlocked := cosmetics.unlocked as Array
+	if _string_array_contains(unlocked, normalized):
+		return false
+	unlocked.append(normalized)
+	cosmetics.unlocked = unlocked
+	_save_data.cosmetics = cosmetics
+	return true
+
+
+func _entitlements_for_product(product_id: String) -> Array[String]:
+	match product_id:
+		PRODUCT_REMOVE_ADS:
+			return [ENTITLEMENT_REMOVE_ADS]
+		PRODUCT_STARTER_PACK:
+			return [ENTITLEMENT_REMOVE_ADS, ENTITLEMENT_STARTER_PACK]
+		_:
+			return []
 
 
 func _normalize_settings(raw: Dictionary) -> Dictionary:

@@ -47,10 +47,10 @@ func _run() -> void:
 func _test_registry() -> bool:
 	var validation: Dictionary = CosmeticRegistryScript.validate_registry()
 	var all := CosmeticRegistryScript.get_all()
-	var passed: bool = bool(validation.ok) and all.size() == 14
-	passed = CosmeticRegistryScript.get_by_category("ball").size() == 6 and passed
-	passed = CosmeticRegistryScript.get_by_category("trail").size() == 5 and passed
-	passed = CosmeticRegistryScript.get_by_category("goal_effect").size() == 3 and passed
+	var passed: bool = bool(validation.ok) and all.size() == 17
+	passed = CosmeticRegistryScript.get_by_category("ball").size() == 7 and passed
+	passed = CosmeticRegistryScript.get_by_category("trail").size() == 6 and passed
+	passed = CosmeticRegistryScript.get_by_category("goal_effect").size() == 4 and passed
 	passed = CosmeticRegistryScript.get_default_for_category("ball") == "ball_classic" and passed
 	passed = CosmeticRegistryScript.get_default_for_category("trail") == "trail_none" and passed
 	passed = CosmeticRegistryScript.get_default_for_category("goal_effect") == "goal_classic" and passed
@@ -194,7 +194,7 @@ func _test_unlock_conditions() -> bool:
 	var all_unlocked := _new_service("all_unlocked")
 	all_unlocked.load_or_create()
 	all_unlocked.unlock_all_cosmetics_for_development()
-	passed = all_unlocked.get_unlocked_cosmetics().size() == 14 and passed
+	passed = all_unlocked.get_unlocked_cosmetics().size() == 17 and passed
 	local_service.free()
 	all_unlocked.free()
 	print("PHASE6 unlock_conditions ok=", passed)
@@ -256,7 +256,7 @@ func _test_cosmetics_screen() -> bool:
 	await process_frame
 	var passed := app.current_screen_name == "cosmetics" \
 		and app.cosmetic_category_buttons.size() == 3 \
-		and app.cosmetic_card_buttons.size() == 6
+		and app.cosmetic_card_buttons.size() == 7
 	app._preview_cosmetic("ball_gold")
 	await process_frame
 	passed = app.previewed_cosmetic_id == "ball_gold" and passed
@@ -274,10 +274,10 @@ func _test_cosmetics_screen() -> bool:
 
 	app._select_cosmetic_category("trail")
 	await process_frame
-	passed = app.cosmetic_card_buttons.size() == 5 and passed
+	passed = app.cosmetic_card_buttons.size() == 6 and passed
 	app._select_cosmetic_category("goal_effect")
 	await process_frame
-	passed = app.cosmetic_card_buttons.size() == 3 and passed
+	passed = app.cosmetic_card_buttons.size() == 4 and passed
 	app._handle_back_navigation()
 	await process_frame
 	passed = app.current_screen_name == "main_menu" or app.current_screen_name == "level_select" and passed

@@ -1,6 +1,6 @@
 # Netbound Cosmetics
 
-Phase 6 implements offline, gameplay-earned cosmetics. Cosmetics are visual-only and must never alter ball physics, collision, scoring, shot tuning, camera behavior, level unlocks, or star calculation.
+Phase 6 implements offline, gameplay-earned cosmetics. Phase 8 adds purchase-entitlement supporter cosmetics through the simulated Starter Pack. Cosmetics are visual-only and must never alter ball physics, collision, scoring, shot tuning, camera behavior, level unlocks, or star calculation.
 
 ## Registry
 
@@ -30,6 +30,7 @@ Ball skins:
 - `ball_ice`
 - `ball_galaxy`
 - `ball_gold`
+- `ball_supporter`
 
 Trails:
 
@@ -38,12 +39,14 @@ Trails:
 - `trail_flame`
 - `trail_spark`
 - `trail_rainbow`
+- `trail_supporter`
 
 Goal effects:
 
 - `goal_classic`
 - `goal_confetti`
 - `goal_shockwave`
+- `goal_supporter`
 
 ## Unlocks
 
@@ -67,6 +70,7 @@ Gameplay milestones:
 | Earn 18 total stars | Confetti Goal Effect |
 | Earn 24 total stars | Rainbow Trail |
 | Earn 30 total stars | Gold Ball, Shockwave Goal Effect |
+| Own Starter Pack | Supporter Ball, Supporter Trail, Supporter Burst |
 
 Unlocks are monotonic. Worse replays cannot remove cosmetics, and repeated evaluation does not duplicate IDs.
 
@@ -79,7 +83,7 @@ Unlocks are monotonic. Worse replays cannot remove cosmetics, and repeated evalu
 - `selected_goal_effect`
 - `unlocked`
 
-No save-version bump was required because Phase 4 already had these fields. Phase 6 migrates legacy placeholder values such as `classic`, `ball:classic`, and `trail:none` into stable registry IDs.
+No save-version bump was required because Phase 4 already had these fields. Phase 6 migrates legacy placeholder values such as `classic`, `ball:classic`, and `trail:none` into stable registry IDs. Phase 8 keeps the same selection/unlocked fields; Starter Pack entitlement simply unlocks the three supporter IDs through `SaveService` normalization and purchase recording.
 
 Selection rules:
 
@@ -88,6 +92,17 @@ Selection rules:
 - one selected item is stored per category
 - selection saves immediately
 - previewing a locked item never saves
+- supporter cosmetics cannot be selected until `entitlement_starter_pack` exists
+
+## Phase 8 Supporter Cosmetics
+
+Supporter cosmetics are entitlement-locked rather than gameplay-earned:
+
+- `ball_supporter`: teal-and-gold Supporter ball
+- `trail_supporter`: restrained teal/gold trail
+- `goal_supporter`: Supporter Burst goal effect
+
+The Cosmetics screen may preview them while locked and shows “Own the Starter Pack” as the requirement. The Open Store button is shown only for locked entitlement cosmetics. Previewing does not save a selection; equipping still goes through the same unlocked-item save path as gameplay cosmetics.
 
 ## Gameplay Flow
 

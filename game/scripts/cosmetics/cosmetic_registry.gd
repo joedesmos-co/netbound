@@ -16,6 +16,8 @@ const VALID_CATEGORIES := [
 const REQUIREMENT_DEFAULT := "default"
 const REQUIREMENT_LEVEL_COMPLETE := "level_complete"
 const REQUIREMENT_TOTAL_STARS := "total_stars"
+const REQUIREMENT_ENTITLEMENT := "entitlement"
+const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 
 const DEFINITIONS := [
 	{
@@ -85,6 +87,17 @@ const DEFINITIONS := [
 		"default_unlocked": false,
 	},
 	{
+		"cosmetic_id": "ball_supporter",
+		"display_name": "Supporter",
+		"category": CATEGORY_BALL,
+		"description": "Premium teal-and-gold finish from the Starter Pack.",
+		"unlock_requirement": {"type": REQUIREMENT_ENTITLEMENT, "entitlement_id": ENTITLEMENT_STARTER_PACK},
+		"preview_color": Color(0.1, 0.92, 0.82, 1.0),
+		"sort_order": 70,
+		"is_default": false,
+		"default_unlocked": false,
+	},
+	{
 		"cosmetic_id": "trail_none",
 		"display_name": "None",
 		"category": CATEGORY_TRAIL,
@@ -140,6 +153,17 @@ const DEFINITIONS := [
 		"default_unlocked": false,
 	},
 	{
+		"cosmetic_id": "trail_supporter",
+		"display_name": "Supporter Trail",
+		"category": CATEGORY_TRAIL,
+		"description": "A restrained teal-gold ribbon for supporters.",
+		"unlock_requirement": {"type": REQUIREMENT_ENTITLEMENT, "entitlement_id": ENTITLEMENT_STARTER_PACK},
+		"preview_color": Color(0.18, 1.0, 0.78, 1.0),
+		"sort_order": 160,
+		"is_default": false,
+		"default_unlocked": false,
+	},
+	{
 		"cosmetic_id": "goal_classic",
 		"display_name": "Classic Flash",
 		"category": CATEGORY_GOAL_EFFECT,
@@ -172,6 +196,17 @@ const DEFINITIONS := [
 		"is_default": false,
 		"default_unlocked": false,
 	},
+	{
+		"cosmetic_id": "goal_supporter",
+		"display_name": "Supporter Burst",
+		"category": CATEGORY_GOAL_EFFECT,
+		"description": "A teal-and-gold celebration for Starter Pack owners.",
+		"unlock_requirement": {"type": REQUIREMENT_ENTITLEMENT, "entitlement_id": ENTITLEMENT_STARTER_PACK},
+		"preview_color": Color(0.12, 0.95, 0.72, 1.0),
+		"sort_order": 240,
+		"is_default": false,
+		"default_unlocked": false,
+	},
 ]
 
 const LEGACY_IDS := {
@@ -181,29 +216,35 @@ const LEGACY_IDS := {
 	"ice": "ball_ice",
 	"galaxy": "ball_galaxy",
 	"gold": "ball_gold",
+	"supporter": "ball_supporter",
 	"none": "trail_none",
 	"blue": "trail_blue",
 	"flame": "trail_flame",
 	"spark": "trail_spark",
 	"rainbow": "trail_rainbow",
+	"supporter_trail": "trail_supporter",
 	"flash": "goal_classic",
 	"confetti": "goal_confetti",
 	"shockwave": "goal_shockwave",
+	"supporter_goal": "goal_supporter",
 	"ball:classic": "ball_classic",
 	"ball:neon": "ball_neon",
 	"ball:fire": "ball_fire",
 	"ball:ice": "ball_ice",
 	"ball:galaxy": "ball_galaxy",
 	"ball:gold": "ball_gold",
+	"ball:supporter": "ball_supporter",
 	"trail:none": "trail_none",
 	"trail:blue": "trail_blue",
 	"trail:flame": "trail_flame",
 	"trail:spark": "trail_spark",
 	"trail:rainbow": "trail_rainbow",
+	"trail:supporter": "trail_supporter",
 	"goal_effect:classic": "goal_classic",
 	"goal_effect:flash": "goal_classic",
 	"goal_effect:confetti": "goal_confetti",
 	"goal_effect:shockwave": "goal_shockwave",
+	"goal_effect:supporter": "goal_supporter",
 }
 
 
@@ -328,6 +369,8 @@ static func get_unlock_requirement_text(cosmetic_id: String) -> String:
 		REQUIREMENT_TOTAL_STARS:
 			var stars := int(requirement.get("stars", 0))
 			return "Earn %d total stars" % stars
+		REQUIREMENT_ENTITLEMENT:
+			return "Own the Starter Pack"
 		_:
 			return "Unlock requirement unavailable"
 
@@ -344,6 +387,8 @@ static func is_requirement_met(cosmetic_id: String, completed_levels: Array, tot
 			return _array_contains_string(completed_levels, String(requirement.get("level_id", "")))
 		REQUIREMENT_TOTAL_STARS:
 			return total_stars >= int(requirement.get("stars", 0))
+		REQUIREMENT_ENTITLEMENT:
+			return false
 		_:
 			return false
 
@@ -411,6 +456,8 @@ static func _is_valid_requirement(requirement: Dictionary) -> bool:
 		REQUIREMENT_TOTAL_STARS:
 			var stars := int(requirement.get("stars", -1))
 			return stars > 0 and stars <= 30
+		REQUIREMENT_ENTITLEMENT:
+			return String(requirement.get("entitlement_id", "")) == ENTITLEMENT_STARTER_PACK
 		_:
 			return false
 

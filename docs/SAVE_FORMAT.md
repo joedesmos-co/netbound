@@ -11,7 +11,7 @@ Default save files:
 - Backup: `user://netbound_save.bak`
 - Corrupt diagnostic copy: `user://netbound_save.corrupt`
 
-No personal information, online account data, analytics identifiers, purchases, or ad data are stored.
+No personal information, online account data, analytics identifiers, cloud data, or real transaction receipts are stored. Phase 8 stores only local simulated product/entitlement state and future consent-readiness placeholders.
 
 ## Version
 
@@ -46,6 +46,34 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "reduced_motion_enabled": false,
     "camera_effects_intensity": 1.0,
     "developer_debug": false
+  },
+  "monetization": {
+    "entitlements": [],
+    "purchases": {
+      "netbound_remove_ads": {
+        "product_id": "netbound_remove_ads",
+        "owned": false,
+        "state": "not_purchased",
+        "provider": "",
+        "transaction_id": "",
+        "last_updated_unix": 0.0
+      },
+      "netbound_starter_pack": {
+        "product_id": "netbound_starter_pack",
+        "owned": false,
+        "state": "not_purchased",
+        "provider": "",
+        "transaction_id": "",
+        "last_updated_unix": 0.0
+      }
+    },
+    "config": {
+      "ads_enabled": true,
+      "purchases_enabled": true,
+      "child_directed_treatment": false,
+      "privacy_consent_status": "unknown",
+      "personalized_ads_allowed": false
+    }
   }
 }
 ```
@@ -60,12 +88,15 @@ The save service validates every loaded save:
 - Completed levels remain completed and are forced unlocked.
 - Completing a level unlocks its `next_level_id` when one exists.
 - Stars are clamped to `0..3`.
-- Fewest shots are clamped to the level shot limit.
+- Fewest shots are clamped to `shot_limit + 1` so a valid Phase 8 ad-continued completion can preserve its true one-extra-shot count.
 - `total_stars` is recalculated from `best_stars`.
 - Missing progression, cosmetic, or settings fields are filled with defaults.
 - Volumes are clamped to `0..1`.
 - Selected cosmetics fall back to defaults if they are not unlocked.
 - Cosmetic IDs are validated against `CosmeticRegistry`.
+- Invalid entitlements and products are ignored.
+- Owned products re-grant their matching entitlements during normalization.
+- Starter Pack entitlement re-grants supporter cosmetics during normalization.
 - Phase 4 legacy IDs such as `classic`, `ball:classic`, `trail:none`, and `goal_effect:classic` migrate into stable Phase 6 IDs.
 - Unknown top-level fields are preserved where practical.
 
@@ -75,8 +106,14 @@ Stars are calculated by `NetboundSaveService.calculate_stars_for_values()`:
 
 - `3` stars: completed with `shots_used <= par_shots`
 - `2` stars: completed with `shots_used == par_shots + 1`
-- `1` star: completed within the shot limit but worse than `par + 1`
+- `1` star: completed within the valid allowance but worse than `par + 1`
 - `0` stars: not completed or malformed result data
+
+Phase 8 rule:
+
+- If `LevelResult.rewarded_continue_used` is true, a completed run earns at most `1` star.
+- The run still records completion and can unlock the next level.
+- Best stars remain monotonic; a worse ad-continued replay cannot reduce a previous best.
 
 If `par_shots` exceeds `shot_limit`, the service clamps the effective par to the shot limit and records a diagnostic.
 
@@ -107,6 +144,7 @@ Important methods:
 - `get_best_stars(level_id)`
 - `get_fewest_shots(level_id)`
 - `get_total_stars()`
+- `get_completed_level_count()`
 - `record_level_result(level_result, level_definition)`
 - `mark_tutorial_complete(level_id)`
 - `is_tutorial_complete(level_id)`
@@ -125,6 +163,12 @@ Important methods:
 - `print_cosmetic_registry_validation()`
 - `get_setting_value(setting_name, default_value)`
 - `set_setting_value(setting_name, value)`
+- `has_entitlement(entitlement_id)`
+- `get_entitlements()`
+- `get_monetization_config()`
+- `is_product_owned(product_id)`
+- `record_purchase(product_id, transaction_id, provider_name)`
+- `restore_purchase(product_id, transaction_id)`
 
 `reset_to_defaults()` is a development/testing reset hook. It is not exposed as a normal player button in Phase 4.
 
@@ -209,3 +253,32 @@ Stable default IDs:
 - `goal_classic`
 
 Unlock evaluation is monotonic. Newly unlocked IDs are returned on `ProgressionUpdate.unlocked_cosmetic_ids` for the result screen, but existing unlocked cosmetics are not announced again.
+
+## Phase 8 Monetization Integration
+
+No save-version bump was required for Phase 8 because version `1` normalization already tolerates missing dictionaries and fills safe defaults. A Phase 7 save with no `monetization` block loads into the schema above.
+
+Stable product IDs:
+
+- `netbound_remove_ads`
+- `netbound_starter_pack`
+
+Stable entitlement IDs:
+
+- `entitlement_remove_ads`
+- `entitlement_starter_pack`
+
+Starter Pack content:
+
+- Remove Ads entitlement
+- `ball_supporter`
+- `trail_supporter`
+- `goal_supporter`
+
+Rules:
+
+- Entitlements are monotonic.
+- Purchase and restore calls save immediately.
+- Duplicate provider callbacks and repeated restores are idempotent.
+- Invalid saved selections fall back unless the matching supporter cosmetic is actually unlocked.
+- Monetization config fields are local placeholders for future real-SDK consent/platform work and do not collect data.

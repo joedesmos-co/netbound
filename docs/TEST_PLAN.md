@@ -540,6 +540,56 @@ Outcomes:
 - Visible Phase 7 app/menu/cosmetics smoke script passed.
 - `git diff --check` passed.
 
+## Phase 8 Verification Results
+
+Phase 8 adds simulated monetization architecture, local entitlements, rewarded continue, interstitial policy, Store UI, offline-provider behavior, and supporter cosmetics.
+
+New regression script:
+
+- `verify_phase8_monetization_external.gd`
+
+Coverage:
+
+- simulated ad and purchase providers initialize
+- unavailable providers block safely
+- duplicate rewarded requests are blocked
+- duplicate provider callbacks grant only once
+- Remove Ads and Starter Pack purchases persist
+- Starter Pack grants all supporter cosmetics
+- restore is idempotent
+- invalid entitlement data normalizes
+- Phase 7 saves without a `monetization` block load safely
+- rewarded continue grants exactly one shot after failure
+- rewarded continue is one use per attempt
+- ad-continued completion is capped at one star
+- interstitial policy requires completed-level thresholds and is disabled by Remove Ads
+- Store UI shows owned, unavailable, pending, and restore states
+- supporter cosmetics link from Cosmetics to Store
+- offline/unavailable providers do not block level play
+- all 10 production levels still start
+
+Commands run for Phase 8:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 3
+```
+
+Outcomes:
+
+- Phase 1 through Phase 8 regression scripts passed.
+- Configured app startup passed headlessly.
+- Visible configured app launch passed on `Metal 4.0 - Forward Mobile`.
+- Strict parser checks passed for touched production and test scripts.
+
 ## Trajectory Acceptance Targets
 
 Approximate peak height above field:
@@ -591,7 +641,7 @@ Still required on physical iOS/Android hardware:
 
 - touch feel and finger occlusion
 - safe-area behavior
-- haptic behavior after it exists
+- haptic behavior on physical iOS/Android devices
 - app pause/resume
 - device performance and thermal behavior
 

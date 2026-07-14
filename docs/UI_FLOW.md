@@ -7,10 +7,10 @@ Phase 5 introduces the production app shell at `res://app/netbound_app.tscn`.
 ```text
 Startup
 -> Main Menu
--> Play/Continue or Level Select
+-> Play/Continue, Level Select, Store, Settings, or Cosmetics
 -> Gameplay Level
 -> Success/Failure Result
--> Next Level, Retry, Level Select, or Main Menu
+-> Next Level, Rewarded Continue, Retry, Level Select, Store, or Main Menu
 ```
 
 `NetboundApp` owns navigation. It loads production levels by `LevelRegistry` ID and never guesses paths from strings.
@@ -21,13 +21,14 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 ### Main Menu
 
-- Shows the Netbound title, Play/Continue, Level Select, Cosmetics, Settings, and a subtle build label.
+- Shows the Netbound title, Play/Continue, Level Select, Cosmetics, Store, Settings, and a subtle build label.
 - Starts the lightweight menu music loop through `AudioService`.
 - Resolves Play/Continue from `SaveService`:
   - first unlocked incomplete level
   - highest unlocked level if unlocked levels are complete but later levels remain locked
   - Level Select when all 10 levels are complete
 - Cosmetics opens the Phase 6 cosmetic selection screen.
+- Store opens the Phase 8 simulated monetization screen.
 
 ### Level Select
 
@@ -61,11 +62,23 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 - Level completion is recorded by `SaveService` before the result overlay appears.
 - Success shows level name, run stars, shots used, par, total stars, best result comparison, and unlock messages.
+- If a rewarded continue was used, success states that the run is capped at one star.
 - Newly unlocked cosmetics from the actual progression update appear in a compact unlock section.
 - Result labels/buttons reveal with a short stagger unless Reduced Motion is enabled.
 - Next Level is enabled only if a valid registered next level is unlocked.
 - Level 10 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
+- Failure may offer “Watch Ad for 1 Extra Shot” when the simulated ad provider is available, the player has no shots remaining, and no rewarded continue has been used for the current attempt.
+- Rewarded continue is optional, grants exactly one shot after a completed provider callback, returns to READY, and never blocks Retry/Level Select/Main Menu.
+
+### Store
+
+- Store is reachable from Main Menu and from locked supporter cosmetics in the Cosmetics screen.
+- Store shows Remove Ads, Starter Pack, Restore Purchases, owned states, unavailable states, pending state, and concise status feedback.
+- Store uses simulated providers only in Phase 8 and labels the build accordingly.
+- Remove Ads disables interstitials but keeps voluntary rewarded continues available.
+- Starter Pack includes Remove Ads plus Supporter Ball, Supporter Trail, and Supporter Goal Effect.
+- Purchase/restore failures return control immediately and do not corrupt save data.
 
 ### Cosmetics
 
@@ -73,6 +86,7 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 - The large preview uses a dedicated lightweight `SubViewport`; it does not load a production level.
 - Item cards can always be previewed.
 - Locked item cards show their gameplay requirement and cannot be equipped.
+- Supporter cosmetics show the Starter Pack requirement and can open Store while locked.
 - Previewing a locked item does not mutate save data.
 - Unlocked items can be equipped with the Equip button and save immediately.
 - One selected cosmetic is stored per category.
@@ -82,7 +96,7 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 - Main Menu: Back/Escape does nothing.
 - Level Select: Back/Escape returns to Main Menu.
-- Settings or Cosmetics: Back/Escape returns to the previous menu or pause overlay.
+- Settings, Cosmetics, or Store: Back/Escape returns to the previous menu or pause overlay.
 - Gameplay: Back/Escape opens Pause.
 - Pause: Back/Escape resumes gameplay.
 - Result Screen: Back/Escape returns to Level Select.
@@ -102,4 +116,4 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 - Buttons and level cards use touch-sized minimums.
 - Level Select adjusts grid columns based on viewport width.
 - Cosmetics uses touch-sized tabs, scrollable item cards, and a separate Equip button to avoid accidental selection while scrolling.
-- Physical iOS/Android safe-area validation is still required in Phase 8.
+- Physical iOS/Android safe-area validation is still required in mobile hardening/release work.
