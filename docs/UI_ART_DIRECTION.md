@@ -148,6 +148,7 @@ Rules:
 - `signal` is the primary action accent; `coral` is reserved for impact and directional emphasis.
 - `success`, `failure`, and `curve` communicate specific state; they are not general decoration.
 - Gameplay cosmetics may retain their authored colors inside previews and play, but shell chrome stays neutral.
+- Goal frames remain normal sports-goal white in gameplay and previews. Celebration color appears around the goal and never replaces its familiar white silhouette.
 - Panels use flat colors. Gradients are not part of the shell system.
 
 ## Vertical Slice Review
@@ -287,6 +288,87 @@ Motion must never own navigation state, alter gameplay timing, or leave controls
 - Store uses two honest product blocks with restrained action hierarchy.
 - Settings is grouped into Audio and Play Feel, using compact rows and no promotional decoration.
 
+## Secondary Screen Review
+
+The first secondary pass covered Pause, Failure, Cosmetics, Store, Settings, and Level 10 completion. Each was captured before propagation, critiqued, and refined.
+
+### Pause
+
+Weakest first-pass decisions:
+
+- the centered modal disconnected Pause from the playfield;
+- five equal actions obscured Resume;
+- the overlay felt like a separate utility app.
+
+Resolution: a compact navy gameplay-edge rail keeps the field visible, gives Resume one yellow slab, keeps Restart secondary, and treats navigation as quiet utility actions.
+
+### Failure
+
+Weakest first-pass decisions:
+
+- “Out of Shots” carried more weight than the emotional recovery action;
+- rewarded continue, Retry, and navigation competed equally;
+- empty modal space had no relationship to Netbound.
+
+Resolution: the cream result rail leads with `SO CLOSE!`, makes Retry dominant, outlines the optional rewarded continue, and uses one low-contrast trajectory/target motif.
+
+### The Locker
+
+Weakest first-pass decisions:
+
+- the screen behaved like a dense inventory dashboard;
+- multiline catalog buttons repeated requirements and descriptions;
+- the live preview was too small to be enjoyable.
+
+Resolution: a large dedicated preview stage, a focused cream detail rail, three clear category tabs, and a horizontal strip of cut-corner cosmetic markers. Locked requirements live in the focused detail view. Long names fit dynamically. Goal-effect previews use twelve bounded reusable pieces and one reusable ring; no transient gameplay effect nodes are spawned in the preview. The goal itself remains white.
+
+### Store And Settings
+
+Weakest first-pass decisions:
+
+- products read as database rows;
+- simulated-development status was easy to miss;
+- Settings had long ungrouped rows and default Godot control emphasis.
+
+Resolution: Store uses two factual offer blocks and a persistent development-status band without urgency or casino language. Settings uses two compact paper groups for Audio and Play Feel with immediate controls and restrained chrome.
+
+Review captures:
+
+- `docs/ui_art_direction/secondary_review/pause_pre_redesign_1280x720.png`
+- `docs/ui_art_direction/secondary_review/pause_v2_1280x720.png`
+- `docs/ui_art_direction/secondary_review/failure_pre_redesign_1280x720.png`
+- `docs/ui_art_direction/secondary_review/failure_v2_1280x720.png`
+- `docs/ui_art_direction/secondary_review/cosmetics_all_pre_redesign_1280x720.png`
+- `docs/ui_art_direction/secondary_review/cosmetics_balls_all_synced_1280x720.png`
+- `docs/ui_art_direction/secondary_review/store_pre_redesign_1280x720.png`
+- `docs/ui_art_direction/secondary_review/store_v2_1280x720.png`
+- `docs/ui_art_direction/secondary_review/settings_pre_redesign_1280x720.png`
+- `docs/ui_art_direction/secondary_review/settings_v3_synced_1280x720.png`
+
+## Production Captures
+
+Canonical after-state captures use the production `1280x720` design canvas:
+
+- `docs/ui_art_direction/final/main_menu_partial_1280x720.png`
+- `docs/ui_art_direction/final/level_select_partial_1280x720.png`
+- `docs/ui_art_direction/final/gameplay_level_01_fresh_1280x720.png`
+- `docs/ui_art_direction/final/pause_fresh_1280x720.png`
+- `docs/ui_art_direction/final/success_fresh_1280x720.png`
+- `docs/ui_art_direction/final/success_cosmetic_unlock_fresh_1280x720.png`
+- `docs/ui_art_direction/final/failure_fresh_1280x720.png`
+- `docs/ui_art_direction/final/cosmetics_balls_fresh_1280x720.png`
+- `docs/ui_art_direction/final/cosmetics_ball_gold_all_1280x720.png`
+- `docs/ui_art_direction/final/cosmetics_trail_rainbow_all_1280x720.png`
+- `docs/ui_art_direction/final/cosmetics_goal_confetti_all_1280x720.png`
+- `docs/ui_art_direction/final/store_fresh_1280x720.png`
+- `docs/ui_art_direction/final/store_owned_all_1280x720.png`
+- `docs/ui_art_direction/final/store_pending_all_1280x720.png`
+- `docs/ui_art_direction/final/store_unavailable_all_1280x720.png`
+- `docs/ui_art_direction/final/settings_fresh_1280x720.png`
+- `docs/ui_art_direction/final/level_10_result_all_1280x720.png`
+
+The capture harness uses an isolated save, explicit fresh/partial/complete fixtures, and a bounded retry for macOS GPU readback tiles. Compatibility rendering is used only for deterministic audit PNG generation; production Forward Mobile is launched and tested separately.
+
 ## Responsive Behavior
 
 - The system is container-driven and uses the existing safe-area service.
@@ -304,6 +386,28 @@ Target visual checks:
 - `2340x1080`
 - `1024x768`
 - `1366x1024`
+
+Exact native-canvas stress captures are stored under `docs/ui_art_direction/responsive/` with a `_native` suffix. They deliberately bypass density scaling to expose container overflow and overlap. Production-scale captures and Phase 9 safe-area tests remain the source of truth for actual device sizing.
+
+Visible outcomes:
+
+- All ten route markers remain readable at `1024x768` without clipping.
+- Main Menu actions remain distinct at narrow, wide, and 4:3 ratios.
+- The Locker keeps its preview/detail hierarchy at `1024x768`; the catalog remains horizontally scrollable.
+- Settings keeps both groups on screen at `1024x768`.
+- Pause and Results retain the playfield at `1366x1024`.
+- Ultra-wide stress layouts retain hierarchy and do not overlap; production density scaling prevents their intentionally raw fixed-pixel typography from appearing undersized on device.
+
+## Reusable UI Pieces
+
+- `NetboundUITheme`: centralized palette, fonts, spacing, label roles, control states, and panel styles.
+- `NetboundWordmark`: procedural title, target-ball `O`, and strike arc.
+- `NetboundLevelRoute`: route/field geometry behind level markers.
+- `NetboundLevelMarker`: cut-corner level state with number, mechanic, stars, par, best, and lock state.
+- `NetboundStarDisplay`: geometry-based stars for results and level state.
+- `NetboundResultMotif`: low-contrast route/target mark used only where it supports result identity.
+- `NetboundCosmeticChoiceButton`: compact browse marker with dynamic long-name fitting.
+- `NetboundMenuBackdrop`: sky/field/trajectory compositions for primary and secondary screens.
 
 ## Rejected Ideas
 
@@ -326,3 +430,25 @@ Every retained visual must answer at least one question:
 - Does it improve mobile readability or touch confidence?
 
 Elements that cannot answer one of those questions are removed.
+
+## Final Verification
+
+Final local audit outcome:
+
+- Godot 4.7 headless import and configured startup: passed with no matched errors or warnings.
+- Strict GDScript parser sweep: `61/61` passed.
+- Production level startup: `10/10` passed.
+- Phase 1-9, UI art-direction, and final release-candidate behavioral suites: `11/11` passed together.
+- Forward Mobile visible launch: configured app, Level 01, and Level 10 passed on Apple M4 Metal.
+- Responsive native-canvas captures: all six required dimensions rendered at their exact requested pixel sizes.
+- Android debug APK export: passed, 28 MB, SHA-256 `5cf07dffa147096f43d9a9976b88e458ccfdbb73e3e7cf258e12ed1cb35e8e19`.
+- Android debug AAB export from an isolated temporary template project: passed, 28 MB, SHA-256 `7936f0e5850195288b5cd0b5773f885395b3b7d685621bab43289f8203deca5d`.
+- `git diff --check`: passed.
+
+Local artifacts are under `/tmp/netbound-ui-redesign-exports/` and are intentionally not committed.
+
+Remaining visual limitations:
+
+- Liberation Sans is a legally safe, competent bundled family but a future custom wordmark/font pass could add more proprietary character.
+- Procedural clouds, field lines, and goal previews intentionally favor clarity and low asset cost over richly illustrated scenery.
+- Native iOS/Android font rasterization, OLED/LCD color response, cutout safe areas, and touch-scroll feel still require physical-device review.

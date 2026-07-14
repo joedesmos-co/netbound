@@ -207,6 +207,24 @@ The current environment can run headless import, parser, startup, and scripted c
 - App suspend/resume.
 - Device-specific aspect ratios.
 
+## UI Art Direction
+
+Locally verified:
+
+- Trajectory Playground theme is shared across Main Menu, Level Select, gameplay HUD, Pause, Results, Locker, Store, and Settings.
+- Normal goals remain white in gameplay and the Locker preview.
+- Six exact native-canvas aspect-ratio stress states show no control overlap or route-marker clipping.
+- Reduced Motion remains wired to the existing transition path.
+- Store owned, unavailable, and pending states remain factual and readable.
+
+Physical-device visual checks still required:
+
+- confirm typography weight and cream/yellow contrast on representative OLED and LCD screens;
+- confirm safe-area breathing room around the Main Menu rail, Back actions, Pause, and result rails;
+- confirm the horizontal Locker catalog cannot equip accidentally during a touch scroll;
+- confirm target/trajectory decoration stays clear of camera cutouts on very wide phones;
+- confirm the white goal remains distinct under Levels 07-10 lighting and low-quality presentation settings.
+
 ## Local Build Status
 
 Final RC local build status is documented in `docs/LOCAL_BUILD_STATUS.md`.

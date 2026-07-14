@@ -740,3 +740,30 @@ Run the focused integration check with:
 ```
 
 The physical-device items in the manual checklist remain mandatory and are not implied by these local results.
+
+## Production UI Art-Direction Verification - July 14, 2026
+
+Focused design-invariant check:
+
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_ui_art_direction_external.gd
+```
+
+Coverage:
+
+- shared theme tokens and bundled display/body fonts resolve;
+- Main Menu and the ten-marker trajectory Level Select build through production navigation;
+- Locker, Store, and Settings retain their real save/monetization bindings;
+- the goal-effect preview keeps the goal material white;
+- preview celebration geometry is bounded to 12 reusable pieces and one reusable ring;
+- all ten level markers remain within the viewport and preserve minimum touch size at `1280x720`, `1600x720`, `1920x864`, `2340x1080`, `1024x768`, and `1366x1024`.
+
+Visible audit assets:
+
+- canonical production-canvas captures: `docs/ui_art_direction/final/`
+- exact native-canvas responsive stress captures: `docs/ui_art_direction/responsive/`
+- initial and iterative review captures: `docs/ui_art_direction/before/`, `vertical_slice/`, and `secondary_review/`
+
+The audit capture script uses isolated save paths and fixture states. It is external-only and is never connected to a production scene.

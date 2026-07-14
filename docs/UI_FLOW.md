@@ -15,7 +15,7 @@ Startup
 
 `NetboundApp` owns navigation. It loads production levels by `LevelRegistry` ID and never guesses paths from strings.
 
-Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overlays fade/scale in, buttons give a small press response, and result contents reveal quickly. Reduced Motion skips these tweens, and animations do not block input or own navigation decisions.
+Phase 7 adds lightweight motion to this flow. The production UI art-direction pass applies the shared Trajectory Playground system through `NetboundUITheme`, route/target components, and edge-aligned gameplay overlays. Reduced Motion skips directional/scale tweens, and animations do not block input or own navigation decisions.
 
 ## Screen Responsibilities
 
@@ -32,10 +32,11 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 ### Level Select
 
-- Builds exactly 10 cards from `LevelRegistry`.
+- Builds exactly 10 connected route markers from `LevelRegistry`.
 - Reads unlocks, completion, stars, fewest shots, and total stars from `SaveService`.
-- Locked cards are disabled and display the unlock requirement.
-- Unlocked cards load the registered production scene.
+- Locked markers are disabled and use a geometric lock state.
+- The current marker uses signal yellow; complete markers use warm paper/success accents.
+- Unlocked markers load the registered production scene.
 
 ### Gameplay
 
@@ -71,6 +72,7 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 - Failure shows Out of Shots and does not mutate progression.
 - Failure may offer “Watch Ad for 1 Extra Shot” when the simulated ad provider is available, the player has no shots remaining, and no rewarded continue has been used for the current attempt.
 - Rewarded continue is optional, grants exactly one shot after a completed provider callback, returns to READY, and never blocks Retry/Level Select/Main Menu.
+- Success and failure use right-edge score rails so gameplay context remains visible.
 
 ### Store
 
@@ -86,12 +88,14 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 
 - Category tabs switch between Balls, Trails, and Goal Effects.
 - The large preview uses a dedicated lightweight `SubViewport`; it does not load a production level.
-- Item cards can always be previewed.
-- Locked item cards show their gameplay requirement and cannot be equipped.
+- Compact cut-corner item markers can always be previewed.
+- The large focused detail panel shows description, unlock requirement, and Equip state without repeating that copy in every catalog item.
+- Locked items cannot be equipped.
 - Supporter cosmetics show the Starter Pack requirement and can open Store while locked.
 - Previewing a locked item does not mutate save data.
 - Unlocked items can be equipped with the Equip button and save immediately.
 - One selected cosmetic is stored per category.
+- The preview goal remains white for every goal-effect selection; celebration color is visual-only and appears around it.
 - Back returns to the previous menu or pause overlay.
 
 ## Back And Escape
@@ -118,7 +122,8 @@ Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overla
 - Main Menu, Level Select, Settings, Cosmetics, Store, Pause, Results, and Gameplay HUD now read safe-area margins from `MobileRuntimeService`.
 - The fallback safe margin is `28px`; device safe-area values are used when available.
 - Buttons and level cards use touch-sized minimums.
-- Level Select adjusts grid columns based on viewport width.
-- Cosmetics uses touch-sized tabs, scrollable item cards, and a separate Equip button to avoid accidental selection while scrolling.
+- Level Select uses a connected route that reflows from two rows to additional rows on narrower safe areas.
+- Cosmetics uses touch-sized tabs, a horizontal scroll strip, and a separate Equip button to avoid accidental selection while scrolling.
 - Automated Phase 9 checks cover representative landscape phone/tablet aspect ratios with simulated safe-area margins.
+- Native-canvas visual stress captures cover `1280x720`, `1600x720`, `1920x864`, `2340x1080`, `1024x768`, and `1366x1024`; production scaling and safe areas are verified separately.
 - Physical iOS/Android safe-area validation is still required before release submission.

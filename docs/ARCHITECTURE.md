@@ -651,7 +651,19 @@ Current gameplay UI includes:
 - Temporary win/fail panels for direct-scene regression runs.
 - Swipe overlay.
 
-Production app UI now includes Main Menu, Level Select, basic Settings, an honest Cosmetics placeholder, Pause, and Success/Failure results. See `docs/UI_FLOW.md`.
+Production app UI includes Main Menu, trajectory-route Level Select, compact gameplay HUD, Pause, Success/Failure results, the live-preview Locker, restrained Store, and grouped Settings. `NetboundApp` retains navigation ownership while `NetboundUITheme` and focused custom Controls own the reusable visual language. See `docs/UI_FLOW.md` and `docs/UI_ART_DIRECTION.md`.
+
+UI art-direction components:
+
+- `res://scripts/ui/netbound_ui_theme.gd`: centralized fonts, color/spacing tokens, state styles, and panel roles.
+- `res://scripts/ui/wordmark.gd`: procedural Netbound wordmark and strike/target treatment.
+- `res://scripts/ui/level_route.gd` and `level_marker.gd`: connected level progression presentation.
+- `res://scripts/ui/star_display.gd` and `result_motif.gd`: glyph-independent stars and restrained result identity.
+- `res://scripts/ui/cosmetic_choice_button.gd`: bounded horizontal Locker marker with responsive label sizing.
+- `res://scripts/ui/menu_backdrop.gd`: primary and secondary sky/field trajectory backdrops.
+- `res://scripts/debug/capture_ui_audit_external.gd`: isolated-fixture production screen capture and native-canvas responsive stress utility; it is not connected to production scenes.
+
+The visual system does not own navigation, save state, progression, monetization, shooting, collision, or scoring. Goal frames remain white; cosmetic and shared goal celebrations render around the frame without changing geometry or gameplay materials.
 
 ## Camera Behavior
 

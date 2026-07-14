@@ -736,7 +736,7 @@ func _show_cosmetics_internal() -> void:
 
 	var preview_panel := PanelContainer.new()
 	preview_panel.theme_type_variation = "PreviewStage"
-	preview_panel.custom_minimum_size = Vector2(560.0, 290.0)
+	preview_panel.custom_minimum_size = Vector2(480.0, 290.0)
 	preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	showcase.add_child(preview_panel)
@@ -753,7 +753,7 @@ func _show_cosmetics_internal() -> void:
 
 	var detail_panel := PanelContainer.new()
 	detail_panel.theme_type_variation = "LockerDetailPanel"
-	detail_panel.custom_minimum_size = Vector2(380.0, 0.0)
+	detail_panel.custom_minimum_size = Vector2(340.0, 0.0)
 	detail_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	showcase.add_child(detail_panel)
 	var detail_margin := MarginContainer.new()
@@ -953,11 +953,17 @@ func _show_store_internal() -> void:
 	screen.add_child(_new_flat_backdrop())
 	var margin := _new_margin_container()
 	screen.add_child(margin)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(scroll)
 
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	margin.add_child(outer)
+	scroll.add_child(outer)
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
@@ -1972,7 +1978,7 @@ func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: Str
 
 	var label := Label.new()
 	label.text = title
-	label.custom_minimum_size = Vector2(150.0, 48.0)
+	label.custom_minimum_size = Vector2(124.0, 48.0)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.theme_type_variation = "LightBodyLabel"
 	row.add_child(label)
@@ -1982,7 +1988,7 @@ func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: Str
 	slider.max_value = 1.0
 	slider.step = 0.01
 	slider.value = float(_get_save_service().get_setting_value(setting_name, 1.0))
-	slider.custom_minimum_size = Vector2(280.0, 48.0)
+	slider.custom_minimum_size = Vector2(140.0, 48.0)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(slider)
 
@@ -2015,13 +2021,13 @@ func _add_quality_setting(parent: VBoxContainer) -> void:
 
 	var label := Label.new()
 	label.text = "Quality"
-	label.custom_minimum_size = Vector2(150.0, 48.0)
+	label.custom_minimum_size = Vector2(124.0, 48.0)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.theme_type_variation = "LightBodyLabel"
 	row.add_child(label)
 
 	var option := OptionButton.new()
-	option.custom_minimum_size = Vector2(280.0, 52.0)
+	option.custom_minimum_size = Vector2(160.0, 52.0)
 	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var values := ["auto", "low", "medium", "high"]
 	var display_names := ["Auto", "Low", "Medium", "High"]
