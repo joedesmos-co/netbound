@@ -1,3 +1,10 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Local export artifacts
+/build/
+/builds/
+*.apk
+*.aab
+*.ipa
