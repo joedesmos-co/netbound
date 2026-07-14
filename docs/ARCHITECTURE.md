@@ -119,6 +119,33 @@ New Phase 3 content coverage:
 
 The configured main scene remains `res://levels/level_01.tscn`. Progression, menus, saves, stars UI, cosmetics, and level selection are still future phases.
 
+## Phase 4 Offline Progression Update
+
+Phase 4 adds versioned local progression without adding menus, online systems, monetization, or final result UI.
+
+New systems:
+
+- Autoload `SaveService` (`res://scripts/services/save_service.gd`), class `NetboundSaveService`.
+- `ProgressionUpdate` result object for future Phase 5 result screens.
+- `LevelRegistry` (`res://scripts/levels/level_registry.gd`) with explicit production level IDs, scene paths, and definition paths.
+- Save-format documentation in `docs/SAVE_FORMAT.md`.
+
+Save ownership:
+
+- All file IO is centralized in `SaveService`.
+- Default path is `user://netbound_save.json`.
+- Writes go through `user://netbound_save.tmp` and preserve `user://netbound_save.bak` where practical.
+- Malformed JSON is preserved as `user://netbound_save.corrupt` before defaults are recreated.
+
+Progression flow:
+
+1. `level_controller.gd` creates a completed `LevelResult` on goal only.
+2. The controller calls `/root/SaveService.record_level_result()`.
+3. `SaveService` calculates stars, preserves best-ever stars/fewest shots, marks completion, unlocks the next level, saves immediately, and emits `progression_changed(update)`.
+4. Failure, Retry, manual Reset Ball, and auto-reset do not call the save service.
+
+The Autoload disables recording during `--script` debug runs by default to avoid mutating normal user progress. Phase 4 tests opt into recording with isolated save paths.
+
 Proof scene:
 
 - `res://levels/debug/level_architecture_test.tscn`
@@ -261,7 +288,7 @@ Typed `Resource` for per-level metadata and runtime setup values: ID, display na
 
 ### `levels/level_result.gd`
 
-Typed `Resource` for current-run completion data. Phase 2 records completion/failure, shots used, shot limit, par shots, and level ID. Persistence and star ratings are left for later phases.
+Typed `Resource` for current-run completion data. Phase 4 records completion/failure, shots used, shots remaining, shot limit, par shots, result state, and level ID. Persistence and star ratings are handled by `SaveService`.
 
 ### `components/goal_target.gd`
 

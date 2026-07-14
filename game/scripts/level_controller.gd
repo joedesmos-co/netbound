@@ -48,6 +48,7 @@ var state_generation: int = 0
 var level_reset_generation: int = 0
 var goal_targets: Array[GoalTarget] = []
 var last_level_result: LevelResult
+var last_progression_update: RefCounted
 
 
 func _ready() -> void:
@@ -210,6 +211,7 @@ func _restart_level() -> void:
 	shot_manually_reset = false
 	level_state = LevelState.AUTO_RESETTING
 	last_level_result = null
+	last_progression_update = null
 	active_shot_id = 0
 	shots_remaining = max_shots
 	shots_used = 0
@@ -245,7 +247,8 @@ func _on_goal_scored() -> void:
 
 	_cancel_shot_callbacks()
 	level_state = LevelState.GOAL
-	last_level_result = LevelResult.completed_result(level_definition, shots_used)
+	last_level_result = LevelResult.completed_result(level_definition, shots_used, shots_remaining)
+	last_progression_update = _record_progression_result(last_level_result)
 	_clear_active_curve()
 	ball.freeze = true
 	_show_goal_feedback()
@@ -270,7 +273,7 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 		_schedule_auto_reset(shot_id)
 	else:
 		level_state = LevelState.FAILED
-		last_level_result = LevelResult.failed_result(level_definition, shots_used)
+		last_level_result = LevelResult.failed_result(level_definition, shots_used, shots_remaining)
 		fail_panel.visible = true
 
 	_update_level_ui()
@@ -378,6 +381,13 @@ func _setup_goal_targets() -> void:
 
 func _on_goal_target_scored(_target: GoalTarget) -> void:
 	_on_goal_scored()
+
+
+func _record_progression_result(level_result: LevelResult) -> RefCounted:
+	var service := get_node_or_null("/root/SaveService")
+	if service and service.has_method("record_level_result"):
+		return service.call("record_level_result", level_result, level_definition) as RefCounted
+	return null
 
 
 func _set_goal_state_name(state_name: String) -> void:

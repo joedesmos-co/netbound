@@ -75,6 +75,7 @@ Phase 0 caveat: these scripts were not all production-path tests. Several called
 - `verify_phase1_shooting_external.gd`
 - `verify_phase2_level_architecture_external.gd`
 - `verify_phase3_levels_external.gd`
+- `verify_phase4_progression_external.gd`
 - `verify_release_path_external.gd`
 - `verify_release_shot_external.gd`
 - `verify_reset_external.gd`
@@ -320,6 +321,53 @@ Scripted Phase 3 routes:
 | 10 | `(-4, -305)` | `-4` | `0.5` |
 
 Phase 3 also updates `verify_goal_detection_external.gd` with off-center goal scoring coverage.
+
+## Phase 4 Verification Results
+
+Phase 4 adds offline progression, star ratings, an explicit level registry, and versioned local save data.
+
+Command:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless \
+  --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_phase4_progression_external.gd
+```
+
+Outcome: passed.
+
+`verify_phase4_progression_external.gd` covers:
+
+- missing save creates defaults
+- Level 01 unlocked and Levels 02-10 locked by default
+- zero default stars
+- default cosmetic/settings placeholders
+- exactly 10 registered production levels
+- unique, sequential registry IDs
+- valid scene and definition paths
+- star boundaries for par, par + 1, worse completion, failure, and malformed par/shot-limit data
+- completing Level 01 unlocks Level 02
+- completing Level 10 does not invent a next level
+- completion is monotonic
+- best stars never decrease
+- fewest shots never worsen
+- total stars sums best stars
+- failure does not modify progression
+- locked level completion does not modify progression
+- save/load round trip
+- settings, cosmetic, and tutorial round trips
+- malformed JSON recovery with corrupt-file preservation
+- missing/malformed field normalization
+- invalid stars and volumes clamping
+- invalid selected cosmetic fallback
+- unknown level IDs ignored
+- Level 01 forced unlocked
+- temp-file atomic write path and backup preservation
+- simulated write failure leaves a reloadable primary save
+- real Level 01 completion records progression through the production controller and Autoload
+
+Phase 4 tests use isolated `user://phase4_*` save paths so development progress is not destroyed.
 
 ## Trajectory Acceptance Targets
 

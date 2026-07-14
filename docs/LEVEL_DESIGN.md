@@ -121,8 +121,15 @@ The Phase 3 regression suite uses production mouse-swipe input, not teleports or
 - Retry must reset moving object phases consistently.
 - Do not use copyrighted external assets.
 
+## Star Rating Notes
+
+- Phase 4 uses each `LevelDefinition.par_shots` and `shot_limit` for saved star ratings.
+- `3` stars: complete at or under par.
+- `2` stars: complete in exactly `par + 1`.
+- `1` star: complete within the shot limit after `par + 1`.
+- Replays preserve best-ever stars and fewest shots.
+
 ## Future Phase Notes
 
-- Star ratings, progression, menu navigation, and save data remain future phases.
-- Initial star targets are represented only by `par_shots` in `LevelDefinition`.
+- Menu navigation, level selection UI, and save-driven result screens remain future phases.
 - Cosmetic unlocks and level selection must read these definitions later; levels themselves do not implement progression.
