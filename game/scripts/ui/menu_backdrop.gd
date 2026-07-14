@@ -25,6 +25,8 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), NetboundUITheme.SKY, true)
 	if variant == "route":
 		_draw_route_field(size)
+	elif variant == "secondary":
+		_draw_secondary_field(size)
 	else:
 		_draw_menu_field(size)
 
@@ -96,6 +98,29 @@ func _draw_route_field(size: Vector2) -> void:
 	var target := Vector2(size.x * 0.87, size.y * 0.23)
 	draw_arc(target, 54.0, 0.0, TAU, 32, Color(NetboundUITheme.CORAL, 0.72), 7.0, true)
 	draw_arc(target, 24.0, 0.0, TAU, 24, Color(NetboundUITheme.CHALK, 0.8), 4.0, true)
+
+
+func _draw_secondary_field(size: Vector2) -> void:
+	draw_rect(Rect2(Vector2.ZERO, size), NetboundUITheme.SKY, true)
+	var field_top := size.y * 0.44
+	draw_rect(
+		Rect2(Vector2(0.0, field_top), Vector2(size.x, size.y - field_top)),
+		NetboundUITheme.GRASS,
+		true
+	)
+	for index in 5:
+		var x := lerpf(size.x * 0.04, size.x * 0.96, float(index) / 4.0)
+		draw_line(
+			Vector2(size.x * 0.5, field_top),
+			Vector2(x, size.y),
+			Color(NetboundUITheme.CHALK, 0.22),
+			3.0,
+			true
+		)
+	var target := Vector2(size.x * 0.86, size.y * 0.22)
+	draw_arc(target, 72.0, 0.0, TAU, 36, Color(NetboundUITheme.CORAL, 0.52), 9.0, true)
+	draw_arc(target, 30.0, 0.0, TAU, 28, Color(NetboundUITheme.CHALK, 0.84), 5.0, true)
+	_draw_cloud(Vector2(size.x * 0.13, size.y * 0.16), size.y * 0.045)
 
 
 func _draw_cloud(center: Vector2, radius: float) -> void:

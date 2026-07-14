@@ -10,6 +10,7 @@ const LevelMarkerScript := preload("res://scripts/ui/level_marker.gd")
 const LevelRouteScript := preload("res://scripts/ui/level_route.gd")
 const StarDisplayScript := preload("res://scripts/ui/star_display.gd")
 const ResultMotifScript := preload("res://scripts/ui/result_motif.gd")
+const CosmeticChoiceButtonScript := preload("res://scripts/ui/cosmetic_choice_button.gd")
 
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
@@ -58,7 +59,7 @@ var current_cosmetic_category: String = CosmeticRegistryScript.CATEGORY_BALL
 var previewed_cosmetic_id: String = "ball_classic"
 var cosmetic_category_buttons: Dictionary = {}
 var cosmetic_card_buttons: Dictionary = {}
-var cosmetic_items_box: VBoxContainer
+var cosmetic_items_box: HBoxContainer
 var cosmetic_preview
 var cosmetic_name_label: Label
 var cosmetic_description_label: Label
@@ -523,7 +524,7 @@ func _show_level_select_internal() -> void:
 	outer.add_child(header)
 
 	var back_button := _new_small_button("BACK")
-	back_button.theme_type_variation = "QuietButton"
+	back_button.theme_type_variation = "LightQuietButton"
 	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(show_main_menu)
 	header.add_child(back_button)
@@ -593,38 +594,77 @@ func _show_settings_internal() -> void:
 	settings_widgets.clear()
 
 	var screen := _new_screen("Settings")
+	screen.theme = NetboundUITheme.get_theme()
 	screen.add_child(_new_flat_backdrop())
 	var margin := _new_margin_container()
 	screen.add_child(margin)
 
 	var outer := VBoxContainer.new()
-	outer.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_theme_constant_override("separation", 14)
+	outer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	margin.add_child(outer)
 
-	var title := Label.new()
-	title.text = "Settings"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	outer.add_child(title)
-
-	_add_volume_setting(outer, "Master Volume", "master_volume")
-	_add_volume_setting(outer, "Music Volume", "music_volume")
-	_add_volume_setting(outer, "SFX Volume", "sfx_volume")
-	_add_toggle_setting(outer, "Haptics", "haptics_enabled")
-	_add_toggle_setting(outer, "Reduced Motion", "reduced_motion_enabled")
-	_add_volume_setting(outer, "Camera Effects", "camera_effects_intensity")
-	_add_quality_setting(outer)
-	if _development_controls_allowed():
-		_add_toggle_setting(outer, "Developer Debug", "developer_debug")
-
-	var back_button := _new_menu_button("Back", true)
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+	outer.add_child(header)
+	var back_button := _new_small_button("BACK")
+	back_button.theme_type_variation = "LightQuietButton"
+	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(_return_from_submenu)
-	outer.add_child(back_button)
+	header.add_child(back_button)
+	var title_stack := VBoxContainer.new()
+	title_stack.add_theme_constant_override("separation", 0)
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_stack)
+	var title := Label.new()
+	title.text = "SETTINGS"
+	title.theme_type_variation = "ScreenTitle"
+	title_stack.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "AUDIO  /  PLAY FEEL  /  DISPLAY"
+	subtitle.theme_type_variation = "LightMetaLabel"
+	title_stack.add_child(subtitle)
+
+	var groups := HBoxContainer.new()
+	groups.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+	groups.custom_minimum_size = Vector2(0.0, 380.0)
+	groups.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	outer.add_child(groups)
+	var audio_box := _new_settings_group(groups, "AUDIO", false)
+	_add_volume_setting(audio_box, "Master Volume", "master_volume")
+	_add_volume_setting(audio_box, "Music Volume", "music_volume")
+	_add_volume_setting(audio_box, "SFX Volume", "sfx_volume")
+
+	var play_box := _new_settings_group(groups, "PLAY FEEL", true)
+	_add_toggle_setting(play_box, "Haptics", "haptics_enabled")
+	_add_toggle_setting(play_box, "Reduced Motion", "reduced_motion_enabled")
+	_add_volume_setting(play_box, "Camera Effects", "camera_effects_intensity")
+	_add_quality_setting(play_box)
+	if _development_controls_allowed():
+		_add_toggle_setting(play_box, "Developer Debug", "developer_debug")
 
 	screen_root.add_child(screen)
 	_refresh_settings_labels()
 	_animate_screen_entrance(screen)
+
+
+func _new_settings_group(parent: HBoxContainer, title_text: String, accented: bool) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = "SettingsAccentPanel" if accented else "SettingsPanel"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(panel)
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_6)
+	panel.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	margin.add_child(box)
+	var title := Label.new()
+	title.text = title_text
+	title.theme_type_variation = "LightSectionLabel"
+	box.add_child(title)
+	return box
 
 
 func _show_cosmetics_internal() -> void:
@@ -636,117 +676,137 @@ func _show_cosmetics_internal() -> void:
 	cosmetic_card_buttons.clear()
 
 	var screen := _new_screen("Cosmetics")
+	screen.theme = NetboundUITheme.get_theme()
 	screen.add_child(_new_flat_backdrop())
 	var margin := _new_margin_container()
 	screen.add_child(margin)
 
 	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 12)
+	outer.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
 	margin.add_child(outer)
 
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
+	header.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	outer.add_child(header)
 
-	var back_button := _new_small_button("Back")
+	var back_button := _new_small_button("BACK")
+	back_button.theme_type_variation = "QuietButton"
+	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(_return_from_submenu)
 	header.add_child(back_button)
 
+	var title_stack := VBoxContainer.new()
+	title_stack.add_theme_constant_override("separation", 0)
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_stack)
 	var title := Label.new()
-	title.text = "Cosmetics"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 36)
-	header.add_child(title)
+	title.text = "THE LOCKER"
+	title.theme_type_variation = "ScreenTitle"
+	title_stack.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "BALLS  /  TRAILS  /  GOAL FX"
+	subtitle.theme_type_variation = "MetaLabel"
+	title_stack.add_child(subtitle)
 
 	var stars := Label.new()
-	stars.text = "Stars: %d / %d" % [_get_save_service().get_total_stars(), MAX_STARS]
+	stars.text = "STARS  %d / %d" % [_get_save_service().get_total_stars(), MAX_STARS]
 	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	stars.add_theme_font_size_override("font_size", 20)
+	stars.theme_type_variation = "NumericLabel"
 	header.add_child(stars)
 
-	var body := HBoxContainer.new()
-	body.add_theme_constant_override("separation", 16)
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	outer.add_child(body)
-
-	var preview_panel := PanelContainer.new()
-	preview_panel.custom_minimum_size = Vector2(390.0, 0.0)
-	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(preview_panel)
-
-	var preview_margin := MarginContainer.new()
-	preview_margin.add_theme_constant_override("margin_left", 16)
-	preview_margin.add_theme_constant_override("margin_top", 16)
-	preview_margin.add_theme_constant_override("margin_right", 16)
-	preview_margin.add_theme_constant_override("margin_bottom", 16)
-	preview_panel.add_child(preview_margin)
-
-	var preview_box := VBoxContainer.new()
-	preview_box.add_theme_constant_override("separation", 10)
-	preview_margin.add_child(preview_box)
-
-	cosmetic_preview = CosmeticPreviewScript.new()
-	cosmetic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cosmetic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	preview_box.add_child(cosmetic_preview)
-
-	cosmetic_name_label = Label.new()
-	cosmetic_name_label.add_theme_font_size_override("font_size", 28)
-	cosmetic_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	preview_box.add_child(cosmetic_name_label)
-
-	cosmetic_description_label = Label.new()
-	cosmetic_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	cosmetic_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cosmetic_description_label.add_theme_font_size_override("font_size", 17)
-	preview_box.add_child(cosmetic_description_label)
-
-	cosmetic_requirement_label = Label.new()
-	cosmetic_requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	cosmetic_requirement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cosmetic_requirement_label.add_theme_font_size_override("font_size", 16)
-	preview_box.add_child(cosmetic_requirement_label)
-
-	cosmetic_equip_button = _new_menu_button("Equip", true)
-	cosmetic_equip_button.pressed.connect(_equip_previewed_cosmetic)
-	preview_box.add_child(cosmetic_equip_button)
-
-	cosmetic_store_button = _new_menu_button("Open Store")
-	cosmetic_store_button.pressed.connect(func() -> void: show_store("cosmetics"))
-	preview_box.add_child(cosmetic_store_button)
-
-	cosmetic_status_label = Label.new()
-	cosmetic_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cosmetic_status_label.add_theme_font_size_override("font_size", 16)
-	preview_box.add_child(cosmetic_status_label)
-
-	var list_column := VBoxContainer.new()
-	list_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list_column.add_theme_constant_override("separation", 10)
-	body.add_child(list_column)
-
 	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 8)
-	list_column.add_child(tabs)
+	tabs.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	outer.add_child(tabs)
 	for category in COSMETIC_CATEGORIES:
-		var category_name := CosmeticRegistryScript.get_category_plural_name(String(category))
+		var category_name := CosmeticRegistryScript.get_category_plural_name(String(category)).to_upper()
 		var tab := _new_small_button(category_name)
+		tab.theme_type_variation = "TabButton"
 		tab.toggle_mode = true
+		tab.custom_minimum_size = Vector2(0.0, 50.0)
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var category_copy := String(category)
 		tab.pressed.connect(func() -> void: _select_cosmetic_category(category_copy))
 		tabs.add_child(tab)
 		cosmetic_category_buttons[category_copy] = tab
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list_column.add_child(scroll)
+	var showcase := HBoxContainer.new()
+	showcase.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+	showcase.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(showcase)
 
-	cosmetic_items_box = VBoxContainer.new()
-	cosmetic_items_box.add_theme_constant_override("separation", 10)
-	cosmetic_items_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var preview_panel := PanelContainer.new()
+	preview_panel.theme_type_variation = "PreviewStage"
+	preview_panel.custom_minimum_size = Vector2(560.0, 290.0)
+	preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	showcase.add_child(preview_panel)
+
+	var preview_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		preview_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_3)
+	preview_panel.add_child(preview_margin)
+
+	cosmetic_preview = CosmeticPreviewScript.new()
+	cosmetic_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cosmetic_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_margin.add_child(cosmetic_preview)
+
+	var detail_panel := PanelContainer.new()
+	detail_panel.theme_type_variation = "LockerDetailPanel"
+	detail_panel.custom_minimum_size = Vector2(380.0, 0.0)
+	detail_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	showcase.add_child(detail_panel)
+	var detail_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		detail_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_6)
+	detail_panel.add_child(detail_margin)
+	var detail_box := VBoxContainer.new()
+	detail_box.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	detail_margin.add_child(detail_box)
+
+	cosmetic_name_label = Label.new()
+	cosmetic_name_label.theme_type_variation = "LightScreenTitle"
+	cosmetic_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_box.add_child(cosmetic_name_label)
+
+	cosmetic_description_label = Label.new()
+	cosmetic_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cosmetic_description_label.theme_type_variation = "LightBodyLabel"
+	detail_box.add_child(cosmetic_description_label)
+
+	cosmetic_requirement_label = Label.new()
+	cosmetic_requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cosmetic_requirement_label.theme_type_variation = "LightMetaLabel"
+	detail_box.add_child(cosmetic_requirement_label)
+
+	var detail_spacer := Control.new()
+	detail_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_box.add_child(detail_spacer)
+
+	cosmetic_equip_button = _new_menu_button("EQUIP", true)
+	cosmetic_equip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cosmetic_equip_button.pressed.connect(_equip_previewed_cosmetic)
+	detail_box.add_child(cosmetic_equip_button)
+
+	cosmetic_store_button = _new_menu_button("OPEN STORE")
+	cosmetic_store_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cosmetic_store_button.pressed.connect(func() -> void: show_store("cosmetics"))
+	detail_box.add_child(cosmetic_store_button)
+
+	cosmetic_status_label = Label.new()
+	cosmetic_status_label.theme_type_variation = "LightSuccessLabel"
+	cosmetic_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_box.add_child(cosmetic_status_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0.0, 118.0)
+	scroll.scroll_deadzone = 18
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	outer.add_child(scroll)
+
+	cosmetic_items_box = HBoxContainer.new()
+	cosmetic_items_box.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
 	scroll.add_child(cosmetic_items_box)
 
 	screen_root.add_child(screen)
@@ -827,20 +887,19 @@ func _build_cosmetic_card(definition: Dictionary) -> Button:
 	var unlocked: bool = service.is_cosmetic_unlocked(cosmetic_id)
 	var selected: bool = service.get_selected_cosmetic(current_cosmetic_category) == cosmetic_id
 	var previewed: bool = previewed_cosmetic_id == cosmetic_id
-	var state_text := "Selected" if selected else ("Unlocked" if unlocked else "Locked")
-	var card := Button.new()
-	card.custom_minimum_size = Vector2(280.0, 112.0)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.focus_mode = Control.FOCUS_ALL
-	card.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	card.text = "%s%s\n%s\n%s" % [
-		"> " if previewed else "",
+	var card := CosmeticChoiceButtonScript.new() as Button
+	card.call(
+		"configure_choice",
+		cosmetic_id,
 		display_name,
-		state_text,
-		CosmeticRegistryScript.get_unlock_requirement_text(cosmetic_id),
-	]
+		current_cosmetic_category,
+		unlocked,
+		selected,
+		previewed
+	)
 	var cosmetic_id_copy := cosmetic_id
 	card.pressed.connect(func() -> void: _preview_cosmetic(cosmetic_id_copy))
+	_connect_button_feedback(card, "ui_tap")
 	return card
 
 
@@ -861,7 +920,7 @@ func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
 		cosmetic_requirement_label.text = CosmeticRegistryScript.get_unlock_requirement_text(cosmetic_id)
 	if cosmetic_equip_button:
 		cosmetic_equip_button.disabled = not unlocked or selected
-		cosmetic_equip_button.text = "Selected" if selected else ("Equip" if unlocked else "Locked")
+		cosmetic_equip_button.text = "EQUIPPED" if selected else ("EQUIP" if unlocked else "LOCKED")
 	if cosmetic_store_button:
 		var requirement := definition.get("unlock_requirement", {}) as Dictionary
 		var requires_starter_pack := (
@@ -871,11 +930,11 @@ func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
 		cosmetic_store_button.disabled = not cosmetic_store_button.visible
 	if cosmetic_status_label:
 		if selected:
-			cosmetic_status_label.text = "Currently equipped"
+			cosmetic_status_label.text = "ON THE BALL"
 		elif unlocked:
-			cosmetic_status_label.text = "Unlocked"
+			cosmetic_status_label.text = "READY TO EQUIP"
 		else:
-			cosmetic_status_label.text = "Preview only"
+			cosmetic_status_label.text = "PREVIEW ONLY"
 
 
 func _show_store_internal() -> void:
@@ -890,86 +949,156 @@ func _show_store_internal() -> void:
 	store_product_buttons.clear()
 
 	var screen := _new_screen("Store")
+	screen.theme = NetboundUITheme.get_theme()
 	screen.add_child(_new_flat_backdrop())
 	var margin := _new_margin_container()
 	screen.add_child(margin)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	margin.add_child(scroll)
-
 	var outer := VBoxContainer.new()
-	outer.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_theme_constant_override("separation", 14)
+	outer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(outer)
+	margin.add_child(outer)
 
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
+	header.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	outer.add_child(header)
 
-	var back_button := _new_small_button("Back")
+	var back_button := _new_small_button("BACK")
+	back_button.theme_type_variation = "LightQuietButton"
+	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(_return_from_submenu)
 	header.add_child(back_button)
 
+	var title_stack := VBoxContainer.new()
+	title_stack.add_theme_constant_override("separation", 0)
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_stack)
 	var title := Label.new()
-	title.text = "Store"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 40)
-	header.add_child(title)
+	title.text = "STORE"
+	title.theme_type_variation = "ScreenTitle"
+	title_stack.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "OPTIONAL EXTRAS. THE FULL ROUTE STAYS FREE."
+	subtitle.theme_type_variation = "LightMetaLabel"
+	title_stack.add_child(subtitle)
 
+	var note_band := PanelContainer.new()
+	note_band.theme_type_variation = "InfoBand"
+	outer.add_child(note_band)
+	var note_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		note_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_3)
+	note_band.add_child(note_margin)
 	var note := Label.new()
 	note.text = _store_note_text()
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_font_size_override("font_size", 17)
-	outer.add_child(note)
+	note.theme_type_variation = "BodyLabel"
+	note_margin.add_child(note)
 
-	var products := VBoxContainer.new()
-	products.add_theme_constant_override("separation", 12)
+	var products := HBoxContainer.new()
+	products.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
 	products.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	products.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	outer.add_child(products)
 
-	store_remove_ads_button = _build_store_product_button(
+	var remove_offer := _build_store_offer(
 		PRODUCT_REMOVE_ADS,
-		"Remove Ads",
-		"Turns off interstitial ads permanently. Rewarded continues remain optional."
+		"CLEAN PLAY",
+		"REMOVE ADS",
+		"Turns off interstitial ads permanently. Rewarded continues stay optional.",
+		false
 	)
+	store_remove_ads_button = remove_offer.button as Button
 	store_remove_ads_button.pressed.connect(_purchase_remove_ads)
-	products.add_child(store_remove_ads_button)
+	products.add_child(remove_offer.panel as PanelContainer)
 
-	store_starter_pack_button = _build_store_product_button(
+	var starter_offer := _build_store_offer(
 		PRODUCT_STARTER_PACK,
-		"Starter Pack",
-		"Includes Remove Ads plus the Supporter ball, trail, and goal effect."
+		"SUPPORTER STYLE",
+		"STARTER PACK",
+		"Remove Ads plus the Supporter ball, trail, and goal effect.",
+		true
 	)
+	store_starter_pack_button = starter_offer.button as Button
 	store_starter_pack_button.pressed.connect(_purchase_starter_pack)
-	products.add_child(store_starter_pack_button)
+	products.add_child(starter_offer.panel as PanelContainer)
 
-	store_restore_button = _new_menu_button("Restore Purchases")
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+	outer.add_child(footer)
+	store_restore_button = _new_small_button("RESTORE PURCHASES")
+	store_restore_button.custom_minimum_size = Vector2(240.0, 54.0)
 	store_restore_button.pressed.connect(_restore_purchases)
-	outer.add_child(store_restore_button)
+	footer.add_child(store_restore_button)
 
 	store_status_label = Label.new()
-	store_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	store_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	store_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	store_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	store_status_label.add_theme_font_size_override("font_size", 17)
-	outer.add_child(store_status_label)
+	store_status_label.theme_type_variation = "BodyLabel"
+	footer.add_child(store_status_label)
 
 	screen_root.add_child(screen)
 	_refresh_store_screen()
 	_animate_screen_entrance(screen)
 
 
+func _build_store_offer(
+	product_id: String,
+	eyebrow_text: String,
+	display_name: String,
+	description: String,
+	accented: bool
+) -> Dictionary:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = "StoreOfferAccentPanel" if accented else "StoreOfferPanel"
+	panel.custom_minimum_size = Vector2(0.0, 350.0)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_6)
+	panel.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	margin.add_child(box)
+	var eyebrow := Label.new()
+	eyebrow.text = eyebrow_text
+	eyebrow.theme_type_variation = "LightSectionLabel"
+	box.add_child(eyebrow)
+	var name_label := Label.new()
+	name_label.text = display_name
+	name_label.theme_type_variation = "LightScreenTitle"
+	box.add_child(name_label)
+	var description_label := Label.new()
+	description_label.text = description
+	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description_label.theme_type_variation = "LightBodyLabel"
+	box.add_child(description_label)
+	var facts := Label.new()
+	facts.theme_type_variation = "LightMetaLabel"
+	facts.text = (
+		"INTERSTITIAL ADS: OFF\nREWARDED CONTINUES: YOUR CHOICE"
+		if product_id == PRODUCT_REMOVE_ADS
+		else "SUPPORTER BALL + TRAIL + GOAL FX\nREMOVE ADS: INCLUDED"
+	)
+	box.add_child(facts)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(spacer)
+	var button := _build_store_product_button(product_id, display_name, description)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(button)
+	return {"panel": panel, "button": button}
+
+
 func _build_store_product_button(product_id: String, display_name: String, description: String) -> Button:
 	var button := Button.new()
 	button.name = product_id
-	button.custom_minimum_size = Vector2(560.0, 112.0)
+	button.custom_minimum_size = Vector2(0.0, 64.0)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.theme_type_variation = "PrimaryButton"
 	button.set_meta("product_id", product_id)
 	button.set_meta("display_name", display_name)
 	button.set_meta("description", description)
@@ -1011,8 +1140,6 @@ func _refresh_store_product_button(button: Button, owned: bool, purchase_availab
 	if not button:
 		return
 	var product_id := String(button.get_meta("product_id", ""))
-	var display_name := String(button.get_meta("display_name", product_id))
-	var description := String(button.get_meta("description", ""))
 	var monetization := _get_monetization_service()
 	var product_info := (
 		monetization.call("get_product_info", product_id)
@@ -1026,7 +1153,7 @@ func _refresh_store_product_button(button: Button, owned: bool, purchase_availab
 	if store_request_in_progress and product_id == store_pending_product_id:
 		action_text = "Processing..."
 	button.disabled = store_request_in_progress or owned or not product_available
-	button.text = "%s\n%s\n%s" % [display_name, description, action_text]
+	button.text = action_text.to_upper()
 
 
 func _purchase_remove_ads() -> void:
@@ -1105,35 +1232,52 @@ func _build_gameplay_overlay() -> void:
 
 func _build_pause_overlay() -> Control:
 	var overlay := _new_modal_overlay("PauseOverlay")
-	var panel := _new_center_panel(Vector2(460.0, 420.0))
-	overlay.add_child(panel)
+	overlay.theme = NetboundUITheme.get_theme()
+	var rail := _new_gameplay_edge_rail(overlay, "RailPanel", 500.0)
+	var box := rail.box as VBoxContainer
 
-	var box := _panel_vbox(panel)
+	var eyebrow := Label.new()
+	eyebrow.text = "BALL HELD. CLOCK STOPPED."
+	eyebrow.theme_type_variation = "SectionLabel"
+	box.add_child(eyebrow)
+
 	var title := Label.new()
-	title.text = "Paused"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 38)
+	title.text = "PAUSED"
+	title.theme_type_variation = "ResultTitle"
 	box.add_child(title)
 
-	var resume_button := _new_menu_button("Resume", true)
+	var resume_button := _new_menu_button("RESUME", true)
+	resume_button.custom_minimum_size = Vector2(0.0, 76.0)
+	resume_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	resume_button.pressed.connect(resume_game)
 	box.add_child(resume_button)
 
-	var restart_button := _new_menu_button("Restart Level")
+	var restart_button := _new_menu_button("RESTART LEVEL")
+	restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	restart_button.pressed.connect(restart_current_level)
 	box.add_child(restart_button)
 
-	var select_button := _new_menu_button("Level Select")
-	select_button.pressed.connect(show_level_select)
-	box.add_child(select_button)
+	var utility_row := HBoxContainer.new()
+	utility_row.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	box.add_child(utility_row)
 
-	var settings_button := _new_menu_button("Settings")
+	var settings_button := _new_small_button("SETTINGS")
+	settings_button.theme_type_variation = "QuietButton"
+	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_button.pressed.connect(func() -> void: show_settings("pause"))
-	box.add_child(settings_button)
+	utility_row.add_child(settings_button)
 
-	var menu_button := _new_menu_button("Main Menu")
+	var select_button := _new_small_button("LEVELS")
+	select_button.theme_type_variation = "QuietButton"
+	select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_button.pressed.connect(show_level_select)
+	utility_row.add_child(select_button)
+
+	var menu_button := _new_small_button("MAIN MENU")
+	menu_button.theme_type_variation = "QuietButton"
+	menu_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_button.pressed.connect(show_main_menu)
-	box.add_child(menu_button)
+	utility_row.add_child(menu_button)
 	return overlay
 
 
@@ -1296,48 +1440,74 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	_play_sfx("result_failure")
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("FailureOverlay")
-	var panel := _new_center_panel(Vector2(540.0, 540.0))
-	overlay.add_child(panel)
-	var box := _panel_vbox(panel)
+	overlay.theme = NetboundUITheme.get_theme()
+	var rail := _new_gameplay_edge_rail(overlay, "FailurePanel", 600.0)
+	var panel := rail.panel as PanelContainer
+	var failure_motif := ResultMotifScript.new()
+	panel.add_child(failure_motif)
+	panel.move_child(failure_motif, 0)
+	var box := rail.box as VBoxContainer
+
+	var eyebrow := Label.new()
+	eyebrow.text = "LEVEL %02d  /  RUN ENDED" % (LevelRegistryScript.get_level_ids().find(level_result.level_id) + 1)
+	eyebrow.theme_type_variation = "LightSectionLabel"
+	box.add_child(eyebrow)
+
+	var failure_display := Label.new()
+	failure_display.text = "SO CLOSE!"
+	failure_display.theme_type_variation = "LightResultTitle"
+	box.add_child(failure_display)
 
 	result_title_label = Label.new()
 	result_title_label.text = "Out of Shots"
-	result_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_title_label.add_theme_font_size_override("font_size", 38)
+	result_title_label.theme_type_variation = "LightBodyLabel"
 	box.add_child(result_title_label)
 
 	result_detail_label = Label.new()
-	result_detail_label.text = "%s\nShots used: %d / %d" % [
+	result_detail_label.text = "%s  /  %d OF %d SHOTS" % [
 		definition.display_name if definition else level_result.level_id,
 		level_result.shots_used,
 		level_result.shot_limit,
 	]
-	result_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_detail_label.add_theme_font_size_override("font_size", 22)
+	result_detail_label.theme_type_variation = "LightMetaLabel"
 	box.add_child(result_detail_label)
 
-	rewarded_continue_button = _new_menu_button("Watch Ad for 1 Extra Shot", true)
+	var action_spacer := Control.new()
+	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(action_spacer)
+
+	rewarded_continue_button = _new_menu_button("WATCH AD  +1 SHOT", false)
 	rewarded_continue_button.name = "RewardedContinueButton"
+	rewarded_continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rewarded_continue_button.pressed.connect(_request_rewarded_continue)
 	box.add_child(rewarded_continue_button)
 
 	rewarded_continue_status_label = Label.new()
-	rewarded_continue_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rewarded_continue_status_label.theme_type_variation = "LightMetaLabel"
 	rewarded_continue_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rewarded_continue_status_label.add_theme_font_size_override("font_size", 16)
 	box.add_child(rewarded_continue_status_label)
 
-	var retry_button := _new_menu_button("Retry", true)
+	var retry_button := _new_menu_button("RETRY", true)
+	retry_button.custom_minimum_size = Vector2(0.0, 68.0)
+	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
 	box.add_child(retry_button)
 
-	var select_button := _new_menu_button("Level Select")
-	select_button.pressed.connect(show_level_select)
-	box.add_child(select_button)
+	var utility_row := HBoxContainer.new()
+	utility_row.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	box.add_child(utility_row)
 
-	var menu_button := _new_menu_button("Main Menu")
+	var select_button := _new_small_button("LEVELS")
+	select_button.theme_type_variation = "LightQuietButton"
+	select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_button.pressed.connect(show_level_select)
+	utility_row.add_child(select_button)
+
+	var menu_button := _new_small_button("MAIN MENU")
+	menu_button.theme_type_variation = "LightQuietButton"
+	menu_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_button.pressed.connect(show_main_menu)
-	box.add_child(menu_button)
+	utility_row.add_child(menu_button)
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
@@ -1410,11 +1580,11 @@ func _refresh_rewarded_continue_button() -> void:
 	var available := bool(availability.get("available", false))
 	rewarded_continue_button.disabled = not available
 	if rewarded_continue_request_in_progress:
-		rewarded_continue_button.text = "Ad Running..."
+		rewarded_continue_button.text = "AD RUNNING..."
 	elif available:
-		rewarded_continue_button.text = "Watch Ad for 1 Extra Shot"
+		rewarded_continue_button.text = "WATCH AD  +1 SHOT"
 	else:
-		rewarded_continue_button.text = "Extra Shot Unavailable"
+		rewarded_continue_button.text = "EXTRA SHOT UNAVAILABLE"
 	if rewarded_continue_status_label and not rewarded_continue_request_in_progress:
 		rewarded_continue_status_label.text = (
 			"Complete after an ad continue for up to 1 star."
@@ -1802,8 +1972,9 @@ func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: Str
 
 	var label := Label.new()
 	label.text = title
-	label.custom_minimum_size = Vector2(170.0, 48.0)
+	label.custom_minimum_size = Vector2(150.0, 48.0)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.theme_type_variation = "LightBodyLabel"
 	row.add_child(label)
 
 	var slider := HSlider.new()
@@ -1818,6 +1989,7 @@ func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: Str
 	var value_label := Label.new()
 	value_label.custom_minimum_size = Vector2(58.0, 48.0)
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.theme_type_variation = "LightMetaLabel"
 	row.add_child(value_label)
 
 	settings_widgets[setting_name] = {"slider": slider, "label": value_label}
@@ -1827,7 +1999,9 @@ func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: Str
 func _add_toggle_setting(parent: VBoxContainer, title: String, setting_name: String) -> void:
 	var toggle := CheckButton.new()
 	toggle.text = title
-	toggle.custom_minimum_size = Vector2(420.0, 52.0)
+	toggle.custom_minimum_size = Vector2(0.0, 52.0)
+	toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toggle.theme_type_variation = "LightCheckButton"
 	toggle.button_pressed = bool(_get_save_service().get_setting_value(setting_name, false))
 	parent.add_child(toggle)
 	settings_widgets[setting_name] = {"toggle": toggle}
@@ -1841,8 +2015,9 @@ func _add_quality_setting(parent: VBoxContainer) -> void:
 
 	var label := Label.new()
 	label.text = "Quality"
-	label.custom_minimum_size = Vector2(170.0, 48.0)
+	label.custom_minimum_size = Vector2(150.0, 48.0)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.theme_type_variation = "LightBodyLabel"
 	row.add_child(label)
 
 	var option := OptionButton.new()
@@ -2157,12 +2332,12 @@ func _position_bottom_right_label(label: Control) -> void:
 	label.offset_bottom = -(10.0 + float(margins.get("bottom", SAFE_MARGIN)))
 
 
-func _new_flat_backdrop() -> ColorRect:
-	var rect := ColorRect.new()
-	rect.color = Color(0.035, 0.07, 0.105, 1.0)
-	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return rect
+func _new_flat_backdrop() -> Control:
+	var backdrop := MenuBackdropScript.new()
+	backdrop.variant = "secondary"
+	backdrop.reduced_motion = _motion_reduced_for_ui()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	return backdrop
 
 
 func _new_menu_button(text_value: String, primary: bool = false) -> Button:
@@ -2341,6 +2516,34 @@ func _panel_vbox(panel: PanelContainer) -> VBoxContainer:
 	box.add_theme_constant_override("separation", 14)
 	margin.add_child(box)
 	return box
+
+
+func _new_gameplay_edge_rail(
+	overlay: Control,
+	panel_variation: StringName,
+	minimum_width: float
+) -> Dictionary:
+	var safe_margin := _new_margin_container()
+	overlay.add_child(safe_margin)
+	var shell := HBoxContainer.new()
+	shell.add_theme_constant_override("separation", NetboundUITheme.SPACE_8)
+	safe_margin.add_child(shell)
+	var gameplay_context := Control.new()
+	gameplay_context.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shell.add_child(gameplay_context)
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = panel_variation
+	panel.custom_minimum_size = Vector2(minimum_width, 0.0)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.add_child(panel)
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_8)
+	panel.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	margin.add_child(box)
+	return {"panel": panel, "box": box}
 
 
 func _new_result_stat(value_text: String, label_text: String) -> VBoxContainer:

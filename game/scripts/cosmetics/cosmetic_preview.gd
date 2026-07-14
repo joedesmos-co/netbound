@@ -11,10 +11,14 @@ var _world: Node3D
 var _camera: Camera3D
 var _ball: RigidBody3D
 var _goal_root: Node3D
-var _goal_particles: CPUParticles3D
+var _goal_material: StandardMaterial3D
+var _goal_preview_ring: MeshInstance3D
+var _goal_preview_ring_material: StandardMaterial3D
+var _goal_preview_pieces: Array[MeshInstance3D] = []
 var _time: float = 0.0
 var _last_ball_position: Vector3 = Vector3.ZERO
 var _goal_effect_timer: float = 0.0
+var _goal_effect_age: float = 1.0
 
 
 func _ready() -> void:
@@ -43,8 +47,7 @@ func set_preview(category: String, cosmetic_id: String) -> void:
 			pass
 	CosmeticVisualsScript.apply_to_ball(_ball, skin_id, trail_id)
 	CosmeticVisualsScript.clear_goal_effects(_world)
-	if _goal_particles:
-		_goal_particles.emitting = false
+	_hide_goal_preview_effect()
 	_reset_preview_ball()
 	if category == CosmeticRegistryScript.CATEGORY_GOAL_EFFECT:
 		_trigger_goal_preview()
@@ -67,6 +70,7 @@ func _process(delta: float) -> void:
 		_last_ball_position = _ball.global_position
 
 	if current_category == CosmeticRegistryScript.CATEGORY_GOAL_EFFECT:
+		_update_goal_preview(delta)
 		_goal_effect_timer -= delta
 		if _goal_effect_timer <= 0.0:
 			_trigger_goal_preview()
@@ -75,13 +79,23 @@ func _process(delta: float) -> void:
 func _build_preview_world() -> void:
 	_viewport = SubViewport.new()
 	_viewport.name = "PreviewViewport"
-	_viewport.transparent_bg = true
+	_viewport.transparent_bg = false
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(_viewport)
 
 	_world = Node3D.new()
 	_world.name = "PreviewWorld"
 	_viewport.add_child(_world)
+
+	var world_environment := WorldEnvironment.new()
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = NetboundUITheme.SKY
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color.WHITE
+	environment.ambient_light_energy = 0.65
+	world_environment.environment = environment
+	_world.add_child(world_environment)
 
 	_camera = Camera3D.new()
 	_camera.name = "PreviewCamera"
@@ -103,7 +117,7 @@ func _build_preview_world() -> void:
 	ground_mesh.size = Vector3(5.0, 0.04, 2.4)
 	ground.mesh = ground_mesh
 	var ground_material := StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.04, 0.12, 0.15, 1.0)
+	ground_material.albedo_color = NetboundUITheme.GRASS
 	ground_material.roughness = 0.9
 	ground.material_override = ground_material
 	ground.position = Vector3(0.0, -0.03, 0.0)
@@ -121,16 +135,7 @@ func _build_preview_world() -> void:
 	_goal_root.position = Vector3(0.0, 0.0, -1.3)
 	_world.add_child(_goal_root)
 	_add_goal_preview_geometry(_goal_root)
-
-	_goal_particles = CPUParticles3D.new()
-	_goal_particles.name = "PreviewGoalParticles"
-	_goal_particles.position = Vector3(0.0, 1.35, 0.08)
-	_goal_particles.emitting = false
-	_goal_particles.one_shot = true
-	_goal_particles.explosiveness = 0.9
-	_goal_particles.spread = 70.0
-	_goal_particles.gravity = Vector3(0.0, -2.8, 0.0)
-	_goal_root.add_child(_goal_particles)
+	_add_goal_preview_effects(_goal_root)
 
 
 func _add_ball_visual_children(parent_ball: RigidBody3D) -> void:
@@ -163,10 +168,10 @@ func _add_ball_visual_children(parent_ball: RigidBody3D) -> void:
 
 
 func _add_goal_preview_geometry(parent_goal: Node3D) -> void:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
-	material.emission_enabled = true
-	material.emission = Color(0.18, 0.18, 0.18, 1.0)
+	_goal_material = StandardMaterial3D.new()
+	_goal_material.albedo_color = Color.WHITE
+	_goal_material.emission_enabled = true
+	_goal_material.emission = Color(0.18, 0.18, 0.18, 1.0)
 	for x in [-1.45, 1.45]:
 		var post := MeshInstance3D.new()
 		var mesh := CylinderMesh.new()
@@ -174,16 +179,48 @@ func _add_goal_preview_geometry(parent_goal: Node3D) -> void:
 		mesh.bottom_radius = 0.045
 		mesh.height = 1.8
 		post.mesh = mesh
-		post.material_override = material
+		post.material_override = _goal_material
 		post.position = Vector3(x, 0.9, 0.0)
 		parent_goal.add_child(post)
 	var crossbar := MeshInstance3D.new()
 	var bar_mesh := BoxMesh.new()
 	bar_mesh.size = Vector3(2.95, 0.07, 0.07)
 	crossbar.mesh = bar_mesh
-	crossbar.material_override = material
+	crossbar.material_override = _goal_material
 	crossbar.position = Vector3(0.0, 1.8, 0.0)
 	parent_goal.add_child(crossbar)
+
+
+func _add_goal_preview_effects(parent_goal: Node3D) -> void:
+	_goal_preview_ring = MeshInstance3D.new()
+	_goal_preview_ring.name = "PreviewCelebrationRing"
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 0.88
+	ring_mesh.outer_radius = 1.02
+	ring_mesh.ring_segments = 28
+	ring_mesh.rings = 6
+	_goal_preview_ring.mesh = ring_mesh
+	_goal_preview_ring.position = Vector3(0.0, 0.92, 0.12)
+	_goal_preview_ring.rotation_degrees.x = 90.0
+	_goal_preview_ring_material = StandardMaterial3D.new()
+	_goal_preview_ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_goal_preview_ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_goal_preview_ring_material.albedo_color = Color(NetboundUITheme.CURVE, 0.0)
+	_goal_preview_ring.material_override = _goal_preview_ring_material
+	parent_goal.add_child(_goal_preview_ring)
+
+	for index in 12:
+		var piece := MeshInstance3D.new()
+		piece.name = "PreviewCelebrationPiece%02d" % index
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.12, 0.055, 0.055)
+		piece.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		piece.material_override = material
+		parent_goal.add_child(piece)
+		_goal_preview_pieces.append(piece)
+	_hide_goal_preview_effect()
 
 
 func _reset_preview_ball() -> void:
@@ -194,10 +231,67 @@ func _reset_preview_ball() -> void:
 
 func _trigger_goal_preview() -> void:
 	_goal_effect_timer = 1.45
-	CosmeticVisualsScript.trigger_goal_effect(
-		_world,
-		_goal_root,
-		null,
-		_goal_particles,
-		current_cosmetic_id
-	)
+	_goal_effect_age = 0.0
+	var colors := _goal_preview_colors()
+	for index in _goal_preview_pieces.size():
+		var piece := _goal_preview_pieces[index]
+		piece.visible = current_cosmetic_id != "goal_shockwave" or index < 6
+		var material := piece.material_override as StandardMaterial3D
+		material.albedo_color = colors[index % colors.size()]
+	_goal_preview_ring.visible = current_cosmetic_id in ["goal_shockwave", "goal_supporter"]
+
+
+func _update_goal_preview(delta: float) -> void:
+	_goal_effect_age += delta
+	var progress := clampf(_goal_effect_age / 0.78, 0.0, 1.0)
+	var eased := 1.0 - pow(1.0 - progress, 3.0)
+	for index in _goal_preview_pieces.size():
+		var piece := _goal_preview_pieces[index]
+		if not piece.visible:
+			continue
+		var angle := TAU * float(index) / float(_goal_preview_pieces.size())
+		var radius := lerpf(0.18, 1.75, eased)
+		piece.position = Vector3(
+			cos(angle) * radius,
+			0.95 + sin(angle * 2.0) * radius * 0.42 + eased * 0.42,
+			0.12 + sin(angle) * 0.12
+		)
+		piece.rotation_degrees = Vector3(index * 19.0, eased * 220.0, index * 31.0)
+		piece.scale = Vector3.ONE * (1.0 - progress * 0.55)
+	if _goal_preview_ring.visible:
+		_goal_preview_ring.scale = Vector3.ONE * lerpf(0.42, 2.15, eased)
+		var ring_color := _goal_preview_colors()[0]
+		ring_color.a = 0.72 * (1.0 - progress)
+		_goal_preview_ring_material.albedo_color = ring_color
+	# The goal stays recognizably white; celebration energy only changes its brightness.
+	var pulse := sin(progress * PI) * 0.22
+	_goal_material.emission = Color(0.18 + pulse, 0.18 + pulse, 0.18 + pulse, 1.0)
+	if progress >= 1.0:
+		_hide_goal_preview_effect()
+
+
+func _hide_goal_preview_effect() -> void:
+	for piece in _goal_preview_pieces:
+		piece.visible = false
+	if _goal_preview_ring:
+		_goal_preview_ring.visible = false
+	if _goal_material:
+		_goal_material.albedo_color = Color.WHITE
+		_goal_material.emission = Color(0.18, 0.18, 0.18, 1.0)
+
+
+func _goal_preview_colors() -> Array[Color]:
+	match current_cosmetic_id:
+		"goal_confetti":
+			return [
+				NetboundUITheme.CORAL,
+				NetboundUITheme.SIGNAL,
+				NetboundUITheme.CURVE,
+				NetboundUITheme.SUCCESS,
+			]
+		"goal_shockwave":
+			return [NetboundUITheme.CURVE, Color("b8f4ff")]
+		"goal_supporter":
+			return [NetboundUITheme.SUCCESS, NetboundUITheme.SIGNAL]
+		_:
+			return [NetboundUITheme.SIGNAL, NetboundUITheme.CHALK]

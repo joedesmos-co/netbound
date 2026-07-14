@@ -109,6 +109,7 @@ static func _register_label_variations(theme: Theme) -> void:
 	_register_label(theme, "LightMetaLabel", FONT_BODY, 15, Color("55707a"))
 	_register_label(theme, "LightNumericLabel", FONT_DISPLAY, 28, INK)
 	_register_label(theme, "LightSuccessLabel", FONT_BOLD, 17, Color("188d4a"))
+	_register_label(theme, "LightScreenTitle", FONT_DISPLAY, 48, INK)
 
 
 static func _register_label(
@@ -174,6 +175,10 @@ static func _register_button_variations(theme: Theme) -> void:
 		style(Color(CHALK, 0.06), Color(CHALK, 0.45), 1, 0),
 		style(SIGNAL, SIGNAL, 2, 0)
 	)
+	theme.set_color("font_pressed_color", "TabButton", INK)
+	theme.set_color("font_focus_color", "TabButton", INK)
+	theme.set_color("font_color", "TabButton", Color(INK, 0.72))
+	theme.set_color("font_hover_color", "TabButton", INK)
 	_register_button(
 		theme,
 		"DangerButton",
@@ -247,10 +252,24 @@ static func _register_panel_variations(theme: Theme) -> void:
 	theme.set_stylebox(
 		"panel",
 		"FailurePanel",
-		edge_style(Color(INK, 0.96), FAILURE, 6, 0, Vector2(0.0, 0.0))
+		edge_style(PAPER, FAILURE, 8, 0, Vector2(0.0, 0.0))
 	)
 	theme.set_type_variation("HudBadge", "PanelContainer")
 	theme.set_stylebox("panel", "HudBadge", style(Color(INK, 0.82), Color(CHALK, 0.22), 1, 1, Vector2(18.0, 8.0)))
+	theme.set_type_variation("PreviewStage", "PanelContainer")
+	theme.set_stylebox("panel", "PreviewStage", style(Color(SURFACE, 0.95), CHALK, 3, 3, Vector2(0.0, 0.0)))
+	theme.set_type_variation("LockerDetailPanel", "PanelContainer")
+	theme.set_stylebox("panel", "LockerDetailPanel", edge_style(PAPER, CORAL, 7, 0, Vector2(0.0, 0.0)))
+	theme.set_type_variation("StoreOfferPanel", "PanelContainer")
+	theme.set_stylebox("panel", "StoreOfferPanel", style(PAPER, INK, 3, 3, Vector2(0.0, 0.0)))
+	theme.set_type_variation("StoreOfferAccentPanel", "PanelContainer")
+	theme.set_stylebox("panel", "StoreOfferAccentPanel", edge_style(PAPER, CORAL, 8, 0, Vector2(0.0, 0.0)))
+	theme.set_type_variation("InfoBand", "PanelContainer")
+	theme.set_stylebox("panel", "InfoBand", style(Color(INK, 0.94), Color(CHALK, 0.2), 1, 1, Vector2(0.0, 0.0)))
+	theme.set_type_variation("SettingsPanel", "PanelContainer")
+	theme.set_stylebox("panel", "SettingsPanel", style(PAPER, INK, 3, 3, Vector2(0.0, 0.0)))
+	theme.set_type_variation("SettingsAccentPanel", "PanelContainer")
+	theme.set_stylebox("panel", "SettingsAccentPanel", edge_style(PAPER, CORAL, 8, 0, Vector2(0.0, 0.0)))
 
 
 static func _register_range_controls(theme: Theme) -> void:
@@ -275,6 +294,17 @@ static func _register_misc_controls(theme: Theme) -> void:
 	theme.set_font_size("font_size", "CheckButton", 17)
 	theme.set_color("font_color", "CheckButton", CHALK)
 	theme.set_color("font_pressed_color", "CheckButton", CHALK)
+	theme.set_type_variation("LightCheckButton", "CheckButton")
+	theme.set_font("font", "LightCheckButton", FONT_BOLD)
+	theme.set_font_size("font_size", "LightCheckButton", 17)
+	theme.set_color("font_color", "LightCheckButton", INK)
+	theme.set_color("font_hover_color", "LightCheckButton", INK)
+	theme.set_color("font_pressed_color", "LightCheckButton", INK)
+	theme.set_color("font_focus_color", "LightCheckButton", INK)
+	theme.set_stylebox("normal", "LightCheckButton", transparent_style(Vector2(4.0, 6.0)))
+	theme.set_stylebox("hover", "LightCheckButton", style(Color(CORAL, 0.1), CORAL, 1, 1, Vector2(4.0, 6.0)))
+	theme.set_stylebox("pressed", "LightCheckButton", transparent_style(Vector2(4.0, 6.0)))
+	theme.set_stylebox("focus", "LightCheckButton", style(Color.TRANSPARENT, SIGNAL, 2, 1, Vector2(4.0, 6.0)))
 	theme.set_font("font", "OptionButton", FONT_BOLD)
 	theme.set_font_size("font_size", "OptionButton", 17)
 	theme.set_color("font_color", "OptionButton", CHALK)
