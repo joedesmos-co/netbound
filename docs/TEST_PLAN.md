@@ -7,7 +7,7 @@ Phase 0 documents the current baseline. Later phases should turn this into an au
 - Godot: `/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot`
 - Required version: `4.7.stable.official.5b4e0cb0f`
 - Project path: `/Users/ryland/Documents/NetBound/game`
-- Current main scene: `res://levels/level_01.tscn`
+- Current main scene: `res://app/netbound_app.tscn`
 
 ## Phase 0 Commands And Outcomes
 
@@ -368,6 +368,48 @@ Outcome: passed.
 - real Level 01 completion records progression through the production controller and Autoload
 
 Phase 4 tests use isolated `user://phase4_*` save paths so development progress is not destroyed.
+
+## Phase 5 Verification Results
+
+Phase 5 adds the production app shell, main menu, level select, pause menu, settings screen, cosmetics placeholder, and save-driven result overlays.
+
+Command:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  --headless \
+  --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_phase5_navigation_external.gd
+```
+
+Outcome: passed.
+
+`verify_phase5_navigation_external.gd` covers:
+
+- configured main scene is `res://app/netbound_app.tscn`
+- app starts on Main Menu
+- Play/Continue resolves Level 01 on a fresh save
+- completing Level 01 resolves Level 02
+- all-complete state resolves to Level Select
+- double navigation is blocked
+- invalid or locked level launch fails without loading
+- Level Select creates exactly 10 cards in registry order
+- locked cards are disabled
+- unlocked cards can launch production level scenes
+- total stars displays from `SaveService`
+- production gameplay hides debug labels and the old Retry Level HUD button
+- Pause sets the tree paused and Resume restores gameplay
+- Restart uses the level retry path
+- success result displays saved progression data
+- final-shot-style goal enters success, not failure
+- Next Level is enabled only after the next level unlocks
+- failure result does not change total stars
+- Level 10 result disables Next Level
+- settings persist through `SaveService`
+- basic touch target minimums are preserved
+- cosmetics screen is a placeholder, not Phase 6 selection
+
+Phase 5 tests use isolated `user://phase5_*` save paths.
 
 ## Trajectory Acceptance Targets
 

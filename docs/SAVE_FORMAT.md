@@ -152,3 +152,14 @@ The registry validates:
 Failures, Retry, auto-reset, and manual Reset Ball do not alter progression.
 
 Debug-script runs disable Autoload recording by default. Phase 4 tests explicitly configure isolated `user://phase4_*` paths before enabling recording.
+
+## Phase 5 UI Integration
+
+The Phase 5 Settings screen reads and writes the existing `settings` object through `SaveService`.
+
+- `master_volume` is applied to Godot's `Master` audio bus when present.
+- `music_volume` and `sfx_volume` are persisted and applied when matching buses exist.
+- `haptics_enabled` is persisted for the later mobile feedback layer.
+- `developer_debug` is exposed only in debug builds and toggles gameplay debug labels for levels loaded through the app shell.
+
+No new save-version migration was required for Phase 5.

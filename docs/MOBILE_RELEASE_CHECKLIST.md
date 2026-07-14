@@ -1,15 +1,17 @@
 # Netbound Mobile Release Checklist
 
-This checklist tracks what must be true before the vertical slice is mobile-ready. Phase 0 only audits current status.
+This checklist tracks what must be true before the vertical slice is mobile-ready.
 
-## Current Phase 0 Status
+## Current Status Through Phase 5
 
 - Godot 4.7 stable is available and verified.
 - Project imports in headless mode.
 - Configured main scene starts in headless mode.
 - Mobile renderer is selected.
 - Touch input is handled directly with `InputEventScreenTouch` and `InputEventScreenDrag`.
-- No offline progression, menus, settings, cosmetics, export presets, or platform packaging exists yet.
+- Offline progression, star ratings, app shell menus, level select, pause, result overlays, and basic settings now exist.
+- Cosmetics has a clean Phase 5 placeholder only; real cosmetic selection remains Phase 6.
+- Export presets and platform packaging are not configured yet.
 
 ## Project Settings
 
@@ -29,9 +31,9 @@ Before release-ready vertical slice:
 Current gaps:
 
 - Orientation is not configured in `project.godot`.
-- Safe-area behavior is not implemented.
+- Safe-area handling uses conservative margins in the Phase 5 UI, but physical notch/home-indicator validation is still required.
 - Export presets are absent.
-- Pause/focus handling is absent.
+- App focus loss requests pause through the app shell, but physical mobile suspend/resume still requires testing.
 
 ## Input And UX
 
@@ -45,10 +47,8 @@ Required:
 
 Current gaps:
 
-- UI uses fixed offsets and prototype labels.
-- No menu navigation exists.
-- No pause menu exists.
-- No controller or keyboard navigation policy exists.
+- Controller navigation is only basic Godot focus support.
+- Physical touch testing is still required for Level Select scrolling and gameplay finger occlusion.
 
 ## Gameplay Readability
 
@@ -62,9 +62,8 @@ Required:
 
 Current gaps:
 
-- Camera is static.
-- Current max lobs peak around `47` to `51` world units.
-- Debug text clutters the normal play view.
+- Final Phase 7 art polish is still pending.
+- Physical small-screen readability checks are still required.
 
 ## Performance
 
@@ -84,7 +83,6 @@ Audit and optimize:
 Current gaps:
 
 - No mobile profiling has been done.
-- Console logging is continuous during normal actions.
 - Swipe samples are not currently bounded by an explicit maximum.
 
 ## Offline Requirements
@@ -102,9 +100,8 @@ Required:
 
 Current gaps:
 
-- No save system exists yet.
-- No progression exists yet.
-- No settings exist yet.
+- Cloud sync is intentionally absent.
+- Physical persistence checks across app kill/relaunch remain required.
 
 ## Audio And Haptics
 
@@ -121,6 +118,7 @@ Current gaps:
 
 - No audio system exists.
 - No haptics abstraction exists.
+- Phase 5 settings persist volume and haptics values; Phase 7 will connect real feedback.
 
 ## Final QA Matrix
 

@@ -1,5 +1,8 @@
 extends "res://scripts/prototype_controller.gd"
 
+signal level_completed(level_result: LevelResult, progression_update: RefCounted)
+signal level_failed(level_result: LevelResult)
+
 enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 
 const RESETTABLE_GROUP := "netbound_level_resettable"
@@ -49,6 +52,7 @@ var level_reset_generation: int = 0
 var goal_targets: Array[GoalTarget] = []
 var last_level_result: LevelResult
 var last_progression_update: RefCounted
+var external_navigation_ui_enabled: bool = false
 
 
 func _ready() -> void:
@@ -62,6 +66,29 @@ func _ready() -> void:
 	fail_retry_button.pressed.connect(_on_retry_level_pressed)
 	reset_button.text = "Reset Ball"
 	await _restart_level()
+	if external_navigation_ui_enabled:
+		set_external_navigation_ui_enabled(true)
+
+
+func set_external_navigation_ui_enabled(enabled: bool) -> void:
+	external_navigation_ui_enabled = enabled
+	if not is_node_ready():
+		return
+	if retry_button:
+		retry_button.visible = not enabled
+	if enabled:
+		win_panel.visible = false
+		fail_panel.visible = false
+
+
+func prepare_for_unload() -> void:
+	_cancel_shot_callbacks()
+	Engine.time_scale = 1.0
+	_clear_active_curve()
+	_clear_swipe()
+	_reset_all_goal_tracking()
+	auto_reset_pending = false
+	pending_auto_reset_shot_id = -1
 
 
 func is_gameplay_input_allowed() -> bool:
@@ -184,7 +211,10 @@ func _on_reset_button_pressed() -> void:
 		level_state = LevelState.READY
 	else:
 		level_state = LevelState.FAILED
-		fail_panel.visible = true
+		last_level_result = LevelResult.failed_result(level_definition, shots_used, shots_remaining)
+		if not external_navigation_ui_enabled:
+			fail_panel.visible = true
+		level_failed.emit(last_level_result)
 	_update_level_ui()
 	_update_instruction_visibility()
 	_update_debug_ui()
@@ -252,9 +282,11 @@ func _on_goal_scored() -> void:
 	_clear_active_curve()
 	ball.freeze = true
 	_show_goal_feedback()
-	win_title.text = "GOAL!"
-	win_shots_used.text = "Shots used: %d / %d" % [shots_used, max_shots]
-	win_panel.visible = true
+	if not external_navigation_ui_enabled:
+		win_title.text = "GOAL!"
+		win_shots_used.text = "Shots used: %d / %d" % [shots_used, max_shots]
+		win_panel.visible = true
+	level_completed.emit(last_level_result, last_progression_update)
 	_update_level_ui()
 
 
@@ -274,7 +306,9 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 	else:
 		level_state = LevelState.FAILED
 		last_level_result = LevelResult.failed_result(level_definition, shots_used, shots_remaining)
-		fail_panel.visible = true
+		if not external_navigation_ui_enabled:
+			fail_panel.visible = true
+		level_failed.emit(last_level_result)
 
 	_update_level_ui()
 
@@ -486,6 +520,7 @@ func _hide_overlays() -> void:
 
 func _update_level_ui() -> void:
 	shots_label.text = "Shots: %d" % shots_remaining
+	retry_button.visible = not external_navigation_ui_enabled
 	retry_button.disabled = reset_in_progress
 	reset_button.disabled = (
 		reset_in_progress

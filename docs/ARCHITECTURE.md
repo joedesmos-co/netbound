@@ -117,7 +117,7 @@ New Phase 3 content coverage:
 - Level 08 uses `BounceSurface`.
 - Level 10 uses an off-center `GoalTarget`; `GoalDetector.goal_center_x` is synced from the goal root so scoring follows the moved frame.
 
-The configured main scene remains `res://levels/level_01.tscn`. Progression, menus, saves, stars UI, cosmetics, and level selection are still future phases.
+Phase 5 replaces direct Level 01 startup with the app shell. Production levels remain loadable scenes, but the configured main scene is now `res://app/netbound_app.tscn`.
 
 ## Phase 4 Offline Progression Update
 
@@ -146,6 +146,41 @@ Progression flow:
 
 The Autoload disables recording during `--script` debug runs by default to avoid mutating normal user progress. Phase 4 tests opt into recording with isolated save paths.
 
+## Phase 5 Menu And Navigation Update
+
+Phase 5 adds the production app shell without changing shooting, level layouts, cosmetics, monetization, or online systems.
+
+New systems:
+
+- `NetboundApp` (`res://scripts/app/netbound_app.gd`) owns main menu, level select, settings, cosmetics placeholder, pause, results, and scene navigation.
+- `res://app/netbound_app.tscn` is the configured main scene.
+- `NetboundMenuBackdrop` draws the lightweight animated arcade menu background procedurally.
+- `verify_phase5_navigation_external.gd` covers app flow and UI state with isolated save data.
+
+Navigation flow:
+
+1. Startup loads `NetboundApp`.
+2. Main Menu resolves Play/Continue from `LevelRegistry` and `SaveService`.
+3. Level Select displays exactly the registered 10 levels in registry order.
+4. Loading a level instances the registered scene under the app shell.
+5. The level keeps stable shooting/reset/goal behavior and emits `level_completed` or `level_failed`.
+6. The app shell presents production result overlays and navigation actions.
+
+Level UI integration:
+
+- Direct level scenes still keep legacy win/fail panels for historical regression scripts.
+- The app shell calls `set_external_navigation_ui_enabled(true)` on loaded levels, hiding temporary result panels and the old Retry Level HUD button.
+- Normal gameplay keeps shots remaining, tutorial copy, Reset Ball, swipe overlay, and the app-level Pause button.
+- Developer labels remain hidden unless the saved development setting enables them.
+
+Settings integration:
+
+- Settings read and write Phase 4 `SaveService` keys.
+- Master volume is applied to the `Master` bus when present.
+- `Music` and `SFX` settings are persisted and applied if those buses are later added.
+- Haptics is persisted for later mobile feedback work.
+- Developer debug is shown only in debug builds.
+
 Proof scene:
 
 - `res://levels/debug/level_architecture_test.tscn`
@@ -165,10 +200,11 @@ How to create a new configured level without changing core shooting:
 
 ## Current Entry Points
 
-- `game/project.godot` runs `res://levels/level_01.tscn`.
+- `game/project.godot` runs `res://app/netbound_app.tscn`.
+- `game/app/netbound_app.tscn` is the production app shell and menu entry point.
 - `game/main.tscn` exists but is an empty `Node3D` and is not the configured main scene.
 - `game/scenes/prototype.tscn` is an older standalone shooting prototype.
-- `game/levels/level_01.tscn` is the configured production main scene.
+- `game/levels/level_01.tscn` is the first production gameplay level and remains loadable through the app shell.
 - `game/levels/level_02.tscn` through `game/levels/level_10.tscn` are authored production levels for the vertical slice.
 - `game/levels/debug/level_architecture_test.tscn` is an architecture proof scene, not a production level and not the configured main scene.
 
@@ -180,7 +216,8 @@ How to create a new configured level without changing core shooting:
 - Stretch mode: `canvas_items`.
 - Stretch aspect: `expand`.
 - No custom input actions are configured. Gameplay reads mouse and touch events directly in `_unhandled_input`.
-- No explicit mobile orientation, safe area, pause/focus, export preset, audio, or platform settings are present yet.
+- No explicit mobile orientation, export preset, or platform packaging settings are present yet.
+- Phase 5 app UI uses conservative margins and pauses on focus loss where practical; physical safe-area and suspend/resume validation remain Phase 8 work.
 
 ## Current Scene Structure
 
@@ -476,17 +513,15 @@ Risks:
 Current gameplay UI includes:
 
 - Shots label.
-- Retry Level button.
 - Reset Ball button.
-- Reset OK label.
 - Instruction label.
-- Power, direction, curve, loft, and shot debug labels.
+- Power, direction, curve, loft, reset, and shot debug labels behind the developer debug flag.
 - Power bar.
 - Full-screen goal flash.
-- Temporary win/fail panels.
+- Temporary win/fail panels for direct-scene regression runs.
 - Swipe overlay.
 
-There is no main menu, level select, pause menu, polished result screen, settings screen, cosmetics screen, or save UI yet.
+Production app UI now includes Main Menu, Level Select, basic Settings, an honest Cosmetics placeholder, Pause, and Success/Failure results. See `docs/UI_FLOW.md`.
 
 ## Camera Behavior
 

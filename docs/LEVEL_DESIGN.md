@@ -51,7 +51,7 @@ The Phase 3 regression suite uses production mouse-swipe input, not teleports or
 - Preserves the existing giant arcade goal and forgiving center route.
 - Keeps one small obstacle far to the side.
 - Tutorial covers swipe direction, power, height, and curve.
-- Remains the configured main scene.
+- Remains the first production gameplay level. Phase 5 loads it through the app shell instead of using it as the configured main scene.
 
 ### Level 02 - The Gate
 
@@ -131,5 +131,5 @@ The Phase 3 regression suite uses production mouse-swipe input, not teleports or
 
 ## Future Phase Notes
 
-- Menu navigation, level selection UI, and save-driven result screens remain future phases.
+- Phase 5 added menu navigation, level selection UI, and save-driven result screens.
 - Cosmetic unlocks and level selection must read these definitions later; levels themselves do not implement progression.
