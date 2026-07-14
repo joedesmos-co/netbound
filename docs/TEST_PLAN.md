@@ -485,9 +485,16 @@ Current coverage:
 - preview clears on release and release feedback does not alter launch velocity
 - camera feedback is deterministic, intensity-controlled, and clearable
 - near-miss feedback is generation-guarded and does not set `GOAL`
+- every production level creates bounded visual-only polish nodes
+- visual polish nodes contain no collision objects
+- goal target geometry remains synced after visual polish
+- ball physics values remain unchanged after visual polish
+- repeated cosmetic refresh reuses ball/trail resources
+- Reduced Motion suppresses UI tweens in the app shell
+- Level Select and Cosmetics remain navigable through the app shell
 - all 10 production levels start
 
-Additional Phase 7 UI motion, world polish, and performance checks will be added as those subsystems land.
+Additional Phase 7 final QA checks will be added before the phase closes.
 
 ## Trajectory Acceptance Targets
 

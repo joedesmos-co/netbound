@@ -21,10 +21,15 @@ func _ready() -> void:
 
 
 func configure(new_trail_id: String) -> void:
-	trail_id = CosmeticRegistryScript.normalize_id_for_category(
+	var normalized_id := CosmeticRegistryScript.normalize_id_for_category(
 		CosmeticRegistryScript.CATEGORY_TRAIL,
 		new_trail_id
 	)
+	if normalized_id == trail_id and not _materials.is_empty():
+		reset_trail()
+		set_physics_process(trail_id != "trail_none")
+		return
+	trail_id = normalized_id
 	_configure_materials()
 	reset_trail()
 	set_physics_process(trail_id != "trail_none")

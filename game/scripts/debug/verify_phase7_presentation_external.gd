@@ -2,6 +2,7 @@ extends SceneTree
 
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
 const CameraFeedbackScript := preload("res://scripts/presentation/camera_feedback.gd")
+const CosmeticVisualsScript := preload("res://scripts/cosmetics/cosmetic_visuals.gd")
 
 const TEST_SAVE := "user://phase7_presentation_test.json"
 const TEST_TMP := "user://phase7_presentation_test.tmp"
@@ -34,6 +35,9 @@ func _run() -> void:
 	passed = _test_save_settings_defaults() and passed
 	passed = await _test_shot_presentation_does_not_change_launch() and passed
 	passed = await _test_near_miss_and_camera_feedback() and passed
+	passed = await _test_visual_polish_and_budgets() and passed
+	passed = await _test_cosmetic_resource_reuse() and passed
+	passed = await _test_ui_motion_and_reduced_motion() and passed
 	passed = await _test_all_production_level_startups() and passed
 	_cleanup_test_files()
 	print("PHASE7 verify=", "PASS" if passed else "FAIL")
@@ -201,6 +205,87 @@ func _test_near_miss_and_camera_feedback() -> bool:
 	return passed
 
 
+func _test_visual_polish_and_budgets() -> bool:
+	var passed := true
+	for level_id in LevelRegistryScript.get_level_ids():
+		var scene: PackedScene = load(LevelRegistryScript.get_scene_path(level_id))
+		var level := scene.instantiate()
+		get_root().add_child(level)
+		await process_frame
+		await process_frame
+		await physics_frame
+		var visual = level.get_node_or_null("LevelVisualPolish")
+		passed = visual != null and passed
+		if visual:
+			var snapshot: Dictionary = visual.call("get_budget_snapshot")
+			passed = int(snapshot.get("collision_nodes", -1)) == 0 and passed
+			passed = int(snapshot.get("visual_nodes", 999)) <= 24 and passed
+			visual.call("on_goal_scored")
+			visual.call("clear_feedback")
+			passed = int(visual.call("get_budget_snapshot").get("active_tweens", 999)) == 0 and passed
+		var ball: RigidBody3D = level.get_node("Ball") as RigidBody3D
+		passed = is_equal_approx(ball.mass, float(level.get("ball_mass"))) and passed
+		passed = _all_goal_targets_still_synced(level) and passed
+		if level.has_method("prepare_for_unload"):
+			level.call("prepare_for_unload")
+		level.queue_free()
+		await process_frame
+	print("PHASE7 visual_polish ok=", passed)
+	return passed
+
+
+func _test_cosmetic_resource_reuse() -> bool:
+	var scene: PackedScene = load("res://levels/level_01.tscn")
+	var level := scene.instantiate()
+	get_root().add_child(level)
+	await process_frame
+	await process_frame
+	var ball: RigidBody3D = level.get_node("Ball") as RigidBody3D
+	var main_mesh := ball.get_node("MeshInstance3D") as MeshInstance3D
+	CosmeticVisualsScript.apply_ball_skin(ball, "ball_fire")
+	var first_skin_material := main_mesh.material_override
+	CosmeticVisualsScript.apply_ball_skin(ball, "ball_fire")
+	var passed := first_skin_material == main_mesh.material_override
+	CosmeticVisualsScript.apply_ball_trail(ball, "trail_blue")
+	var trail := ball.get_node_or_null("NetboundBallTrail")
+	var first_trail_material: Material = trail.get_child(0).material_override if trail and trail.get_child_count() > 0 else null
+	CosmeticVisualsScript.apply_ball_trail(ball, "trail_blue")
+	var second_trail_material: Material = trail.get_child(0).material_override if trail and trail.get_child_count() > 0 else null
+	passed = first_trail_material == second_trail_material and passed
+	if level.has_method("prepare_for_unload"):
+		level.call("prepare_for_unload")
+	level.queue_free()
+	await process_frame
+	print("PHASE7 cosmetic_reuse ok=", passed)
+	return passed
+
+
+func _test_ui_motion_and_reduced_motion() -> bool:
+	service.reset_to_defaults()
+	service.set_setting_value("reduced_motion_enabled", true)
+	var scene: PackedScene = load("res://app/netbound_app.tscn")
+	var app := scene.instantiate()
+	get_root().add_child(app)
+	await process_frame
+	await process_frame
+	var passed := String(app.get("current_screen_name")) == "main_menu"
+	passed = int(app.get("active_ui_tweens").size()) == 0 and passed
+	passed = app.call("show_level_select") and passed
+	await process_frame
+	passed = String(app.get("current_screen_name")) == "level_select" and passed
+	passed = int(app.get("active_ui_tweens").size()) == 0 and passed
+	passed = int(app.call("get_registered_level_card_count")) == 10 and passed
+	passed = app.call("show_cosmetics") and passed
+	await process_frame
+	passed = String(app.get("current_screen_name")) == "cosmetics" and passed
+	passed = int(app.get("active_ui_tweens").size()) == 0 and passed
+	app.queue_free()
+	await process_frame
+	service.reset_to_defaults()
+	print("PHASE7 ui_motion ok=", passed)
+	return passed
+
+
 func _test_all_production_level_startups() -> bool:
 	var passed := true
 	for level_id in LevelRegistryScript.get_level_ids():
@@ -216,6 +301,17 @@ func _test_all_production_level_startups() -> bool:
 		await process_frame
 	print("PHASE7 level_startups ok=", passed)
 	return passed
+
+
+func _all_goal_targets_still_synced(level: Node) -> bool:
+	var targets := level.find_children("*", "GoalTarget", true, false)
+	if targets.is_empty():
+		return false
+	for node in targets:
+		var target := node as GoalTarget
+		if not target or not target.geometry_matches_detector():
+			return false
+	return true
 
 
 func _line_offsets(offset: Vector2, count: int) -> PackedVector2Array:

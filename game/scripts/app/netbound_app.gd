@@ -6,7 +6,7 @@ const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
 
-const APP_VERSION_LABEL := "Vertical Slice P6"
+const APP_VERSION_LABEL := "Vertical Slice P7"
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
 const RESULT_REVEAL_DELAY := 0.35
@@ -53,6 +53,7 @@ var cosmetic_description_label: Label
 var cosmetic_requirement_label: Label
 var cosmetic_status_label: Label
 var cosmetic_equip_button: Button
+var active_ui_tweens: Array[Tween] = []
 
 
 func _ready() -> void:
@@ -364,6 +365,7 @@ func _show_main_menu_internal() -> void:
 
 	screen_root.add_child(screen)
 	_refresh_main_menu_play_state()
+	_animate_screen_entrance(screen)
 
 
 func _show_level_select_internal() -> void:
@@ -430,6 +432,7 @@ func _show_level_select_internal() -> void:
 	screen_root.add_child(screen)
 	_refresh_level_grid_columns()
 	_refresh_level_select_state()
+	_animate_screen_entrance(screen)
 
 
 func _show_settings_internal() -> void:
@@ -474,6 +477,7 @@ func _show_settings_internal() -> void:
 
 	screen_root.add_child(screen)
 	_refresh_settings_labels()
+	_animate_screen_entrance(screen)
 
 
 func _show_cosmetics_internal() -> void:
@@ -596,6 +600,7 @@ func _show_cosmetics_internal() -> void:
 
 	screen_root.add_child(screen)
 	_refresh_cosmetics_screen()
+	_animate_screen_entrance(screen)
 
 
 func _select_cosmetic_category(category: String) -> void:
@@ -873,6 +878,8 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
+	_animate_modal_entrance(result_overlay)
+	_animate_result_reveal(box)
 
 
 func _show_failure_result(level_result: LevelResult) -> void:
@@ -915,6 +922,8 @@ func _show_failure_result(level_result: LevelResult) -> void:
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
+	_animate_modal_entrance(result_overlay)
+	_animate_result_reveal(box)
 
 
 func _on_level_completed(level_result: LevelResult, progression_update: RefCounted) -> void:
@@ -974,6 +983,7 @@ func _leave_current_level() -> void:
 
 
 func _clear_screen() -> void:
+	_kill_ui_tweens()
 	for child in screen_root.get_children():
 		if child != fade_rect:
 			child.queue_free()
@@ -990,6 +1000,7 @@ func _clear_screen() -> void:
 
 
 func _clear_gameplay_overlay() -> void:
+	_kill_ui_tweens()
 	gameplay_overlay_root.visible = true
 	for child in gameplay_overlay_root.get_children():
 		child.queue_free()
@@ -1303,7 +1314,10 @@ func _new_small_button(text_value: String) -> Button:
 
 
 func _connect_button_feedback(button: Button, sound_id: String) -> void:
-	button.pressed.connect(func() -> void: _play_ui_feedback(sound_id))
+	button.pressed.connect(func() -> void:
+		_play_ui_feedback(sound_id)
+		_animate_button_press(button)
+	)
 
 
 func _new_modal_overlay(node_name: String) -> Control:
@@ -1317,6 +1331,111 @@ func _new_modal_overlay(node_name: String) -> Control:
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(shade)
 	return overlay
+
+
+func _animate_screen_entrance(screen: Control) -> void:
+	if _motion_reduced_for_ui() or not screen:
+		return
+	screen.modulate.a = 0.0
+	var tween := create_tween()
+	_track_ui_tween(tween)
+	tween.tween_property(screen, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func() -> void: _active_ui_tween_finished(tween))
+	_animate_buttons_in(screen)
+
+
+func _animate_modal_entrance(overlay: Control) -> void:
+	if _motion_reduced_for_ui() or not overlay:
+		return
+	overlay.modulate.a = 0.0
+	var tween := create_tween()
+	_track_ui_tween(tween)
+	tween.tween_property(overlay, "modulate:a", 1.0, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func() -> void: _active_ui_tween_finished(tween))
+	var panel := _first_panel_child(overlay)
+	if panel:
+		panel.pivot_offset = panel.size * 0.5
+		panel.scale = Vector2(0.96, 0.96)
+		var panel_tween := create_tween()
+		_track_ui_tween(panel_tween)
+		panel_tween.tween_property(panel, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		panel_tween.tween_callback(func() -> void: _active_ui_tween_finished(panel_tween))
+
+
+func _animate_result_reveal(box: VBoxContainer) -> void:
+	if _motion_reduced_for_ui() or not box:
+		return
+	var delay := 0.0
+	for child in box.get_children():
+		var control := child as Control
+		if not control:
+			continue
+		control.modulate.a = 0.0
+		var tween := create_tween()
+		_track_ui_tween(tween)
+		tween.tween_interval(delay)
+		tween.tween_property(control, "modulate:a", 1.0, 0.12)
+		tween.tween_callback(func() -> void: _active_ui_tween_finished(tween))
+		delay += 0.045
+
+
+func _animate_buttons_in(root: Node) -> void:
+	if _motion_reduced_for_ui():
+		return
+	var buttons: Array[Button] = []
+	for node in root.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button:
+			buttons.append(button)
+	for i in mini(buttons.size(), 12):
+		var button := buttons[i]
+		button.modulate.a = 0.0
+		var tween := create_tween()
+		_track_ui_tween(tween)
+		tween.tween_interval(float(i) * 0.025)
+		tween.tween_property(button, "modulate:a", 1.0, 0.12)
+		tween.tween_callback(func() -> void: _active_ui_tween_finished(tween))
+
+
+func _animate_button_press(button: Button) -> void:
+	if _motion_reduced_for_ui() or not button:
+		return
+	button.pivot_offset = button.size * 0.5
+	button.scale = Vector2(0.98, 0.98)
+	var tween := create_tween()
+	_track_ui_tween(tween)
+	tween.tween_property(button, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func() -> void: _active_ui_tween_finished(tween))
+
+
+func _motion_reduced_for_ui() -> bool:
+	return _is_headless_run() or bool(_get_save_service().get_setting_value("reduced_motion_enabled", false))
+
+
+func _track_ui_tween(tween: Tween) -> void:
+	if tween:
+		active_ui_tweens.append(tween)
+
+
+func _active_ui_tween_finished(tween: Tween) -> void:
+	active_ui_tweens.erase(tween)
+
+
+func _kill_ui_tweens() -> void:
+	for tween in active_ui_tweens:
+		if tween:
+			tween.kill()
+	active_ui_tweens.clear()
+
+
+func _first_panel_child(root: Node) -> Control:
+	for child in root.get_children():
+		if child is PanelContainer:
+			return child as Control
+		var nested := _first_panel_child(child)
+		if nested:
+			return nested
+	return null
 
 
 func _new_center_panel(size: Vector2) -> PanelContainer:

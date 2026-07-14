@@ -100,6 +100,32 @@ Near-miss feedback is presentation-only and lives in `level_controller.gd`. It m
 
 Post/crossbar impacts can also request the same guarded feedback. Valid swept goal detection still resolves first and remains authoritative.
 
+### LevelVisualPolish
+
+Component: `LevelVisualPolish`
+Script: `res://scripts/presentation/level_visual_polish.gd`
+
+Each production level creates one visual-only polish node at runtime. It owns:
+
+- per-level environment colors and directional light color/energy
+- shared material language for fields, goals, nets, static blockers, gates, route hints, and bounce surfaces
+- non-colliding arena trim, route rails, field stripes, and backdrop meshes
+- one visual-only contact shadow that follows the ball
+- a goal frame pulse that layers with the selected cosmetic goal effect
+
+The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
+
+### UI Motion
+
+`NetboundApp` owns screen and modal motion. It adds:
+
+- short screen fade-ins for Main Menu, Level Select, Settings, and Cosmetics
+- modal fade/scale on Pause and Results
+- small button press scale feedback
+- staggered result/card/button reveal where practical
+
+Reduced Motion and headless runs skip these tweens. UI animations do not disable controls or own navigation results; the existing navigation lock still prevents double navigation.
+
 ## Settings
 
 Phase 7 extends the existing version `1` settings dictionary with:
@@ -122,11 +148,15 @@ Initial presentation budgets:
 - aim preview dots per active level: 14
 - gameplay camera feedback: one reusable component per level
 - launch rings/near-miss labels: transient and cleared on Reset/Retry
+- level visual polish nodes per level: at most 24, zero collision objects
+- contact shadows: one mesh per level
+- active UI tweens: transient and killed on screen/gameplay overlay clear
 - impact cooldown: 0.08-0.14 seconds depending on type
+- cached ball skin materials and reused same-trail materials on repeated cosmetic refresh
 - no unbounded presentation arrays
 - no production debug spam
 
-Later Phase 7 subsystems must keep these budgets current as UI motion, world polish, and level presentation are added.
+Later Phase 7 subsystems must keep these budgets current as any final QA instrumentation is added.
 
 ## Physical Checks Still Required
 

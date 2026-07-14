@@ -8,6 +8,7 @@ enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 const RESETTABLE_GROUP := "netbound_level_resettable"
 const GOAL_TARGET_GROUP := "netbound_goal_target"
 const CosmeticVisualsScript := preload("res://scripts/cosmetics/cosmetic_visuals.gd")
+const LevelVisualPolishScript := preload("res://scripts/presentation/level_visual_polish.gd")
 
 @export var level_definition: LevelDefinition
 @export var max_shots: int = 3
@@ -58,6 +59,7 @@ var selected_ball_skin_id: String = "ball_classic"
 var selected_trail_id: String = "trail_none"
 var selected_goal_effect_id: String = "goal_classic"
 var near_miss_presented_shot_id: int = -1
+var level_visual_polish
 
 
 func _ready() -> void:
@@ -66,6 +68,7 @@ func _ready() -> void:
 	_refresh_selected_cosmetics()
 	_apply_level_definition_ui_values()
 	_setup_goal_targets()
+	_setup_level_visual_polish()
 	retry_button.pressed.connect(_on_retry_level_pressed)
 	win_retry_button.pressed.connect(_on_retry_level_pressed)
 	win_continue_button.pressed.connect(_on_continue_pressed)
@@ -93,6 +96,7 @@ func prepare_for_unload() -> void:
 	_clear_active_curve()
 	_clear_swipe()
 	_clear_cosmetic_feedback()
+	_clear_level_presentation_feedback()
 	_reset_all_goal_tracking()
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
@@ -261,6 +265,7 @@ func _restart_level() -> void:
 	_reset_all_goal_tracking()
 	_hide_overlays()
 	_clear_swipe()
+	_clear_level_presentation_feedback()
 	reset_in_progress = true
 	_update_level_ui()
 	await _apply_physics_safe_reset()
@@ -503,6 +508,8 @@ func _show_goal_feedback() -> void:
 	_refresh_selected_cosmetics()
 	if gameplay_feedback:
 		gameplay_feedback.on_goal_scored()
+	if level_visual_polish:
+		level_visual_polish.on_goal_scored()
 	CosmeticVisualsScript.trigger_goal_effect(
 		self,
 		goal_root,
@@ -538,6 +545,7 @@ func _hide_overlays() -> void:
 	goal_flash.visible = false
 	goal_particles.emitting = false
 	_clear_cosmetic_feedback()
+	_clear_level_presentation_feedback()
 
 
 func _update_level_ui() -> void:
@@ -566,6 +574,19 @@ func _refresh_selected_cosmetics() -> void:
 func _clear_cosmetic_feedback() -> void:
 	CosmeticVisualsScript.reset_ball_trail(ball)
 	CosmeticVisualsScript.clear_goal_effects(self)
+
+
+func _setup_level_visual_polish() -> void:
+	if level_visual_polish:
+		return
+	level_visual_polish = LevelVisualPolishScript.new()
+	add_child(level_visual_polish)
+	level_visual_polish.setup(self)
+
+
+func _clear_level_presentation_feedback() -> void:
+	if level_visual_polish and level_visual_polish.has_method("clear_feedback"):
+		level_visual_polish.clear_feedback()
 
 
 func _present_ball_impact(kind: String, strength: float, body: Node) -> void:

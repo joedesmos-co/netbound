@@ -15,6 +15,8 @@ Startup
 
 `NetboundApp` owns navigation. It loads production levels by `LevelRegistry` ID and never guesses paths from strings.
 
+Phase 7 adds lightweight motion to this flow. Main screens fade in, modal overlays fade/scale in, buttons give a small press response, and result contents reveal quickly. Reduced Motion skips these tweens, and animations do not block input or own navigation decisions.
+
 ## Screen Responsibilities
 
 ### Main Menu
@@ -60,6 +62,7 @@ Startup
 - Level completion is recorded by `SaveService` before the result overlay appears.
 - Success shows level name, run stars, shots used, par, total stars, best result comparison, and unlock messages.
 - Newly unlocked cosmetics from the actual progression update appear in a compact unlock section.
+- Result labels/buttons reveal with a short stagger unless Reduced Motion is enabled.
 - Next Level is enabled only if a valid registered next level is unlocked.
 - Level 10 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
@@ -83,6 +86,15 @@ Startup
 - Gameplay: Back/Escape opens Pause.
 - Pause: Back/Escape resumes gameplay.
 - Result Screen: Back/Escape returns to Level Select.
+
+## Motion Rules
+
+- Major screens use a short fade-in.
+- Pause and result overlays use a short fade plus panel scale.
+- Buttons use a brief press scale with audio/haptics feedback.
+- Reduced Motion makes screen changes effectively immediate.
+- Active tweens are killed when screens or gameplay overlays are cleared.
+- Navigation remains guarded by `navigation_in_progress`; tweens do not add a second navigation lock.
 
 ## Responsive Layout
 

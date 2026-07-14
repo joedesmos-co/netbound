@@ -14,6 +14,8 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Cosmetic visuals are material overrides, bounded trail points, and transient goal effects; they do not alter physics or scoring.
 - Original generated audio assets, runtime audio buses, bounded AudioService players, and HapticsService now exist.
 - Reduced Motion and Camera Effects settings exist and persist.
+- Gameplay aim preview, launch/impact/goal feedback, near-miss presentation, level visual polish, contact shadows, and UI motion now exist.
+- Phase 7 presentation nodes are bounded, visual-only, and covered by headless regression checks.
 - Export presets and platform packaging are not configured yet.
 
 ## Project Settings
@@ -66,7 +68,6 @@ Required:
 
 Current gaps:
 
-- Final Phase 7 art polish is still pending.
 - Physical small-screen readability checks are still required.
 - Cosmetic trails and goal effects require physical-device readability checks to confirm they do not hide tight gaps or goals.
 
@@ -91,6 +92,7 @@ Current gaps:
 
 - No mobile profiling has been done.
 - Swipe samples are not currently bounded by an explicit maximum.
+- Desktop/headless budget checks cover audio pools, trail points, visual polish node counts, and presentation cleanup, but device GPU/thermal checks remain open.
 
 ## Offline Requirements
 
@@ -123,7 +125,6 @@ Required:
 
 Current gaps:
 
-- Audio and haptics are connected at the service layer.
 - Physical mobile audio focus and haptic feel still require device testing.
 
 ## Final QA Matrix

@@ -96,6 +96,7 @@ Selection rules:
 - Ball skins use material overrides on existing visual mesh children.
 - Trails use `NetboundBallTrail`, a bounded visual-only child node with no physics interaction.
 - Goal effects trigger from `_show_goal_feedback()` after valid scoring and are cleared on retry, unload, and navigation.
+- Phase 7 level presentation may add lighting/material context around the ball, but cosmetics remain the only system that changes ball visual skin/trail selection.
 
 ## Preview Flow
 
@@ -104,6 +105,8 @@ The Cosmetics screen uses `NetboundCosmeticPreview`, a lightweight `SubViewport`
 ## Performance Constraints
 
 - No per-frame material allocation.
+- Ball skin materials are cached by stable cosmetic ID.
+- Reapplying the same selected trail resets the trail without rebuilding its materials.
 - Trail point count is fixed.
 - Goal effect nodes are transient and self-cleaning.
 - No external copyrighted assets or textures.

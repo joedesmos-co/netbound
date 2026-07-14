@@ -6,6 +6,9 @@ const BallTrailScript := preload("res://scripts/cosmetics/ball_trail.gd")
 
 const GOAL_EFFECT_GROUP := "netbound_cosmetic_goal_effect"
 
+static var _ball_main_material_cache: Dictionary = {}
+static var _ball_accent_material_cache: Dictionary = {}
+
 
 static func apply_to_ball(ball: RigidBody3D, ball_skin_id: String, trail_id: String) -> void:
 	if not ball:
@@ -87,6 +90,8 @@ static func clear_goal_effects(level_root: Node) -> void:
 
 
 static func _ball_main_material(skin_id: String) -> StandardMaterial3D:
+	if _ball_main_material_cache.has(skin_id):
+		return _ball_main_material_cache[skin_id]
 	var material := StandardMaterial3D.new()
 	material.roughness = 0.36
 	match skin_id:
@@ -117,10 +122,13 @@ static func _ball_main_material(skin_id: String) -> StandardMaterial3D:
 			material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 			material.emission_enabled = true
 			material.emission = Color(0.16, 0.16, 0.16, 1.0)
+	_ball_main_material_cache[skin_id] = material
 	return material
 
 
 static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
+	if _ball_accent_material_cache.has(skin_id):
+		return _ball_accent_material_cache[skin_id]
 	var material := StandardMaterial3D.new()
 	material.roughness = 0.42
 	match skin_id:
@@ -147,6 +155,7 @@ static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
 			material.emission = Color(0.75, 0.42, 0.04, 1.0)
 		_:
 			material.albedo_color = Color(0.035, 0.035, 0.035, 1.0)
+	_ball_accent_material_cache[skin_id] = material
 	return material
 
 
