@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_06_definition.tres" id="2_level_def"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_overhead"]
+albedo_color = Color(0.12, 0.24, 0.92, 1)
+emission_enabled = true
+emission = Color(0.0, 0.02, 0.22, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_overhead"]
+material = SubResource("StandardMaterial3D_overhead")
+size = Vector3(12.5, 2.5, 0.85)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_overhead"]
+size = Vector3(12.5, 2.5, 0.85)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_low_marker"]
+albedo_color = Color(0.1, 1, 0.35, 1)
+emission_enabled = true
+emission = Color(0.0, 0.28, 0.08, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_low_marker"]
+material = SubResource("StandardMaterial3D_low_marker")
+size = Vector3(5.0, 0.08, 0.85)
+
+[node name="Level06" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0.38, -2.2)
+
+[node name="OverheadBlocker" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1, -5.3)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="OverheadBlocker"]
+mesh = SubResource("BoxMesh_overhead")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="OverheadBlocker"]
+shape = SubResource("BoxShape3D_overhead")
+
+[node name="LowRoadMarker" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -5.3)
+mesh = SubResource("BoxMesh_low_marker")

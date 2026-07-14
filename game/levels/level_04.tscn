@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_04_definition.tres" id="2_level_def"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blocker"]
+albedo_color = Color(0.62, 0.1, 0.82, 1)
+emission_enabled = true
+emission = Color(0.12, 0.0, 0.2, 1)
+roughness = 0.62
+
+[sub_resource type="BoxMesh" id="BoxMesh_blocker"]
+material = SubResource("StandardMaterial3D_blocker")
+size = Vector3(4.2, 5.2, 1.35)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_blocker"]
+size = Vector3(4.2, 5.2, 1.35)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lane"]
+albedo_color = Color(0.1, 0.9, 0.95, 1)
+emission_enabled = true
+emission = Color(0.0, 0.22, 0.28, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_lane"]
+material = SubResource("StandardMaterial3D_lane")
+size = Vector3(2.2, 0.08, 6.0)
+
+[node name="Level04" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0.38, -2.2)
+
+[node name="CentralBlocker" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, -5.25)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CentralBlocker"]
+mesh = SubResource("BoxMesh_blocker")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CentralBlocker"]
+shape = SubResource("BoxShape3D_blocker")
+
+[node name="LeftCurveHint" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94, -5.7, 0.1, -5.0)
+mesh = SubResource("BoxMesh_lane")
+
+[node name="RightCurveHint" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94, 5.7, 0.1, -5.0)
+mesh = SubResource("BoxMesh_lane")

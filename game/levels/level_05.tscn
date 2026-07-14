@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_05_definition.tres" id="2_level_def"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_barrier"]
+albedo_color = Color(0.95, 0.38, 0.12, 1)
+emission_enabled = true
+emission = Color(0.28, 0.08, 0.0, 1)
+roughness = 0.72
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrier"]
+material = SubResource("StandardMaterial3D_barrier")
+size = Vector3(13.0, 2.8, 0.75)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
+size = Vector3(13.0, 2.8, 0.75)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_top_marker"]
+albedo_color = Color(1, 0.95, 0.2, 1)
+emission_enabled = true
+emission = Color(0.35, 0.22, 0.0, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_top_marker"]
+material = SubResource("StandardMaterial3D_top_marker")
+size = Vector3(13.2, 0.12, 0.82)
+
+[node name="Level05" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0.38, -2.2)
+
+[node name="TallBarrier" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -5.4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TallBarrier"]
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TallBarrier"]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="TopMarker" type="MeshInstance3D" parent="TallBarrier"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.46, 0)
+mesh = SubResource("BoxMesh_top_marker")

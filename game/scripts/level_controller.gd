@@ -222,8 +222,8 @@ func _restart_level() -> void:
 	_clear_swipe()
 	reset_in_progress = true
 	_update_level_ui()
-	await _reset_level_elements()
 	await _apply_physics_safe_reset()
+	_reset_level_elements()
 	_ensure_ball_ready_for_play()
 	level_state = LevelState.READY
 	_update_level_ui()
@@ -421,7 +421,6 @@ func _reset_level_elements() -> void:
 	for node in _find_nodes_in_group(RESETTABLE_GROUP):
 		if node.has_method("reset_level_element"):
 			node.call("reset_level_element", token)
-	await get_tree().physics_frame
 
 
 func _find_nodes_in_group(group_name: StringName) -> Array[Node]:

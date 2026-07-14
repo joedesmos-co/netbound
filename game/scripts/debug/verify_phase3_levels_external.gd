@@ -34,6 +34,46 @@ const LEVEL_SPECS := [
 		"curve": 0.0,
 		"wait": 0.0,
 	},
+	{
+		"scene": "res://levels/level_04.tscn",
+		"id": "level_04",
+		"next": "level_05",
+		"shots": 4,
+		"par": 2,
+		"offset": Vector2(-145.0, -245.0),
+		"curve": -12.0,
+		"wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_05.tscn",
+		"id": "level_05",
+		"next": "level_06",
+		"shots": 4,
+		"par": 2,
+		"offset": Vector2(0.0, -235.0),
+		"curve": 0.0,
+		"wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_06.tscn",
+		"id": "level_06",
+		"next": "level_07",
+		"shots": 3,
+		"par": 1,
+		"offset": Vector2(0.0, -135.0),
+		"curve": 0.0,
+		"wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_07.tscn",
+		"id": "level_07",
+		"next": "level_08",
+		"shots": 4,
+		"par": 2,
+		"offset": Vector2(0.0, -230.0),
+		"curve": 0.0,
+		"wait": 0.45,
+	},
 ]
 
 
@@ -128,7 +168,21 @@ func _complete_with_swipe(
 		if state == level.LevelState.GOAL:
 			return true
 		if state == level.LevelState.FAILED:
+			print(
+				"PHASE3 completion_failed state=FAILED pos=",
+				ball.global_position,
+				" vel=",
+				ball.linear_velocity
+			)
 			return false
+	print(
+		"PHASE3 completion_failed state=",
+		level.get("level_state"),
+		" pos=",
+		ball.global_position,
+		" vel=",
+		ball.linear_velocity
+	)
 	return false
 
 

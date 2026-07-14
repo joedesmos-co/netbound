@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_06"
+display_name = "Low Road"
+shot_limit = 3
+par_shots = 1
+tutorial_text = "Keep the route low. The overhead blocker punishes big chips."
+bounds_min = Vector3(-24, -2, -18)
+bounds_max = Vector3(24, 32, 12)
+camera_position = Vector3(0, 11.4, 14.2)
+camera_look_at = Vector3(0, 3.2, -8.5)
+mechanic_id = "low_route"
+tags = PackedStringArray("low", "control", "overhead")
+next_level_id = "level_07"
