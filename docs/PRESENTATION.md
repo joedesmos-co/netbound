@@ -168,3 +168,21 @@ Headless and desktop-visible checks cannot prove physical mobile feel. iOS and A
 - haptic feel
 - safe areas
 - thermal/performance behavior
+
+## Phase 7 Profiling Snapshot
+
+Desktop/headless instrumentation checks currently verify:
+
+- SFX player pool: `10`
+- UI player pool: `4`
+- music players: `1`
+- trail points per active ball: `16`
+- aim preview dots per active level: `14`
+- level polish visual nodes per production level: `<= 24`
+- level polish collision objects: `0`
+- cosmetic confetti pieces: `24`
+- shockwave nodes: `1`
+- material reuse: repeated ball skin and same-trail refreshes reuse existing materials
+- cleanup: Reset/Retry/unload clears camera feedback, goal pulses, cosmetic effects, and UI tweens
+
+This is not a substitute for physical mobile profiling. GPU cost, thermal behavior, safe-area comfort, haptic feel, and audio focus still need iOS/Android hardware validation in Phase 8.

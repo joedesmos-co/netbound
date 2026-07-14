@@ -459,7 +459,7 @@ Phase 6 tests use isolated `user://phase6_*` save paths.
 
 ## Phase 7 Verification Results
 
-Phase 7 adds the presentation service layer, generated original audio assets, audio buses, haptics abstraction, and reduced-motion/camera-effects settings.
+Phase 7 adds the presentation service layer, generated original audio assets, audio buses, haptics abstraction, aim/shot/goal/near-miss feedback, level visual polish, UI motion, and reduced-motion/camera-effects settings.
 
 Command:
 
@@ -470,7 +470,7 @@ Command:
   --script res://scripts/debug/verify_phase7_presentation_external.gd
 ```
 
-Current coverage:
+Coverage:
 
 - generated audio assets resolve
 - `Music`, `SFX`, and `UI` buses exist
@@ -494,7 +494,51 @@ Current coverage:
 - Level Select and Cosmetics remain navigable through the app shell
 - all 10 production levels start
 
-Additional Phase 7 final QA checks will be added before the phase closes.
+Final Phase 7 audit commands and outcomes:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+for f in $(find /Users/ryland/Documents/NetBound/game/scripts -type f -name '*.gd' | sort); do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    --check-only \
+    --script "res://${f#/Users/ryland/Documents/NetBound/game/}"
+done
+for f in $(find /Users/ryland/Documents/NetBound/game/scripts/debug -type f -name '*.gd' | sort); do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    --script "res://${f#/Users/ryland/Documents/NetBound/game/}"
+done
+for scene in res://levels/level_01.tscn res://levels/level_02.tscn res://levels/level_03.tscn res://levels/level_04.tscn res://levels/level_05.tscn res://levels/level_06.tscn res://levels/level_07.tscn res://levels/level_08.tscn res://levels/level_09.tscn res://levels/level_10.tscn; do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    "$scene" \
+    --quit-after 3
+done
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 4
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_01.tscn --quit-after 4
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_05.tscn --quit-after 4
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_07.tscn --quit-after 4
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_10.tscn --quit-after 4
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+git diff --check
+```
+
+Outcomes:
+
+- Headless import passed.
+- Configured app startup passed.
+- Strict parser sweep passed for every GDScript file.
+- Every external debug script passed, including Phase 1-7 suites and historical release/reset/trajectory probes.
+- All 10 production level scenes started headlessly.
+- Visible configured app launch passed on `Metal 4.0 - Forward Mobile`.
+- Visible Level 01, Level 05, Level 07, and Level 10 launches passed on `Metal 4.0 - Forward Mobile`.
+- Visible Phase 7 app/menu/cosmetics smoke script passed.
+- `git diff --check` passed.
 
 ## Trajectory Acceptance Targets
 
