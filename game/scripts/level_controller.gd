@@ -366,6 +366,7 @@ func _setup_goal_targets() -> void:
 		goal_detector.setup(ball)
 		goal_detector.sync_geometry(
 			goal_root.global_position.z,
+			goal_root.global_position.x,
 			goal_clear_half_width,
 			goal_crossbar_height,
 			goal_interior_depth,

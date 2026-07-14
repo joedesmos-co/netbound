@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_09"
+display_name = "Double Timing"
+shot_limit = 5
+par_shots = 3
+tutorial_text = "Watch both gates. Fire when the openings overlap."
+bounds_min = Vector3(-24, -2, -18)
+bounds_max = Vector3(24, 32, 12)
+camera_position = Vector3(0, 12.2, 15.4)
+camera_look_at = Vector3(0, 3.8, -8.4)
+mechanic_id = "double_timing"
+tags = PackedStringArray("timing", "gates", "advanced")
+next_level_id = "level_10"

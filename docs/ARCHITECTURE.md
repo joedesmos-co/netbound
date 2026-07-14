@@ -87,7 +87,7 @@ Level definition schema:
 
 Reusable components:
 
-- `GoalTarget`: attached to the goal root. It owns opening width, crossbar height, depth, detector sync, debug volume sizing, and frame/net helper sizing from one exported source of truth. It wraps `GoalDetector` so multiple goals can be registered by the level runtime.
+- `GoalTarget`: attached to the goal root. It owns opening width, crossbar height, depth, detector sync, debug volume sizing, and frame/net helper sizing from one exported source of truth. It wraps `GoalDetector` so multiple goals can be registered by the level runtime. Phase 3 syncs both goal line `z` and center `x`, so off-center goals keep visual and scoring geometry aligned.
 - `MovingObstacle`: deterministic point-to-point motion with duration, looping/ping-pong, start phase, and exact Retry reset.
 - `RotatingObstacle`: deterministic rotation with exported axis, speed, start angle, and exact Retry reset.
 - `TimedGate`: deterministic open/closed cycle with exported durations, start phase, target node movement, visible state, and exact Retry reset.
@@ -97,9 +97,27 @@ Reset contract:
 
 - Resettable level elements join the `netbound_level_resettable` group.
 - Resettable nodes implement `reset_level_element(generation: int)`.
-- `_restart_level()` enters `AUTO_RESETTING`, cancels stale shot callbacks, resets all group members, resets the ball, then enters `READY`.
-- READY is therefore reached only after level elements and the ball have completed their reset path.
+- `_restart_level()` enters `AUTO_RESETTING`, cancels stale shot callbacks, awaits the physics-safe ball reset, immediately resets all group members, then enters `READY`.
+- READY is therefore reached only after the ball and level elements have completed their reset path.
 - Components use deterministic `_physics_process()` state rather than tweens/timers, so Retry cannot leave stale tweens running.
+
+## Phase 3 Production Level Update
+
+Phase 3 adds exactly ten production levels:
+
+- `res://levels/level_01.tscn` through `res://levels/level_10.tscn`
+- `res://levels/definitions/level_01_definition.tres` through `level_10_definition.tres`
+
+The level set uses inherited scenes and reusable components rather than duplicating the gameplay controller. No production level overrides global launch speed, elevation, curve, ball mass, ball radius, damping, or bounce tuning.
+
+New Phase 3 content coverage:
+
+- Levels 02, 09, and 10 use `TimedGate`.
+- Level 07 uses `RotatingObstacle`.
+- Level 08 uses `BounceSurface`.
+- Level 10 uses an off-center `GoalTarget`; `GoalDetector.goal_center_x` is synced from the goal root so scoring follows the moved frame.
+
+The configured main scene remains `res://levels/level_01.tscn`. Progression, menus, saves, stars UI, cosmetics, and level selection are still future phases.
 
 Proof scene:
 
@@ -116,14 +134,15 @@ How to create a new configured level without changing core shooting:
 3. Assign the `level_definition` export.
 4. Place `BallSpawn`, one or more `GoalTarget` nodes, static content, and optional resettable components.
 5. Keep per-level changes in the definition and scene content; do not override global shooting exports unless a later phase explicitly documents why.
-6. Run the Phase 1 and Phase 2 regression scripts.
+6. Run the Phase 1, Phase 2, and Phase 3 regression scripts.
 
 ## Current Entry Points
 
 - `game/project.godot` runs `res://levels/level_01.tscn`.
 - `game/main.tscn` exists but is an empty `Node3D` and is not the configured main scene.
 - `game/scenes/prototype.tscn` is an older standalone shooting prototype.
-- `game/levels/level_01.tscn` is the production scene for current gameplay.
+- `game/levels/level_01.tscn` is the configured production main scene.
+- `game/levels/level_02.tscn` through `game/levels/level_10.tscn` are authored production levels for the vertical slice.
 - `game/levels/debug/level_architecture_test.tscn` is an architecture proof scene, not a production level and not the configured main scene.
 
 ## Project Settings
@@ -156,6 +175,22 @@ Main children:
 - `UI`
 
 The scene still contains temporary UI and prototype-era nodes, but level metadata now comes from `LevelDefinition` and goal geometry/scoring is synchronized by `GoalTarget`.
+
+### `levels/level_02.tscn` through `levels/level_10.tscn`
+
+Production levels 02-10 inherit Level 01 and override scene content plus `level_definition`. They do not duplicate `level_controller.gd` or `prototype_controller.gd`.
+
+High-level content:
+
+- Level 02: timed gate.
+- Level 03: static precision gap.
+- Level 04: central curve blocker.
+- Level 05: elevation barrier.
+- Level 06: overhead low-road blocker.
+- Level 07: rotating obstacle.
+- Level 08: bounce wall and direct blocker.
+- Level 09: two offset timed gates.
+- Level 10: timed gate, low height hurdle, curve blocker, and off-center goal.
 
 ### `levels/debug/level_architecture_test.tscn`
 
@@ -252,7 +287,7 @@ Reusable local bounce surface that applies its own `PhysicsMaterial` override wi
 
 Standalone `GoalDetector` node. It performs swept goal-line crossing detection from previous to current ball position and emits `goal_scored`.
 
-The detector scores immediately when the ball's full radius crosses the goal opening at the crossing moment. It intentionally does not invalidate a legal crossing later because of side or rear net position.
+The detector scores immediately when the ball's full radius crosses the goal opening at the crossing moment. It intentionally does not invalidate a legal crossing later because of side or rear net position. Phase 3 adds `goal_center_x`, so off-center goals evaluate opening width relative to the goal root instead of assuming world `x = 0`.
 
 ### `swipe_overlay.gd`
 
@@ -296,8 +331,8 @@ Retry reset flow:
 
 1. `_restart_level()` cancels stale shot callbacks and enters `AUTO_RESETTING`.
 2. Shot counters and result data are reset.
-3. All `netbound_level_resettable` nodes receive `reset_level_element(level_reset_generation)`.
-4. The ball reset path is awaited.
+3. The ball reset path is awaited.
+4. All `netbound_level_resettable` nodes receive `reset_level_element(level_reset_generation)` immediately before READY.
 5. The ball is made ready and the level enters `READY`.
 
 ## Shot Calculation
@@ -402,6 +437,7 @@ Strengths:
 - Scores at goal-mouth crossing and avoids invalidating legal goals later due to side net or rear net geometry.
 - Uses a tracked shot ID to reject stale shot IDs.
 - `GoalTarget` now synchronizes the detector values, debug helper volumes, and goal frame/net helper dimensions from one exported target configuration.
+- Off-center goals are supported through `GoalDetector.goal_center_x`, synced by `GoalTarget`.
 
 Risks:
 

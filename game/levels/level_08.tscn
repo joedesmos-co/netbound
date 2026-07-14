@@ -1,0 +1,76 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_08_definition.tres" id="2_level_def"]
+[ext_resource type="Script" path="res://scripts/components/bounce_surface.gd" id="3_bounce"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blocker"]
+albedo_color = Color(0.88, 0.12, 0.18, 1)
+emission_enabled = true
+emission = Color(0.24, 0.0, 0.03, 1)
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="BoxMesh_blocker"]
+material = SubResource("StandardMaterial3D_blocker")
+size = Vector3(7.2, 4.2, 1.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_blocker"]
+size = Vector3(7.2, 4.2, 1.0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bounce"]
+albedo_color = Color(0.0, 0.95, 0.85, 1)
+emission_enabled = true
+emission = Color(0.0, 0.28, 0.24, 1)
+roughness = 0.38
+
+[sub_resource type="BoxMesh" id="BoxMesh_bounce"]
+material = SubResource("StandardMaterial3D_bounce")
+size = Vector3(0.6, 4.2, 7.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bounce"]
+size = Vector3(0.6, 4.2, 7.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stripe"]
+albedo_color = Color(1, 0.95, 0.18, 1)
+emission_enabled = true
+emission = Color(0.38, 0.25, 0.0, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_stripe"]
+material = SubResource("StandardMaterial3D_stripe")
+size = Vector3(0.66, 0.14, 7.7)
+
+[node name="Level08" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0.38, -2.2)
+
+[node name="DirectBlocker" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, -5.4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="DirectBlocker"]
+mesh = SubResource("BoxMesh_blocker")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DirectBlocker"]
+shape = SubResource("BoxShape3D_blocker")
+
+[node name="BankWall" type="StaticBody3D" parent="."]
+transform = Transform3D(0.985, 0, 0.174, 0, 1, 0, -0.174, 0, 0.985, 8.8, 2.1, -5.0)
+script = ExtResource("3_bounce")
+arcade_bounce = 0.92
+arcade_friction = 0.02
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BankWall"]
+mesh = SubResource("BoxMesh_bounce")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BankWall"]
+shape = SubResource("BoxShape3D_bounce")
+
+[node name="BankStripeTop" type="MeshInstance3D" parent="BankWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02, 1.55, 0)
+mesh = SubResource("BoxMesh_stripe")
+
+[node name="BankStripeLow" type="MeshInstance3D" parent="BankWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02, -1.15, 0)
+mesh = SubResource("BoxMesh_stripe")

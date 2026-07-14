@@ -4,6 +4,7 @@ extends Node3D
 signal goal_scored
 
 @export var goal_line_z: float = -10.0
+@export var goal_center_x: float = 0.0
 @export var post_half_width: float = 11.0
 @export var crossbar_height: float = 8.4
 @export var interior_depth: float = 5.0
@@ -38,19 +39,22 @@ func setup(ball: RigidBody3D) -> void:
 
 func sync_geometry(
 	line_z: float,
+	center_x: float,
 	half_width: float,
 	bar_height: float,
 	depth: float,
 	radius: float
 ) -> void:
 	goal_line_z = line_z
+	goal_center_x = center_x
 	post_half_width = half_width
 	crossbar_height = bar_height
 	interior_depth = depth
 	ball_radius = radius
 	_debug_print(
-		"sync line_z=%s half_width=%s bar=%s depth=%s radius=%s" % [
+		"sync line_z=%s center_x=%s half_width=%s bar=%s depth=%s radius=%s" % [
 			goal_line_z,
+			goal_center_x,
 			post_half_width,
 			crossbar_height,
 			interior_depth,
@@ -121,7 +125,7 @@ func process_ball(ball_position: Vector3, radius: float, shot_id: int) -> bool:
 func is_ball_fully_in_goal(ball_position: Vector3, radius: float) -> bool:
 	if ball_position.z + radius > goal_line_z:
 		return false
-	if absf(ball_position.x) + radius > post_half_width:
+	if absf(ball_position.x - goal_center_x) + radius > post_half_width:
 		return false
 	if ball_position.y + radius > crossbar_height:
 		return false
@@ -176,7 +180,7 @@ func _detect_swept_crossing(previous: Vector3, current: Vector3, radius: float) 
 
 func _evaluate_opening_at_point(center: Vector3, radius: float) -> Dictionary:
 	# Whole-ball inside posts/crossbar at the crossing moment only.
-	if absf(center.x) + radius > post_half_width:
+	if absf(center.x - goal_center_x) + radius > post_half_width:
 		return {"valid": false, "reason": "outside_left_right_opening_at_crossing"}
 	if center.y + radius > crossbar_height:
 		return {"valid": false, "reason": "above_crossbar_at_crossing"}

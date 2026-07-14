@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_08"
+display_name = "Bank Job"
+shot_limit = 4
+par_shots = 2
+tutorial_text = "Use the bright wall to bank around the blocker."
+bounds_min = Vector3(-24, -2, -18)
+bounds_max = Vector3(24, 32, 12)
+camera_position = Vector3(0, 12.0, 15.0)
+camera_look_at = Vector3(1.8, 3.3, -7.2)
+mechanic_id = "bank_shot"
+tags = PackedStringArray("bounce", "bank", "blocker")
+next_level_id = "level_09"

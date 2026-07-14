@@ -74,6 +74,7 @@ Phase 0 caveat: these scripts were not all production-path tests. Several called
 - `verify_loft_external.gd`
 - `verify_phase1_shooting_external.gd`
 - `verify_phase2_level_architecture_external.gd`
+- `verify_phase3_levels_external.gd`
 - `verify_release_path_external.gd`
 - `verify_release_shot_external.gd`
 - `verify_reset_external.gd`
@@ -238,6 +239,87 @@ Strict external regression scripts:
 - Global shooting values are unchanged across Level 01 and the proof scene.
 - Side-net goal detection remains valid.
 - Final-shot goal still beats fail state.
+
+## Phase 3 Verification Results
+
+Phase 3 adds exactly 10 authored production levels without changing global shooting tuning.
+
+Commands:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+
+for f in $(find scripts -type f -name '*.gd' | sort); do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    --check-only \
+    --script "res://${f}"
+done
+
+for scene in \
+  res://levels/level_01.tscn \
+  res://levels/level_02.tscn \
+  res://levels/level_03.tscn \
+  res://levels/level_04.tscn \
+  res://levels/level_05.tscn \
+  res://levels/level_06.tscn \
+  res://levels/level_07.tscn \
+  res://levels/level_08.tscn \
+  res://levels/level_09.tscn \
+  res://levels/level_10.tscn; do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    "$scene" \
+    --quit-after 3
+done
+
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+```
+
+Outcomes:
+
+- Headless import passed.
+- Strict parser check passed.
+- Startup passed for all 10 production scenes.
+- Phase 1 shooting regression still passed.
+- Phase 2 architecture regression still passed.
+- Phase 3 level-content regression passed.
+
+`verify_phase3_levels_external.gd` covers:
+
+- exactly 10 production level specs
+- all scenes load and start through the production controller
+- all definitions load with unique sequential IDs
+- expected shot limits, par values, and next-level IDs
+- unchanged global shooting tuning
+- unchanged ball radius, mass, damping, and bounce tuning
+- no debug scripts attached to production scene nodes
+- one production level controller per level
+- `GoalTarget` visual/scoring sync, including Level 10's off-center goal
+- READY ball state after restart
+- deterministic Retry reset signatures for resettable elements
+- scripted production-input completion routes for all 10 levels
+
+Scripted Phase 3 routes:
+
+| Level | Offset | Curve px | Wait |
+| --- | --- | ---: | ---: |
+| 01 | `(0, -220)` | `0` | `0.0` |
+| 02 | `(0, -230)` | `0` | `0.25` |
+| 03 | `(18, -235)` | `0` | `0.0` |
+| 04 | `(-145, -245)` | `-12` | `0.0` |
+| 05 | `(0, -235)` | `0` | `0.0` |
+| 06 | `(0, -135)` | `0` | `0.0` |
+| 07 | `(0, -230)` | `0` | `0.45` |
+| 08 | `(135, -185)` | `0` | `0.0` |
+| 09 | `(0, -230)` | `0` | `0.45` |
+| 10 | `(-4, -305)` | `-4` | `0.5` |
+
+Phase 3 also updates `verify_goal_detection_external.gd` with off-center goal scoring coverage.
 
 ## Trajectory Acceptance Targets
 

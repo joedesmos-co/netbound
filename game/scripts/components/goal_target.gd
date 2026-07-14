@@ -40,6 +40,7 @@ func setup(ball: RigidBody3D) -> void:
 		detector.setup(ball)
 		detector.sync_geometry(
 			global_position.z,
+			global_position.x,
 			opening_half_width,
 			crossbar_height,
 			interior_depth,
@@ -81,6 +82,7 @@ func geometry_matches_detector() -> bool:
 		return false
 	return (
 		is_equal_approx(detector.goal_line_z, global_position.z)
+		and is_equal_approx(detector.goal_center_x, global_position.x)
 		and is_equal_approx(detector.post_half_width, opening_half_width)
 		and is_equal_approx(detector.crossbar_height, crossbar_height)
 		and is_equal_approx(detector.interior_depth, interior_depth)
@@ -101,6 +103,7 @@ func _sync_geometry() -> void:
 		detector.show_debug_volumes = show_debug_volumes
 		detector.sync_geometry(
 			global_position.z,
+			global_position.x,
 			opening_half_width,
 			crossbar_height,
 			interior_depth,

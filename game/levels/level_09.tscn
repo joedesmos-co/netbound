@@ -1,0 +1,87 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_09_definition.tres" id="2_level_def"]
+[ext_resource type="Script" path="res://scripts/components/timed_gate.gd" id="3_timed_gate"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate_a"]
+albedo_color = Color(0.08, 0.75, 1, 1)
+emission_enabled = true
+emission = Color(0.0, 0.18, 0.32, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate_a"]
+material = SubResource("StandardMaterial3D_gate_a")
+size = Vector3(9.5, 4.3, 0.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gate_a"]
+size = Vector3(9.5, 4.3, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate_b"]
+albedo_color = Color(1, 0.42, 0.12, 1)
+emission_enabled = true
+emission = Color(0.3, 0.08, 0.0, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate_b"]
+material = SubResource("StandardMaterial3D_gate_b")
+size = Vector3(8.5, 4.2, 0.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gate_b"]
+size = Vector3(8.5, 4.2, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lane"]
+albedo_color = Color(0.1, 1, 0.45, 1)
+emission_enabled = true
+emission = Color(0.0, 0.28, 0.08, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_lane"]
+material = SubResource("StandardMaterial3D_lane")
+size = Vector3(4.4, 0.08, 5.8)
+
+[node name="Level09" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0.38, -2.2)
+
+[node name="FirstGate" type="Node3D" parent="."]
+script = ExtResource("3_timed_gate")
+target_path = NodePath("GateBody")
+closed_position = Vector3(0, 2.15, -4.55)
+open_position = Vector3(0, 7.6, -4.55)
+closed_duration = 0.9
+open_duration = 1.15
+starts_open = true
+start_phase_seconds = 0.35
+
+[node name="GateBody" type="StaticBody3D" parent="FirstGate"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FirstGate/GateBody"]
+mesh = SubResource("BoxMesh_gate_a")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FirstGate/GateBody"]
+shape = SubResource("BoxShape3D_gate_a")
+
+[node name="SecondGate" type="Node3D" parent="."]
+script = ExtResource("3_timed_gate")
+target_path = NodePath("GateBody")
+closed_position = Vector3(0, 2.1, -7.25)
+open_position = Vector3(0, 7.7, -7.25)
+closed_duration = 0.85
+open_duration = 1.05
+starts_open = false
+start_phase_seconds = 0.52
+
+[node name="GateBody" type="StaticBody3D" parent="SecondGate"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SecondGate/GateBody"]
+mesh = SubResource("BoxMesh_gate_b")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SecondGate/GateBody"]
+shape = SubResource("BoxShape3D_gate_b")
+
+[node name="TimingLane" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -5.9)
+mesh = SubResource("BoxMesh_lane")

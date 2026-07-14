@@ -1,109 +1,111 @@
 # Netbound Level Design Notes
 
-This document records the current level baseline and the target structure for the 10-level vertical slice.
+Phase 3 builds the first production level set: exactly 10 authored, deterministic levels that use the reusable Phase 2 architecture without changing the stable Phase 1 shooting model.
 
-## Current Baseline
+## Production Level Set
 
-Only one production level exists:
+All production levels live under `res://levels/level_01.tscn` through `res://levels/level_10.tscn`. Each has a matching `LevelDefinition` in `res://levels/definitions/`.
 
-- `res://levels/level_01.tscn`
-- Scene root: `Level01`
-- Script: `res://scripts/level_controller.gd`
-- Definition: `res://levels/definitions/level_01_definition.tres`
-- Shot limit: `3`
-- Goal: oversized arcade goal at `z = -10`
-- Goal opening: about `22` units wide and `8.4` units high
-- Ground: `48 x 42`
-- Obstacle: one small static block near the left side at about `(-11.5, 0.38, -3.8)`
-- Camera: elevated, goal-facing setup with Phase 1 shot follow
+| Level | Name | Main mechanic | Shots | Par | Verified route |
+| --- | --- | --- | ---: | ---: | --- |
+| 01 | Open Range | Basic swipe shooting | 3 | 1 | Straight forgiving swipe toward the giant center goal. |
+| 02 | The Gate | Simple timing | 3 | 1 | Wait briefly for the timed gate opening, then shoot straight. |
+| 03 | Thread The Gap | Directional precision | 3 | 1 | Driven center-lane shot through two static walls. |
+| 04 | Bend Around | Curve | 4 | 2 | Aim wide left and bend back right around the central blocker. |
+| 05 | Over The Top | Elevation | 4 | 2 | Normal air shot over the low-tuned tall barrier. |
+| 06 | Low Road | Ground control | 3 | 1 | Low straight shot under the overhead blocker. |
+| 07 | Rotation | Rotating timing obstacle | 4 | 2 | Wait for the rotating bar to open, then shoot through. |
+| 08 | Bank Job | Bounce shot | 4 | 2 | Shoot into the bright right wall and bank around the direct blocker. |
+| 09 | Double Timing | Two offset timed gates | 5 | 3 | Wait for overlapping openings, then shoot straight through both gates. |
+| 10 | The Impossible Shot | Timing, height, and curve | 5 | 3 | Wait, fire a strong air shot with mild left-lane bend into the off-center goal. |
 
-Level 01 remains the only production level. Phase 2 preserves it as the open-range baseline while moving metadata into a reusable `LevelDefinition` and goal sizing into `GoalTarget`.
+## Scripted Solution Parameters
 
-One non-production architecture proof scene also exists:
+The Phase 3 regression suite uses production mouse-swipe input, not teleports or helper-only scoring. These values are test guidance, not hidden requirements:
 
-- `res://levels/debug/level_architecture_test.tscn`
-- Inherits Level 01.
-- Definition: `res://levels/definitions/level_architecture_test.tres`
-- Shot limit: `4`
-- Demonstrates one `MovingObstacle`, one `RotatingObstacle`, and one `TimedGate`.
-- This is not Level 02 and should not be included in the final 10-level sequence.
+| Level | Swipe offset | Curve px | Wait |
+| --- | --- | ---: | ---: |
+| 01 | `(0, -220)` | `0` | `0.0` |
+| 02 | `(0, -230)` | `0` | `0.25` |
+| 03 | `(18, -235)` | `0` | `0.0` |
+| 04 | `(-145, -245)` | `-12` | `0.0` |
+| 05 | `(0, -235)` | `0` | `0.0` |
+| 06 | `(0, -135)` | `0` | `0.0` |
+| 07 | `(0, -230)` | `0` | `0.45` |
+| 08 | `(135, -185)` | `0` | `0.0` |
+| 09 | `(0, -230)` | `0` | `0.45` |
+| 10 | `(-4, -305)` | `-4` | `0.5` |
 
-## Current Level Authoring Issues
+## Component Usage
 
-- Gameplay controller, temporary UI, ball, field, and some prototype-era nodes still share one scene shell.
-- `GoalTarget` now prevents silent drift between goal dimensions and scoring dimensions.
-- `LevelDefinition` now provides level ID, display name, shot limit, par shots, tutorial copy, bounds, camera setup, tags, mechanic ID, and next-level placeholder.
-- `MovingObstacle`, `RotatingObstacle`, `TimedGate`, and `BounceSurface` exist as reusable components.
-- Retry now has a group-based deterministic reset hook for future moving hazards.
-- Star ratings, progression, menu navigation, and save data are intentionally still future phases.
+- `GoalTarget`: all production goals, including Level 10's off-center goal. Visual frame/net helpers and scoring geometry are synced from the same exported values.
+- `TimedGate`: Levels 02, 09, and 10.
+- `RotatingObstacle`: Level 07.
+- `BounceSurface`: Level 08.
+- Static authored blockers: Levels 03, 04, 05, 06, 08, and 10.
 
-## Vertical Slice Level Sequence
-
-Build exactly 10 initial levels after the shooting core is stable.
+## Production Level Notes
 
 ### Level 01 - Open Range
 
-- Giant open goal.
-- Minimal obstacle.
-- Teaches swipe direction, power, height, and curve.
-- Very forgiving.
-- Shot limit: `3`.
+- Preserves the existing giant arcade goal and forgiving center route.
+- Keeps one small obstacle far to the side.
+- Tutorial covers swipe direction, power, height, and curve.
+- Remains the configured main scene.
 
 ### Level 02 - The Gate
 
-- Large moving gate.
-- Player times a shot through the opening.
-- Teaches timing.
-- Shot limit: `3`.
+- Uses one readable `TimedGate` with a wide opening.
+- The player can wait and shoot straight; no curve is required.
+- Reset and Retry restore the gate phase deterministically.
 
 ### Level 03 - Thread The Gap
 
-- Two walls with a narrow central opening.
-- Driven precision shot.
-- Shot limit: `3`.
+- Two static wall blocks create a central lane.
+- The intended solution is a driven precision shot with comfortable clearance.
+- Mild diagonal alternatives remain possible.
 
 ### Level 04 - Bend Around
 
-- Large central blocker.
-- Requires left or right curve.
-- Generous goal.
-- Shot limit: `4`.
+- Large central blocker teaches curve routing.
+- The verified route aims left and bends right; the goal remains large and visible.
+- Does not require maximum curve.
 
 ### Level 05 - Over The Top
 
-- Tall barrier.
-- Requires a moderate air shot or lob.
-- Shot limit: `4`.
+- A readable barrier blocks ground/driven shots.
+- Normal air is enough; maximum lob is not required.
+- The camera setup looks higher to keep the barrier and landing region understandable.
 
 ### Level 06 - Low Road
 
-- Elevated blockers.
-- Requires a ground-skimming shot.
-- Shot limit: `3`.
+- Elevated blocker visually communicates staying low.
+- Ground/low-driven shots pass underneath.
+- Airborne shots are discouraged by the overhead geometry.
 
 ### Level 07 - Rotation
 
-- Rotating obstacle with periodic opening.
-- Timing plus directional control.
-- Shot limit: `4`.
+- Uses `RotatingObstacle` with deterministic start angle and speed.
+- The timing window is generous enough for mobile latency.
+- Retry returns to the exact start rotation.
 
 ### Level 08 - Bank Job
 
-- Direct path blocked.
-- Uses an angled bounce wall.
-- Shot limit: `4`.
+- Direct route is blocked by a large center obstacle.
+- A bright `BounceSurface` on the right creates a deterministic one-bank solution.
+- The bounce wall is locally materialized and does not alter global ball physics.
 
 ### Level 09 - Double Timing
 
-- Two moving gates with offset timing.
-- Multiple valid solutions.
-- Shot limit: `5`.
+- Two `TimedGate` components use offset phases.
+- The verified route waits for a shared opening and shoots straight.
+- Cycles are short enough to avoid excessive waiting.
 
 ### Level 10 - The Impossible Shot
 
-- Moving gap, height choice, and strong curve.
-- Difficult but fair.
-- Shot limit: `5`.
+- Final authored challenge combines a timed gate, a low height hurdle, a shifted route, curve input, and an off-center giant goal.
+- The title is dramatic, but the verified route is repeatable and does not require maximum curve.
+- Off-center scoring is supported by `GoalDetector.goal_center_x`, synced by `GoalTarget`.
 
 ## Level Design Rules
 
@@ -119,85 +121,8 @@ Build exactly 10 initial levels after the shooting core is stable.
 - Retry must reset moving object phases consistently.
 - Do not use copyrighted external assets.
 
-## Required Data Per Level
+## Future Phase Notes
 
-Current `LevelDefinition` configuration includes:
-
-- Unique level ID.
-- Display name.
-- Shot limit.
-- Par shots for future star ratings.
-- Optional tutorial copy.
-- Bounds.
-- Level-specific setup camera framing.
-- Mechanic ID/tags.
-- Next-level identifier placeholder.
-
-Scene content should include:
-
-- Ball spawn.
-- One or more goals/targets.
-- Static obstacles.
-- Moving obstacles.
-- Rotating obstacles.
-- Timed gates.
-- Optional bounce surfaces.
-
-Runtime completion result is represented by `LevelResult`, but save data and star ratings are not implemented yet.
-
-## Reusable Component Notes
-
-`GoalTarget`
-
-- Attach to the goal root.
-- Configure opening half-width, crossbar height, interior depth, ball radius, post radius, and debug visibility.
-- The component synchronizes visual helpers and the child `GoalDetector` from those values.
-- Side and rear net visuals remain non-colliding unless a level intentionally adds separate collision.
-
-`MovingObstacle`
-
-- Configure `point_a`, `point_b`, duration, loop/ping-pong, and start phase.
-- Retry resets exact position and phase.
-
-`RotatingObstacle`
-
-- Configure axis, degrees per second, and start angle.
-- Retry resets exact rotation and elapsed time.
-
-`TimedGate`
-
-- Configure open/closed positions, durations, starting state, and phase.
-- Retry resets exact state and phase.
-
-`BounceSurface`
-
-- Configure only local bounce/friction.
-- It must not alter global ball physics or shot tuning.
-
-## Star Rating Direction
-
-Initial rule:
-
-- 3 stars: complete at or under par.
-- 2 stars: complete within par + 1.
-- 1 star: complete within the shot limit.
-
-Stars must never downgrade a previously earned best result.
-
-## Camera Requirements
-
-Each level should define camera setup data, but the camera system itself should remain global and stable.
-
-Minimum expectations:
-
-- Ball starts lower-center in frame.
-- Goal and primary route are visible.
-- Moving hazards are readable before launch.
-- High lobs and strong curves stay understandable.
-- Camera returns smoothly after reset.
-
-## Current Level 01 Risk Notes
-
-- The side/rear nets are visual only, which is correct for legal crossing behavior.
-- The huge goal is now backed by `GoalTarget`; future levels can reuse or resize it through exported configuration.
-- The debug goal volumes are hidden and normal debug logging is disabled.
+- Star ratings, progression, menu navigation, and save data remain future phases.
+- Initial star targets are represented only by `par_shots` in `LevelDefinition`.
+- Cosmetic unlocks and level selection must read these definitions later; levels themselves do not implement progression.

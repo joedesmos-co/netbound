@@ -2,6 +2,7 @@ extends SceneTree
 
 const RADIUS := 0.49
 const GOAL_Z := -10.0
+const CENTER_X := 0.0
 const HALF_W := 11.0
 const BAR_H := 8.4
 
@@ -26,7 +27,7 @@ func _run() -> void:
 	var crossbar: Node3D = level.get_node("Goal/Crossbar") as Node3D
 	var passed := true
 
-	detector.sync_geometry(GOAL_Z, HALF_W, BAR_H, 5.0, RADIUS)
+	detector.sync_geometry(GOAL_Z, CENTER_X, HALF_W, BAR_H, 5.0, RADIUS)
 
 	var opening := (right_post.global_position.x - 0.28) - (left_post.global_position.x + 0.28)
 	var bar_underside := crossbar.global_position.y - 0.14
@@ -72,6 +73,23 @@ func _run() -> void:
 		Vector3(0, 3, -8.5),
 		false
 	) and passed
+
+	detector.sync_geometry(GOAL_Z, -4.0, HALF_W, BAR_H, 5.0, RADIUS)
+	passed = _check_case(
+		detector,
+		"off_center_inside_left",
+		Vector3(-13.0, 3, -8.5),
+		Vector3(-13.6, 3, -12.5),
+		true
+	) and passed
+	passed = _check_case(
+		detector,
+		"off_center_outside_right",
+		Vector3(8.0, 3, -8.5),
+		Vector3(8.5, 3, -12.5),
+		false
+	) and passed
+	detector.sync_geometry(GOAL_Z, CENTER_X, HALF_W, BAR_H, 5.0, RADIUS)
 
 	# Live-style production path: fire tracking then physics-like positions.
 	detector.begin_shot_tracking(7, Vector3(-9.0, 2.5, -8.0))

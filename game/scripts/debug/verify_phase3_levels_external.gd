@@ -2,6 +2,9 @@ extends SceneTree
 
 const BALL_RADIUS := 0.49
 const BASE_TUNING := "5.00|25.00|38.00|78.00"
+const BASE_BALL_TUNING := "0.49|0.43|0.08|0.25|0.28|0.22"
+const LEVEL_CONTROLLER_SCRIPT := "res://scripts/level_controller.gd"
+const DEBUG_SCRIPT_PREFIX := "res://scripts/debug/"
 
 const LEVEL_SPECS := [
 	{
@@ -74,6 +77,36 @@ const LEVEL_SPECS := [
 		"curve": 0.0,
 		"wait": 0.45,
 	},
+	{
+		"scene": "res://levels/level_08.tscn",
+		"id": "level_08",
+		"next": "level_09",
+		"shots": 4,
+		"par": 2,
+		"offset": Vector2(135.0, -185.0),
+		"curve": 0.0,
+		"wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_09.tscn",
+		"id": "level_09",
+		"next": "level_10",
+		"shots": 5,
+		"par": 3,
+		"offset": Vector2(0.0, -230.0),
+		"curve": 0.0,
+		"wait": 0.45,
+	},
+	{
+		"scene": "res://levels/level_10.tscn",
+		"id": "level_10",
+		"next": "",
+		"shots": 5,
+		"par": 3,
+		"offset": Vector2(-4.0, -305.0),
+		"curve": -4.0,
+		"wait": 0.5,
+	},
 ]
 
 
@@ -83,6 +116,9 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var passed := true
+	var count_ok := LEVEL_SPECS.size() == 10
+	print("PHASE3 level_count ok=", count_ok)
+	passed = count_ok and passed
 	var seen_ids: Dictionary = {}
 	for spec in LEVEL_SPECS:
 		passed = await _verify_level(spec, seen_ids) and passed
@@ -117,6 +153,14 @@ func _verify_level(spec: Dictionary, seen_ids: Dictionary) -> bool:
 	var no_tuning_override: bool = _shooting_tuning_signature(level) == BASE_TUNING
 	print("PHASE3 tuning id=", spec.id, " ok=", no_tuning_override)
 	passed = no_tuning_override and passed
+
+	var ball_tuning_ok: bool = _ball_tuning_signature(level) == BASE_BALL_TUNING
+	print("PHASE3 ball_tuning id=", spec.id, " ok=", ball_tuning_ok)
+	passed = ball_tuning_ok and passed
+
+	var integrity_ok: bool = _production_scene_integrity_ok(level)
+	print("PHASE3 integrity id=", spec.id, " ok=", integrity_ok)
+	passed = integrity_ok and passed
 
 	var goal_sync_ok: bool = _all_goal_targets_sync(level)
 	print("PHASE3 goals id=", spec.id, " ok=", goal_sync_ok)
@@ -218,6 +262,38 @@ func _shooting_tuning_signature(level: Node) -> String:
 		float(level.get("maximum_elevation_degrees")),
 		float(level.get("maximum_curve_heading_degrees")),
 	]
+
+
+func _ball_tuning_signature(level: Node) -> String:
+	return "%.2f|%.2f|%.2f|%.2f|%.2f|%.2f" % [
+		float(level.get("ball_radius")),
+		float(level.get("ball_mass")),
+		float(level.get("linear_damping")),
+		float(level.get("angular_damping")),
+		float(level.get("ball_bounce")),
+		float(level.get("ground_bounce")),
+	]
+
+
+func _production_scene_integrity_ok(level: Node) -> bool:
+	var controller_count := 0
+	var debug_script_found := false
+	for node in _all_nodes_with_root(level):
+		var script := node.get_script() as Script
+		if not script:
+			continue
+		var path := script.resource_path
+		if path == LEVEL_CONTROLLER_SCRIPT:
+			controller_count += 1
+		if path.begins_with(DEBUG_SCRIPT_PREFIX):
+			debug_script_found = true
+	return controller_count == 1 and not debug_script_found
+
+
+func _all_nodes_with_root(root: Node) -> Array[Node]:
+	var nodes: Array[Node] = [root]
+	nodes.append_array(root.find_children("*", "", true, false))
+	return nodes
 
 
 func _send_mouse_swipe(
