@@ -68,12 +68,63 @@ Debug cleanup:
 - Production gameplay logs are behind `developer_debug_enabled`.
 - `GoalDetector.debug_goal_detection` defaults to `false`.
 
+## Phase 2 Reusable Level Architecture Update
+
+Phase 2 adds a composition layer around the stable Phase 1 shooting controller. Launch math, curve tuning, camera follow, reset ball safety, and swept goal detection remain global gameplay systems.
+
+Ownership boundaries:
+
+- Global gameplay systems remain in `prototype_controller.gd`: input, launch velocity, curve, ball preparation/reset, camera follow, and developer debug display.
+- Reusable level runtime lives in `level_controller.gd`: level definition application, shot limit, level state, bounds, win/fail, goal registration, deterministic Retry reset, and `LevelResult` data.
+- Level content lives in scenes/resources: `BallSpawn`, `GoalTarget`, obstacles, resettable components, tutorial copy, bounds, par shots, and camera framing.
+
+Level definition schema:
+
+- Resource class: `LevelDefinition`
+- Files: `res://levels/definitions/*.tres`
+- Fields: `level_id`, `display_name`, `shot_limit`, `par_shots`, `tutorial_text`, `bounds_min`, `bounds_max`, `camera_position`, `camera_look_at`, `mechanic_id`, `tags`, and `next_level_id`.
+- Progression and save data are intentionally not part of Phase 2.
+
+Reusable components:
+
+- `GoalTarget`: attached to the goal root. It owns opening width, crossbar height, depth, detector sync, debug volume sizing, and frame/net helper sizing from one exported source of truth. It wraps `GoalDetector` so multiple goals can be registered by the level runtime.
+- `MovingObstacle`: deterministic point-to-point motion with duration, looping/ping-pong, start phase, and exact Retry reset.
+- `RotatingObstacle`: deterministic rotation with exported axis, speed, start angle, and exact Retry reset.
+- `TimedGate`: deterministic open/closed cycle with exported durations, start phase, target node movement, visible state, and exact Retry reset.
+- `BounceSurface`: per-surface physics material override for arcade bounce/friction without mutating global ball physics.
+
+Reset contract:
+
+- Resettable level elements join the `netbound_level_resettable` group.
+- Resettable nodes implement `reset_level_element(generation: int)`.
+- `_restart_level()` enters `AUTO_RESETTING`, cancels stale shot callbacks, resets all group members, resets the ball, then enters `READY`.
+- READY is therefore reached only after level elements and the ball have completed their reset path.
+- Components use deterministic `_physics_process()` state rather than tweens/timers, so Retry cannot leave stale tweens running.
+
+Proof scene:
+
+- `res://levels/debug/level_architecture_test.tscn`
+- Inherits Level 01 instead of duplicating the controller.
+- Uses `level_architecture_test.tres` with a different shot limit.
+- Demonstrates one `GoalTarget`, one `MovingObstacle`, one `RotatingObstacle`, and one `TimedGate`.
+- It is not the configured main scene and is not production Level 02.
+
+How to create a new configured level without changing core shooting:
+
+1. Create a `LevelDefinition` resource under `res://levels/definitions/`.
+2. Instance or inherit a level scene using `level_controller.gd`.
+3. Assign the `level_definition` export.
+4. Place `BallSpawn`, one or more `GoalTarget` nodes, static content, and optional resettable components.
+5. Keep per-level changes in the definition and scene content; do not override global shooting exports unless a later phase explicitly documents why.
+6. Run the Phase 1 and Phase 2 regression scripts.
+
 ## Current Entry Points
 
 - `game/project.godot` runs `res://levels/level_01.tscn`.
 - `game/main.tscn` exists but is an empty `Node3D` and is not the configured main scene.
 - `game/scenes/prototype.tscn` is an older standalone shooting prototype.
 - `game/levels/level_01.tscn` is the production scene for current gameplay.
+- `game/levels/debug/level_architecture_test.tscn` is an architecture proof scene, not a production level and not the configured main scene.
 
 ## Project Settings
 
@@ -89,7 +140,7 @@ Debug cleanup:
 
 ### `levels/level_01.tscn`
 
-`Level01` is a monolithic `Node3D` scene with script `res://scripts/level_controller.gd`.
+`Level01` is a `Node3D` scene with script `res://scripts/level_controller.gd` and `level_definition = res://levels/definitions/level_01_definition.tres`.
 
 Main children:
 
@@ -104,7 +155,11 @@ Main children:
 - `AimGuide`
 - `UI`
 
-The scene combines level geometry, reusable gameplay logic, temporary UI, debug labels, goal detection, and feedback. There is no reusable level definition resource yet.
+The scene still contains temporary UI and prototype-era nodes, but level metadata now comes from `LevelDefinition` and goal geometry/scoring is synchronized by `GoalTarget`.
+
+### `levels/debug/level_architecture_test.tscn`
+
+Architecture proof scene inherited from Level 01. It assigns `level_architecture_test.tres`, uses the same core controller, and adds resettable moving, rotating, and timed components. This scene exists only to prove Phase 2 architecture and should not be treated as production Level 02.
 
 ### `scenes/prototype.tscn`
 
@@ -151,16 +206,47 @@ This file is currently 1017 lines and mixes production mechanics, UI, debug repo
 
 Extends `prototype_controller.gd` and adds:
 
+- Level definition application.
 - Level states.
 - Shot limits.
+- Level results.
 - Win/fail panels.
 - Retry level.
 - Auto-reset after misses.
 - Bounds, timeout, stopped-ball miss checks.
-- Goal detector wiring.
+- Goal target registration.
+- Resettable level-element contract.
 - Goal feedback.
 
 Because it inherits the full prototype controller, level behavior depends on many base-class variables and private methods.
+
+### `levels/level_definition.gd`
+
+Typed `Resource` for per-level metadata and runtime setup values: ID, display name, shot limit, par shots, tutorial copy, bounds, setup camera framing, tags, mechanic ID, and next-level placeholder.
+
+### `levels/level_result.gd`
+
+Typed `Resource` for current-run completion data. Phase 2 records completion/failure, shots used, shot limit, par shots, and level ID. Persistence and star ratings are left for later phases.
+
+### `components/goal_target.gd`
+
+Reusable goal component. It owns goal dimensions, keeps child visuals/debug helpers/scoring detector synchronized, wraps swept scoring calls, and emits a target-aware `goal_scored` signal.
+
+### `components/moving_obstacle.gd`
+
+Reusable deterministic point-to-point mover with loop/ping-pong settings and reset signature support for tests.
+
+### `components/rotating_obstacle.gd`
+
+Reusable deterministic rotator with exported axis, speed, start angle, and reset signature support.
+
+### `components/timed_gate.gd`
+
+Reusable deterministic open/closed gate that moves a target node between closed and open positions on a fixed cycle.
+
+### `components/bounce_surface.gd`
+
+Reusable local bounce surface that applies its own `PhysicsMaterial` override without changing ball or global ground tuning.
 
 ### `goal_detector.gd`
 
@@ -184,10 +270,10 @@ Current `LevelState` values:
 
 Startup flow:
 
-1. `Level01._ready()` sets camera tuning values.
+1. `level_controller._ready()` applies `LevelDefinition` runtime values such as shot limit, bounds, tutorial camera setup, and camera look-at.
 2. It awaits `super._ready()`.
 3. Base `_ready()` configures camera, spawn, swipe distance, ball tuning, debug UI, and awaits `_apply_physics_safe_reset()`.
-4. Level `_ready()` configures `GoalDetector`, connects UI and goal callbacks, then awaits `_restart_level()`.
+4. Level `_ready()` applies tutorial text, registers `GoalTarget` nodes, connects UI callbacks, then awaits `_restart_level()`.
 
 Shot flow:
 
@@ -196,7 +282,7 @@ Shot flow:
 3. `_end_swipe()` validates the gesture and calls `_fire_shot()` if valid.
 4. `level_controller._fire_shot()` consumes a shot only when state is `READY`, increments `active_shot_id`, ensures the ball is awake, sets `SHOT_ACTIVE`, then calls `super._fire_shot()`.
 5. `prototype_controller._fire_shot()` computes the canonical launch velocity, directly assigns `ball.linear_velocity`, starts bounded curve state when needed, and clears the swipe.
-6. Goal tracking begins after the base launch call.
+6. Goal tracking begins on all registered targets after the base launch call.
 
 Shot resolution flow:
 
@@ -205,6 +291,14 @@ Shot resolution flow:
 3. A valid goal emits `goal_scored` and enters `GOAL`.
 4. A miss with remaining shots enters `AUTO_RESETTING` and schedules a timer.
 5. A final miss enters `FAILED`.
+
+Retry reset flow:
+
+1. `_restart_level()` cancels stale shot callbacks and enters `AUTO_RESETTING`.
+2. Shot counters and result data are reset.
+3. All `netbound_level_resettable` nodes receive `reset_level_element(level_reset_generation)`.
+4. The ball reset path is awaited.
+5. The ball is made ready and the level enters `READY`.
 
 ## Shot Calculation
 
@@ -258,7 +352,7 @@ Async methods:
 - `prototype_controller._validate_launch_next_frame()` awaits one physics frame and only restores velocity if a stale freeze somehow returned.
 - `level_controller._ready()` awaits `super._ready()` and `_restart_level()`.
 - `level_controller._on_retry_level_pressed()` awaits `_restart_level()`.
-- `level_controller._restart_level()` awaits `_apply_physics_safe_reset()`.
+- `level_controller._restart_level()` awaits `_reset_level_elements()` and `_apply_physics_safe_reset()`.
 - `level_controller._auto_reset_after_miss()` awaits `_apply_physics_safe_reset()`.
 
 Non-awaited or callback-driven async risks:
@@ -307,12 +401,12 @@ Strengths:
 - Uses swept crossing rather than relying on Area3D overlap timing.
 - Scores at goal-mouth crossing and avoids invalidating legal goals later due to side net or rear net geometry.
 - Uses a tracked shot ID to reject stale shot IDs.
+- `GoalTarget` now synchronizes the detector values, debug helper volumes, and goal frame/net helper dimensions from one exported target configuration.
 
 Risks:
 
-- Gameplay bounds and visual goal dimensions are manually duplicated through exported values and scene geometry.
 - `GoalMouthTrigger` and `GoalInteriorTrigger` exist but have monitoring disabled and are not the primary scoring source.
-- `debug_goal_detection` defaults to `true` in both script and Level 01, causing production logs.
+- Phase 2 still keeps the old trigger nodes for visualization/debug support; scoring remains swept and script-driven.
 
 ## UI Structure
 
@@ -407,6 +501,7 @@ Scripts under `game/scripts/debug/`:
 - `verify_level01_external.gd`: checks basic Level 01 setup, scoring, retry, and reset behavior.
 - `verify_loft_external.gd`: checks elevation categories in the prototype scene.
 - `verify_phase1_shooting_external.gd`: covers Phase 1 production-scene launch, reset/retry, auto-reset, shot-height, curve, camera, final-shot, side-net, and cycle regressions.
+- `verify_phase2_level_architecture_external.gd`: covers level definitions, `GoalTarget` sync, proof-scene loading, resettable component determinism, unchanged global shooting tuning, side-net goal, final-shot goal priority, and proof shot limit.
 - `verify_release_path_external.gd`: drives the production release path and retry cycles.
 - `verify_release_shot_external.gd`: verifies canonical launch velocity behavior and the production fire path.
 - `verify_reset_external.gd`: checks reset in prototype scene.
@@ -473,4 +568,4 @@ Measured trajectory evidence from existing scripts:
 11. Inheritance depth: `level_controller.gd` inherits a large prototype controller, making future reusable levels fragile.
 12. No save/progression layer: future menu and star work will need a clean offline persistence boundary.
 
-Phase 1 resolved the current-production portions of items 1 through 9. Items 10 through 12 remain future architecture risks for later phases.
+Phase 1 resolved the current-production portions of items 1 through 9. Phase 2 resolved the current-production goal geometry drift in item 10 by adding `GoalTarget`; future unusual goals still need careful authoring checks. Items 11 and 12 remain future architecture risks for later phases.

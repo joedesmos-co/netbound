@@ -1,8 +1,10 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=35 format=3]
 
 [ext_resource type="Script" path="res://scripts/level_controller.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/swipe_overlay.gd" id="2_swipe_overlay"]
 [ext_resource type="Script" path="res://scripts/goal_detector.gd" id="3_goal"]
+[ext_resource type="Script" path="res://scripts/components/goal_target.gd" id="4_goal_target"]
+[ext_resource type="Resource" path="res://levels/definitions/level_01_definition.tres" id="5_level_def"]
 
 [sub_resource type="Environment" id="Environment_level"]
 background_mode = 1
@@ -202,6 +204,7 @@ corner_radius_bottom_left = 12
 
 [node name="Level01" type="Node3D"]
 script = ExtResource("1_level")
+level_definition = ExtResource("5_level_def")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_level")
@@ -239,6 +242,7 @@ shape = SubResource("BoxShape3D_obstacle")
 
 [node name="Goal" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.0)
+script = ExtResource("4_goal_target")
 
 [node name="LeftPost" type="StaticBody3D" parent="Goal"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.28, 4.2, 0)

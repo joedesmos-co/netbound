@@ -73,6 +73,7 @@ Phase 0 caveat: these scripts were not all production-path tests. Several called
 - `verify_level01_external.gd`
 - `verify_loft_external.gd`
 - `verify_phase1_shooting_external.gd`
+- `verify_phase2_level_architecture_external.gd`
 - `verify_release_path_external.gd`
 - `verify_release_shot_external.gd`
 - `verify_reset_external.gd`
@@ -184,6 +185,59 @@ Measured Phase 1 curve caps:
 - side-net goal
 - five Reset/shoot cycles
 - five Retry/shoot cycles
+
+## Phase 2 Verification Results
+
+Phase 2 adds reusable level architecture without changing global shooting tuning.
+
+Commands:
+
+```sh
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game res://levels/debug/level_architecture_test.tscn --quit-after 3
+```
+
+Outcomes:
+
+- Headless import passed.
+- Configured main-scene startup passed.
+- Proof-scene startup passed.
+
+Strict parser check:
+
+```sh
+for f in $(find scripts -type f -name '*.gd' | sort); do
+  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+    --headless \
+    --path /Users/ryland/Documents/NetBound/game \
+    --check-only \
+    --script "res://${f}"
+done
+```
+
+Outcome: all scripts passed.
+
+Strict external regression scripts:
+
+- All Phase 1 scripts still pass.
+- `verify_phase2_level_architecture_external.gd`: passed.
+
+`verify_phase2_level_architecture_external.gd` covers:
+
+- Level 01 definition loads correctly.
+- Level 01 still launches, scores, resets, and retries.
+- Goal visual/scoring dimensions stay synchronized through `GoalTarget`.
+- Proof scene loads with a second `LevelDefinition`.
+- Moving obstacle resets deterministically.
+- Rotating obstacle resets deterministically.
+- Timed gate resets deterministically.
+- Multiple retries produce identical initial resettable-element signatures.
+- Stale tween/timer-style drift is avoided by deterministic component state.
+- Proof-scene shot limit is respected.
+- Global shooting values are unchanged across Level 01 and the proof scene.
+- Side-net goal detection remains valid.
+- Final-shot goal still beats fail state.
 
 ## Trajectory Acceptance Targets
 

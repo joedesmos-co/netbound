@@ -9,22 +9,33 @@ Only one production level exists:
 - `res://levels/level_01.tscn`
 - Scene root: `Level01`
 - Script: `res://scripts/level_controller.gd`
+- Definition: `res://levels/definitions/level_01_definition.tres`
 - Shot limit: `3`
 - Goal: oversized arcade goal at `z = -10`
 - Goal opening: about `22` units wide and `8.4` units high
 - Ground: `48 x 42`
 - Obstacle: one small static block near the left side at about `(-11.5, 0.38, -3.8)`
-- Camera: static, elevated, goal-facing
+- Camera: elevated, goal-facing setup with Phase 1 shot follow
 
-The current Level 01 is useful as an open-range shooting prototype, but it is not yet a reusable level architecture.
+Level 01 remains the only production level. Phase 2 preserves it as the open-range baseline while moving metadata into a reusable `LevelDefinition` and goal sizing into `GoalTarget`.
+
+One non-production architecture proof scene also exists:
+
+- `res://levels/debug/level_architecture_test.tscn`
+- Inherits Level 01.
+- Definition: `res://levels/definitions/level_architecture_test.tres`
+- Shot limit: `4`
+- Demonstrates one `MovingObstacle`, one `RotatingObstacle`, and one `TimedGate`.
+- This is not Level 02 and should not be included in the final 10-level sequence.
 
 ## Current Level Authoring Issues
 
-- Gameplay controller, UI, goal, ball, field, obstacle, and debug elements are all in one scene.
-- Goal scoring dimensions are manually mirrored between scene geometry and exported script values.
-- No level ID, display name, star/par data, tutorial copy, or completion result resource exists.
-- No moving obstacles, rotating obstacles, timed gates, bounce surfaces, or level-specific camera configuration exist as reusable components.
-- No deterministic reset hooks exist for future moving hazards.
+- Gameplay controller, temporary UI, ball, field, and some prototype-era nodes still share one scene shell.
+- `GoalTarget` now prevents silent drift between goal dimensions and scoring dimensions.
+- `LevelDefinition` now provides level ID, display name, shot limit, par shots, tutorial copy, bounds, camera setup, tags, mechanic ID, and next-level placeholder.
+- `MovingObstacle`, `RotatingObstacle`, `TimedGate`, and `BounceSurface` exist as reusable components.
+- Retry now has a group-based deterministic reset hook for future moving hazards.
+- Star ratings, progression, menu navigation, and save data are intentionally still future phases.
 
 ## Vertical Slice Level Sequence
 
@@ -110,11 +121,20 @@ Build exactly 10 initial levels after the shooting core is stable.
 
 ## Required Data Per Level
 
-Future level configuration should include:
+Current `LevelDefinition` configuration includes:
 
 - Unique level ID.
 - Display name.
 - Shot limit.
+- Par shots for future star ratings.
+- Optional tutorial copy.
+- Bounds.
+- Level-specific setup camera framing.
+- Mechanic ID/tags.
+- Next-level identifier placeholder.
+
+Scene content should include:
+
 - Ball spawn.
 - One or more goals/targets.
 - Static obstacles.
@@ -122,11 +142,37 @@ Future level configuration should include:
 - Rotating obstacles.
 - Timed gates.
 - Optional bounce surfaces.
-- Bounds.
-- Level-specific camera framing.
-- Par shots for star ratings.
-- Optional tutorial copy.
-- Completion result.
+
+Runtime completion result is represented by `LevelResult`, but save data and star ratings are not implemented yet.
+
+## Reusable Component Notes
+
+`GoalTarget`
+
+- Attach to the goal root.
+- Configure opening half-width, crossbar height, interior depth, ball radius, post radius, and debug visibility.
+- The component synchronizes visual helpers and the child `GoalDetector` from those values.
+- Side and rear net visuals remain non-colliding unless a level intentionally adds separate collision.
+
+`MovingObstacle`
+
+- Configure `point_a`, `point_b`, duration, loop/ping-pong, and start phase.
+- Retry resets exact position and phase.
+
+`RotatingObstacle`
+
+- Configure axis, degrees per second, and start angle.
+- Retry resets exact rotation and elapsed time.
+
+`TimedGate`
+
+- Configure open/closed positions, durations, starting state, and phase.
+- Retry resets exact state and phase.
+
+`BounceSurface`
+
+- Configure only local bounce/friction.
+- It must not alter global ball physics or shot tuning.
 
 ## Star Rating Direction
 
@@ -152,7 +198,6 @@ Minimum expectations:
 
 ## Current Level 01 Risk Notes
 
-- The static camera cannot handle current extreme lobs.
-- The huge goal is good for identity but should become a reusable component.
 - The side/rear nets are visual only, which is correct for legal crossing behavior.
-- The debug goal volumes are hidden, but debug logging remains active.
+- The huge goal is now backed by `GoalTarget`; future levels can reuse or resize it through exported configuration.
+- The debug goal volumes are hidden and normal debug logging is disabled.

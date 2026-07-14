@@ -2,6 +2,10 @@ extends "res://scripts/prototype_controller.gd"
 
 enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 
+const RESETTABLE_GROUP := "netbound_level_resettable"
+const GOAL_TARGET_GROUP := "netbound_goal_target"
+
+@export var level_definition: LevelDefinition
 @export var max_shots: int = 3
 @export var shot_timeout: float = 8.0
 @export var shot_settling_grace: float = 0.2
@@ -17,8 +21,8 @@ enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 @export var goal_crossbar_height: float = 8.4
 @export var goal_interior_depth: float = 5.0
 
-@onready var goal_detector: GoalDetector = $Goal/GoalDetection
-@onready var goal_root: Node3D = $Goal
+@onready var goal_detector: GoalDetector = get_node_or_null("Goal/GoalDetection") as GoalDetector
+@onready var goal_root: Node3D = get_node_or_null("Goal") as Node3D
 @onready var goal_flash: ColorRect = $UI/GoalFlash
 @onready var goal_particles: CPUParticles3D = $Goal/GoalParticles
 @onready var shots_label: Label = $UI/TopBar/ShotsLabel
@@ -41,22 +45,16 @@ var auto_reset_pending: bool = false
 var pending_auto_reset_shot_id: int = -1
 var shot_manually_reset: bool = false
 var state_generation: int = 0
+var level_reset_generation: int = 0
+var goal_targets: Array[GoalTarget] = []
+var last_level_result: LevelResult
 
 
 func _ready() -> void:
-	camera_position = Vector3(0.0, 11.5, 14.0)
-	camera_look_at = Vector3(0.0, 3.6, -8.5)
+	_apply_level_definition_runtime_values()
 	await super._ready()
-	goal_detector.debug_goal_detection = developer_debug_enabled
-	goal_detector.setup(ball)
-	goal_detector.sync_geometry(
-		goal_root.global_position.z,
-		goal_clear_half_width,
-		goal_crossbar_height,
-		goal_interior_depth,
-		ball_radius
-	)
-	goal_detector.goal_scored.connect(_on_goal_scored)
+	_apply_level_definition_ui_values()
+	_setup_goal_targets()
 	retry_button.pressed.connect(_on_retry_level_pressed)
 	win_retry_button.pressed.connect(_on_retry_level_pressed)
 	win_continue_button.pressed.connect(_on_continue_pressed)
@@ -74,11 +72,11 @@ func _physics_process(delta: float) -> void:
 	if level_state != LevelState.SHOT_ACTIVE:
 		return
 
-	goal_detector.set_level_state_name("SHOT_ACTIVE")
+	_set_goal_state_name("SHOT_ACTIVE")
 	shot_active_elapsed += delta
 	shot_time_remaining -= delta
 
-	if goal_detector.process_ball(ball.global_position, ball_radius, active_shot_id):
+	if _process_goal_targets():
 		return
 	if _is_ball_out_of_bounds():
 		_resolve_miss(active_shot_id, "out_of_bounds")
@@ -127,7 +125,7 @@ func _fire_shot() -> bool:
 
 	# Mark active before physics so settling logic and detector share the same shot id.
 	level_state = LevelState.SHOT_ACTIVE
-	goal_detector.set_level_state_name("SHOT_ACTIVE")
+	_set_goal_state_name("SHOT_ACTIVE")
 	shot_time_remaining = shot_timeout
 	shot_active_elapsed = 0.0
 	shot_manually_reset = false
@@ -147,7 +145,7 @@ func _fire_shot() -> bool:
 			ball.linear_velocity,
 		]
 	)
-	goal_detector.begin_shot_tracking(active_shot_id, ball.global_position)
+	_begin_goal_tracking(active_shot_id, ball.global_position)
 	_update_level_ui()
 	return true
 
@@ -163,7 +161,7 @@ func _on_reset_button_pressed() -> void:
 	if was_active_shot:
 		active_shot_id += 1
 
-	goal_detector.reset_shot_tracking()
+	_reset_all_goal_tracking()
 	shot_manually_reset = was_active_shot
 	shot_time_remaining = 0.0
 	shot_active_elapsed = 0.0
@@ -210,7 +208,8 @@ func _restart_level() -> void:
 	_cancel_shot_callbacks()
 	Engine.time_scale = 1.0
 	shot_manually_reset = false
-	level_state = LevelState.READY
+	level_state = LevelState.AUTO_RESETTING
+	last_level_result = null
 	active_shot_id = 0
 	shots_remaining = max_shots
 	shots_used = 0
@@ -218,12 +217,15 @@ func _restart_level() -> void:
 	shot_active_elapsed = 0.0
 	_clear_active_curve()
 	has_successful_shot = false
-	goal_detector.reset_shot_tracking()
+	_reset_all_goal_tracking()
 	_hide_overlays()
 	_clear_swipe()
 	reset_in_progress = true
+	_update_level_ui()
+	await _reset_level_elements()
 	await _apply_physics_safe_reset()
 	_ensure_ball_ready_for_play()
+	level_state = LevelState.READY
 	_update_level_ui()
 	_update_instruction_visibility()
 	_update_debug_ui()
@@ -243,6 +245,7 @@ func _on_goal_scored() -> void:
 
 	_cancel_shot_callbacks()
 	level_state = LevelState.GOAL
+	last_level_result = LevelResult.completed_result(level_definition, shots_used)
 	_clear_active_curve()
 	ball.freeze = true
 	_show_goal_feedback()
@@ -267,6 +270,7 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 		_schedule_auto_reset(shot_id)
 	else:
 		level_state = LevelState.FAILED
+		last_level_result = LevelResult.failed_result(level_definition, shots_used)
 		fail_panel.visible = true
 
 	_update_level_ui()
@@ -314,6 +318,118 @@ func _cancel_shot_callbacks() -> int:
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
 	return state_generation
+
+
+func _apply_level_definition_runtime_values() -> void:
+	if not level_definition:
+		camera_position = Vector3(0.0, 11.5, 14.0)
+		camera_look_at = Vector3(0.0, 3.6, -8.5)
+		return
+
+	max_shots = level_definition.shot_limit
+	bounds_min_x = level_definition.bounds_min.x
+	bounds_min_y = level_definition.bounds_min.y
+	bounds_min_z = level_definition.bounds_min.z
+	bounds_max_x = level_definition.bounds_max.x
+	bounds_max_z = level_definition.bounds_max.z
+	camera_position = level_definition.camera_position
+	camera_look_at = level_definition.camera_look_at
+
+
+func _apply_level_definition_ui_values() -> void:
+	if level_definition and not level_definition.tutorial_text.is_empty():
+		instruction_label.text = level_definition.tutorial_text
+
+
+func _setup_goal_targets() -> void:
+	goal_targets.clear()
+	for node in _find_nodes_in_group(GOAL_TARGET_GROUP):
+		var target := node as GoalTarget
+		if target:
+			goal_targets.append(target)
+
+	if goal_targets.is_empty() and goal_root is GoalTarget:
+		goal_targets.append(goal_root as GoalTarget)
+
+	if not goal_targets.is_empty():
+		for target in goal_targets:
+			target.ball_radius = ball_radius
+			target.debug_goal_detection = developer_debug_enabled
+			target.setup(ball)
+			if not target.goal_scored.is_connected(_on_goal_target_scored):
+				target.goal_scored.connect(_on_goal_target_scored)
+		goal_detector = goal_targets[0].detector
+		return
+
+	if goal_detector and goal_root:
+		goal_detector.debug_goal_detection = developer_debug_enabled
+		goal_detector.setup(ball)
+		goal_detector.sync_geometry(
+			goal_root.global_position.z,
+			goal_clear_half_width,
+			goal_crossbar_height,
+			goal_interior_depth,
+			ball_radius
+		)
+		if not goal_detector.goal_scored.is_connected(_on_goal_scored):
+			goal_detector.goal_scored.connect(_on_goal_scored)
+
+
+func _on_goal_target_scored(_target: GoalTarget) -> void:
+	_on_goal_scored()
+
+
+func _set_goal_state_name(state_name: String) -> void:
+	if goal_targets.is_empty():
+		if goal_detector:
+			goal_detector.set_level_state_name(state_name)
+		return
+	for target in goal_targets:
+		target.set_level_state_name(state_name)
+
+
+func _process_goal_targets() -> bool:
+	if goal_targets.is_empty():
+		return goal_detector.process_ball(ball.global_position, ball_radius, active_shot_id) if goal_detector else false
+	for target in goal_targets:
+		if target.process_ball(ball.global_position, ball_radius, active_shot_id):
+			return true
+	return false
+
+
+func _begin_goal_tracking(shot_id: int, ball_position: Vector3) -> void:
+	if goal_targets.is_empty():
+		if goal_detector:
+			goal_detector.begin_shot_tracking(shot_id, ball_position)
+		return
+	for target in goal_targets:
+		target.begin_shot_tracking(shot_id, ball_position)
+
+
+func _reset_all_goal_tracking() -> void:
+	if goal_targets.is_empty():
+		if goal_detector:
+			goal_detector.reset_shot_tracking()
+		return
+	for target in goal_targets:
+		target.reset_shot_tracking()
+
+
+func _reset_level_elements() -> void:
+	level_reset_generation += 1
+	var token := level_reset_generation
+	for node in _find_nodes_in_group(RESETTABLE_GROUP):
+		if node.has_method("reset_level_element"):
+			node.call("reset_level_element", token)
+	await get_tree().physics_frame
+
+
+func _find_nodes_in_group(group_name: StringName) -> Array[Node]:
+	var found: Array[Node] = []
+	for child in find_children("*", "", true, false):
+		if child.is_in_group(group_name):
+			found.append(child)
+	return found
 
 
 func _is_ball_out_of_bounds() -> bool:

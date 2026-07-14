@@ -1,0 +1,87 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_architecture_test.tres" id="2_level_def"]
+[ext_resource type="Script" path="res://scripts/components/moving_obstacle.gd" id="3_moving"]
+[ext_resource type="Script" path="res://scripts/components/rotating_obstacle.gd" id="4_rotating"]
+[ext_resource type="Script" path="res://scripts/components/timed_gate.gd" id="5_timed_gate"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_moving"]
+albedo_color = Color(0.1, 0.35, 0.95, 1)
+roughness = 0.65
+
+[sub_resource type="BoxMesh" id="BoxMesh_moving"]
+material = SubResource("StandardMaterial3D_moving")
+size = Vector3(1.2, 1.0, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_moving"]
+size = Vector3(1.2, 1.0, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rotating"]
+albedo_color = Color(1, 0.82, 0.08, 1)
+roughness = 0.55
+
+[sub_resource type="BoxMesh" id="BoxMesh_rotating"]
+material = SubResource("StandardMaterial3D_rotating")
+size = Vector3(5.0, 0.35, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rotating"]
+size = Vector3(5.0, 0.35, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate"]
+albedo_color = Color(0.05, 0.95, 0.75, 1)
+roughness = 0.55
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate"]
+material = SubResource("StandardMaterial3D_gate")
+size = Vector3(4.0, 2.2, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gate"]
+size = Vector3(4.0, 2.2, 0.45)
+
+[node name="LevelArchitectureTest" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="ProofMovingObstacle" type="StaticBody3D" parent="."]
+script = ExtResource("3_moving")
+point_a = Vector3(-5.0, 0.6, -3.8)
+point_b = Vector3(5.0, 0.6, -3.8)
+duration = 1.5
+start_phase = 0.2
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ProofMovingObstacle"]
+mesh = SubResource("BoxMesh_moving")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProofMovingObstacle"]
+shape = SubResource("BoxShape3D_moving")
+
+[node name="ProofRotatingObstacle" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -6.0)
+script = ExtResource("4_rotating")
+axis = Vector3(0, 1, 0)
+degrees_per_second = 120.0
+start_angle_degrees = 25.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ProofRotatingObstacle"]
+mesh = SubResource("BoxMesh_rotating")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProofRotatingObstacle"]
+shape = SubResource("BoxShape3D_rotating")
+
+[node name="ProofTimedGate" type="Node3D" parent="."]
+script = ExtResource("5_timed_gate")
+target_path = NodePath("GateBody")
+closed_position = Vector3(0, 1.1, -7.4)
+open_position = Vector3(0, 4.2, -7.4)
+closed_duration = 0.8
+open_duration = 0.6
+starts_open = false
+start_phase_seconds = 0.15
+
+[node name="GateBody" type="StaticBody3D" parent="ProofTimedGate"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ProofTimedGate/GateBody"]
+mesh = SubResource("BoxMesh_gate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProofTimedGate/GateBody"]
+shape = SubResource("BoxShape3D_gate")
