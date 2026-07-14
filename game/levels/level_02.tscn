@@ -1,0 +1,56 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_02_definition.tres" id="2_level_def"]
+[ext_resource type="Script" path="res://scripts/components/timed_gate.gd" id="3_timed_gate"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate"]
+albedo_color = Color(0.05, 0.78, 0.95, 1)
+emission_enabled = true
+emission = Color(0.0, 0.2, 0.28, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate"]
+material = SubResource("StandardMaterial3D_gate")
+size = Vector3(12.0, 4.6, 0.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gate"]
+size = Vector3(12.0, 4.6, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_marker"]
+albedo_color = Color(1, 0.95, 0.16, 1)
+emission_enabled = true
+emission = Color(0.4, 0.25, 0.0, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_marker"]
+material = SubResource("StandardMaterial3D_marker")
+size = Vector3(12.4, 0.12, 0.64)
+
+[node name="Level02" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.8, 0.38, -2.6)
+
+[node name="Gate" type="Node3D" parent="."]
+script = ExtResource("3_timed_gate")
+target_path = NodePath("GateBody")
+closed_position = Vector3(0, 2.3, -5.3)
+open_position = Vector3(0, 8.0, -5.3)
+closed_duration = 1.2
+open_duration = 1.4
+starts_open = true
+start_phase_seconds = 0.15
+
+[node name="GateBody" type="StaticBody3D" parent="Gate"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Gate/GateBody"]
+mesh = SubResource("BoxMesh_gate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Gate/GateBody"]
+shape = SubResource("BoxShape3D_gate")
+
+[node name="OpenLaneMarker" type="MeshInstance3D" parent="Gate"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -5.3)
+mesh = SubResource("BoxMesh_marker")

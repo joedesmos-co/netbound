@@ -1,0 +1,55 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base_level"]
+[ext_resource type="Resource" path="res://levels/definitions/level_03_definition.tres" id="2_level_def"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.86, 0.18, 0.18, 1)
+emission_enabled = true
+emission = Color(0.18, 0.02, 0.01, 1)
+roughness = 0.68
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+material = SubResource("StandardMaterial3D_wall")
+size = Vector3(7.0, 6.2, 0.75)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(7.0, 6.2, 0.75)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lane"]
+albedo_color = Color(1, 0.95, 0.18, 1)
+emission_enabled = true
+emission = Color(0.28, 0.2, 0.0, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_lane"]
+material = SubResource("StandardMaterial3D_lane")
+size = Vector3(4.4, 0.08, 0.85)
+
+[node name="Level03" instance=ExtResource("1_base_level")]
+level_definition = ExtResource("2_level_def")
+
+[node name="Obstacle" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.8, 0.38, -2.6)
+
+[node name="LeftWall" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9, 3.1, -5.4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LeftWall"]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LeftWall"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="RightWall" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9, 3.1, -5.4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RightWall"]
+mesh = SubResource("BoxMesh_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RightWall"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="LaneMarker" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -5.4)
+mesh = SubResource("BoxMesh_lane")
