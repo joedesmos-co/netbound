@@ -19,7 +19,10 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Phase 8 simulated monetization architecture now exists with rewarded continue, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling.
 - Phase 9 mobile runtime now handles lifecycle, safe-area margins, dirty save flush, quality tiers, release/development feature tags, and audio pause/resume.
 - Android and iOS export presets exist with placeholder package/bundle ID `com.netbound.game`.
+- Phase 9.5 installed matching Godot 4.7 export templates locally.
+- Phase 9.5 configured a local Android SDK/JDK toolchain and produced Android debug APK/AAB artifacts under `/tmp/netbound-phase95`.
 - Landscape viewport defaults and Forward Mobile renderer settings are configured in `project.godot`.
+- ETC2/ASTC texture compression import is enabled for Android export compatibility.
 - Automated safe-area/responsive checks cover representative landscape phone/tablet shapes with simulated safe margins.
 - No real ad SDK, purchase SDK, analytics SDK, online account, cloud save, or consent SDK is integrated.
 
@@ -42,7 +45,11 @@ Current gaps:
 
 - Physical notch/home-indicator validation is still required on real devices.
 - App suspend/resume still requires physical iOS/Android testing.
-- Export presets are not signed with production credentials and real platform templates/toolchains may be missing locally.
+- Android debug APK export now succeeds locally with debug signing.
+- Android debug AAB export now succeeds locally from a temporary project copy with Godot's Android build template installed during export.
+- Android AAB output still needs final store signing/review before public distribution.
+- iOS export is still blocked locally by missing full Xcode selection and missing Apple Team ID/signing configuration.
+- Export presets are not signed with production credentials.
 
 ## Input And UX
 
@@ -117,6 +124,7 @@ Current gaps:
 - Cloud sync is intentionally absent.
 - Physical persistence checks across app kill/relaunch remain required.
 - SaveService dirty flush is covered by scripted background/quit checks, but real mobile process-kill timing still requires device validation.
+- No local Android or iOS runtime smoke test was completed in Phase 9.5 because no Android device/emulator was connected and iOS lacked full Xcode/signing.
 
 ## Monetization Readiness
 
@@ -198,3 +206,21 @@ The current environment can run headless import, parser, startup, and scripted c
 - Haptics.
 - App suspend/resume.
 - Device-specific aspect ratios.
+
+## Local Build Status
+
+Phase 9.5 local build status is documented in `docs/LOCAL_BUILD_STATUS.md`.
+
+Current local capabilities:
+
+- Export Android debug APK.
+- Export Android debug AAB from a temporary project copy using `--install-android-build-template`.
+- Inspect APK metadata and signing.
+- Enumerate Android devices with `adb`.
+
+Current local blockers:
+
+- No connected Android device/emulator for install/run.
+- No full Xcode installation/selection.
+- No Apple Team ID, signing identity, or provisioning profile.
+- No iOS simulator tooling through `xcrun simctl`.
