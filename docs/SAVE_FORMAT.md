@@ -11,11 +11,11 @@ Default save files:
 - Backup: `user://netbound_save.bak`
 - Corrupt diagnostic copy: `user://netbound_save.corrupt`
 
-No personal information, online account data, analytics identifiers, cloud data, or real transaction receipts are stored. Phase 8 stores only local simulated product/entitlement state and future consent-readiness placeholders.
+No personal information, online account data, analytics identifiers, cloud data, or real transaction receipts are stored. Monetization and economy data are local simulated state plus future consent-readiness placeholders.
 
 ## Version
 
-Current `save_version`: `1`
+Current `save_version`: `2`
 
 Older or malformed versions are normalized into the current schema. Unknown future fields are preserved where practical, but gameplay only reads the documented fields below.
 
@@ -23,7 +23,7 @@ Older or malformed versions are normalized into the current schema. Unknown futu
 
 ```json
 {
-  "save_version": 1,
+  "save_version": 2,
   "progression": {
     "unlocked_levels": ["level_01"],
     "completed_levels": [],
@@ -36,7 +36,8 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "selected_ball": "ball_classic",
     "selected_trail": "trail_none",
     "selected_goal_effect": "goal_classic",
-    "unlocked": ["ball_classic", "trail_none", "goal_classic"]
+    "unlocked": ["ball_classic", "trail_none", "goal_classic"],
+    "purchased": []
   },
   "settings": {
     "master_volume": 1.0,
@@ -47,6 +48,21 @@ Older or malformed versions are normalized into the current schema. Unknown futu
     "camera_effects_intensity": 1.0,
     "quality_tier": "auto",
     "developer_debug": false
+  },
+  "economy": {
+    "arcade_coins": 0,
+    "net_tokens": 0,
+    "processed_transaction_ids": [],
+    "transaction_history": [],
+    "daily_rewarded_tokens": {
+      "local_date": "",
+      "completed_rewards": 0,
+      "tokens_granted": 0
+    },
+    "first_completion_rewards": [],
+    "rewarded_star_milestones": {},
+    "rewarded_best_shots": {},
+    "next_transaction_sequence": 1
   },
   "monetization": {
     "entitlements": [],
@@ -96,6 +112,10 @@ The save service validates every loaded save:
 - `quality_tier` normalizes to `auto`, `low`, `medium`, or `high`.
 - Selected cosmetics fall back to defaults if they are not unlocked.
 - Cosmetic IDs are validated against `CosmeticRegistry`.
+- Purchased cosmetic IDs are limited to valid Coin/Token catalog items and imply unlock ownership.
+- Currency balances clamp to non-negative 32-bit-safe integers.
+- Daily rewarded counters clamp to five completions and ten Tokens.
+- Processed transaction IDs and transaction history are bounded.
 - Invalid entitlements and products are ignored.
 - Owned products re-grant their matching entitlements during normalization.
 - Starter Pack entitlement re-grants supporter cosmetics during normalization.
@@ -140,7 +160,7 @@ Phase 9 adds a dirty flag without changing the atomic write format:
 - `flush_if_dirty()` is called during mobile background and quit handling.
 - Existing gameplay/progression/cosmetic/settings setters still save immediately, so no per-frame or debounced save writer was introduced.
 
-No save-version bump was required for Phase 9 because the new `quality_tier` key is optional within the existing settings dictionary and is safely normalized when missing.
+Phase 9 did not require a version bump. The economy phase increases the version from `1` to `2` because it adds authoritative balances, reward ledgers, transaction IDs, and purchased cosmetic ownership. Version `1` migration seeds reward ledgers from existing progression so old completions/stars/bests are not paid again.
 
 ## Public API
 

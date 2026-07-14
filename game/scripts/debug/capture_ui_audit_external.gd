@@ -11,6 +11,7 @@ const DESIGN_SIZE := Vector2i(1280, 720)
 
 var app: NetboundApp
 var service: NetboundSaveService
+var wallet: NetboundWalletService
 var screen_name: String = "main_menu"
 var output_path: String = "/tmp/netbound-ui-audit.png"
 var viewport_size := Vector2i(1280, 720)
@@ -27,6 +28,8 @@ func _initialize() -> void:
 	# The default preserves the production design canvas and stretch path.
 	get_root().content_scale_size = viewport_size if native_canvas_capture else DESIGN_SIZE
 	service = get_root().get_node("SaveService") as NetboundSaveService
+	wallet = get_root().get_node("WalletService") as NetboundWalletService
+	wallet.configure_save_service(service)
 	service.configure_storage_paths(TEST_SAVE, TEST_TMP, TEST_BAK, TEST_CORRUPT)
 	service.recording_enabled = true
 	_configure_capture_save()
@@ -91,6 +94,16 @@ func _show_requested_screen() -> void:
 			app._select_cosmetic_category("goal_effect")
 		"cosmetics_ball_gold":
 			_show_cosmetic_preview("ball", "ball_gold")
+		"cosmetics_ball_candy":
+			_show_cosmetic_preview("ball", "ball_candy")
+		"cosmetics_ball_comet":
+			_show_cosmetic_preview("ball", "ball_comet")
+		"cosmetics_insufficient":
+			_show_cosmetic_preview("ball", "ball_candy")
+			app._purchase_previewed_cosmetic()
+		"cosmetics_token_confirmation":
+			_show_cosmetic_preview("ball", "ball_comet")
+			app._purchase_previewed_cosmetic()
 		"cosmetics_trail_rainbow":
 			_show_cosmetic_preview("trail", "trail_rainbow")
 		"cosmetics_goal_confetti":
@@ -99,6 +112,28 @@ func _show_requested_screen() -> void:
 			_show_cosmetic_preview("goal_effect", "goal_shockwave")
 		"store":
 			app.show_store("main_menu")
+		"store_token_success":
+			app.show_store("main_menu")
+			var monetization := get_root().get_node_or_null("MonetizationService")
+			monetization.call("configure_simulated_purchases", true, "success", "success", 1, false)
+			monetization.call("set_simulated_transaction_id", "ui_audit_token_pack")
+			app._start_store_purchase("netbound_tokens_100")
+			await _wait_frames(5)
+			_scroll_store_to_bottom()
+		"store_token_failure":
+			app.show_store("main_menu")
+			var monetization := get_root().get_node_or_null("MonetizationService")
+			monetization.call("configure_simulated_purchases", true, "failure", "success", 1, false)
+			app._start_store_purchase("netbound_tokens_100")
+			await _wait_frames(5)
+			_scroll_store_to_bottom()
+		"store_starter_owned":
+			app.show_store("main_menu")
+			var monetization := get_root().get_node_or_null("MonetizationService")
+			monetization.call("configure_simulated_purchases", true, "success", "success", 1, false)
+			monetization.call("set_simulated_transaction_id", "ui_audit_starter_pack")
+			app._start_store_purchase("netbound_starter_pack")
+			await _wait_frames(5)
 		"store_owned":
 			service.record_purchase("netbound_remove_ads", "ui_audit_remove_ads", "ui_audit")
 			service.record_purchase("netbound_starter_pack", "ui_audit_starter", "ui_audit")
@@ -148,6 +183,14 @@ func _show_cosmetic_preview(category: String, cosmetic_id: String) -> void:
 	app._preview_cosmetic(cosmetic_id)
 
 
+func _scroll_store_to_bottom() -> void:
+	for node in app.find_children("*", "ScrollContainer", true, false):
+		var scroll := node as ScrollContainer
+		if scroll:
+			scroll.scroll_vertical = roundi(scroll.get_v_scroll_bar().max_value)
+			return
+
+
 func _show_success(level_id: String) -> void:
 	if not service.is_level_unlocked(level_id):
 		_complete_through_level(_previous_level_id(level_id))
@@ -168,6 +211,16 @@ func _apply_fixture() -> void:
 		"all_unlocked":
 			_complete_through_level("level_10")
 			service.unlock_all_cosmetics_for_development()
+		"coins":
+			wallet.grant_coins(6000, "ui_audit", "ui_audit:coins")
+		"tokens":
+			wallet.grant_tokens(300, "ui_audit", "ui_audit:tokens")
+		"purchased":
+			wallet.grant_coins(6000, "ui_audit", "ui_audit:coins")
+			wallet.purchase_cosmetic("ball_candy")
+		"daily_limit":
+			for index in 5:
+				wallet.claim_rewarded_token_ad("ui_audit:daily:%d" % index)
 
 
 func _configure_capture_save() -> void:

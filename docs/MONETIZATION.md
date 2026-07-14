@@ -45,6 +45,7 @@ Products:
 
 - `netbound_remove_ads`
 - `netbound_starter_pack`
+- five consumable Token packs defined by `NetboundCurrencyProductRegistry`
 
 Entitlements:
 
@@ -57,8 +58,10 @@ Starter Pack grants:
 - `ball_supporter`
 - `trail_supporter`
 - `goal_supporter`
+- 2,500 Arcade Coins once
+- 300 Net Tokens once
 
-Purchases and restores are idempotent. Duplicate provider callbacks cannot grant twice because request IDs are consumed once.
+Purchases and restores are idempotent. Duplicate provider callbacks cannot grant twice because request IDs and provider transaction IDs are consumed once. Token packs are consumable and never restored. Starter Pack currency is a one-time fulfillment; Restore reapplies only permanent ownership.
 
 ## Rewarded Continue
 
@@ -89,10 +92,11 @@ Current policy:
 
 - never during gameplay, aiming, or failure
 - only after completed-result navigation contexts
-- requires at least 3 completed levels in the save
+- never appears during the first 3 completed levels
+- requires at least 4 completed levels in the save
 - requires 3 completed-level events in the current session
-- max one per app session
-- minimum time spacing
+- maximum 2 per app session
+- minimum 8-minute spacing
 - disabled by Remove Ads or Starter Pack
 - provider unavailable/offline skips silently and navigation continues
 
@@ -105,17 +109,20 @@ Store includes:
 - Remove Ads card
 - Starter Pack card
 - Restore Purchases
+- Coin/Token wallet balances
+- five simulated Token packs
+- optional rewarded Token ad with daily status
 - owned state
 - unavailable/offline state
 - purchase-in-progress state
 - success/failure feedback
 - Back button
 
-The Cosmetics screen may preview supporter items while locked and shows an Open Store button for locked entitlement cosmetics. It does not contain purchase logic.
+The Cosmetics screen doubles as the cosmetic Shop. It previews all items, filters by rarity/ownership, confirms Token spending, and sends purchase intent to `WalletService`. It never mutates balances itself.
 
 ## Save Integration
 
-`SaveService` stores the `monetization` dictionary in save version `1`:
+`SaveService` stores permanent monetization state plus the version `2` economy ledger. See `docs/ECONOMY.md` and `docs/SAVE_FORMAT.md`.
 
 - `entitlements`
 - product records under `purchases`

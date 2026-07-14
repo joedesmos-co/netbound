@@ -858,3 +858,17 @@ Measured trajectory evidence from existing scripts:
 12. No save/progression layer: future menu and star work will need a clean offline persistence boundary.
 
 Phase 1 resolved the current-production portions of items 1 through 9. Phase 2 resolved the current-production goal geometry drift in item 10 by adding `GoalTarget`; future unusual goals still need careful authoring checks. Items 11 and 12 remain future architecture risks for later phases.
+
+## Cosmetic Economy Architecture - July 14, 2026
+
+The local economy adds one service without moving authority into UI or gameplay:
+
+- `/root/WalletService` owns integer balances, grants, spends, reward evaluation, daily Token claims, cosmetic purchases, and transaction idempotency.
+- `/root/SaveService` remains the persistence authority. Save version `2` stores economy ledgers and purchased cosmetic IDs through the existing atomic temp/backup flow.
+- `/root/MonetizationService` owns provider lifecycle and policy. It passes validated simulated Token purchases and completed rewarded ads to `WalletService`.
+- `CosmeticRegistry` owns the 38-item schema, rarity, acquisition type, Coin/Token price, requirements, visual mapping, and ordering.
+- `NetboundApp` owns presentation only: wallet labels, filters, purchase confirmation, insufficient-funds feedback, and result reward copy.
+
+Level completion remains authoritative in `SaveService.record_level_result()`. The resulting `ProgressionUpdate` is passed once to `WalletService.process_level_completion_rewards()`, then progression and economy are saved before the success rail is shown. No gameplay script reads currency and no economy method changes physics, collision, scoring, stars, level unlocks, or obstacle timing.
+
+External callbacks use stable transaction IDs. The processed-ID ledger is bounded to 2048 and the developer history to 64 entries. This prevents unbounded local storage but is not a substitute for future server receipt validation. The complete contract is documented in `docs/ECONOMY.md` and `docs/CURRENCY_PRODUCTS.md`.

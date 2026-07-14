@@ -7,10 +7,12 @@ var category: String = "ball"
 var unlocked: bool = false
 var selected: bool = false
 var previewed: bool = false
+var rarity: String = "common"
+var price_text: String = ""
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(190.0, 108.0)
+	custom_minimum_size = Vector2(200.0, 120.0)
 	focus_mode = Control.FOCUS_ALL
 	flat = true
 	text = ""
@@ -29,7 +31,9 @@ func configure_choice(
 	category_value: String,
 	is_unlocked: bool,
 	is_selected: bool,
-	is_previewed: bool
+	is_previewed: bool,
+	rarity_value: String = "common",
+	price_value: String = ""
 ) -> void:
 	cosmetic_id = id_value
 	display_name = name_value
@@ -37,6 +41,8 @@ func configure_choice(
 	unlocked = is_unlocked
 	selected = is_selected
 	previewed = is_previewed
+	rarity = rarity_value
+	price_text = price_value
 	tooltip_text = "%s, %s" % [
 		display_name,
 		"equipped" if selected else ("unlocked" if unlocked else "locked"),
@@ -88,7 +94,7 @@ func _draw() -> void:
 		label_size,
 		text_color
 	)
-	var state := "EQUIPPED" if selected else ("READY" if unlocked else "LOCKED")
+	var state := "EQUIPPED" if selected else ("OWNED" if unlocked else rarity.to_upper())
 	draw_string(
 		NetboundUITheme.FONT_BODY,
 		Vector2(58.0, 61.0),
@@ -98,6 +104,16 @@ func _draw() -> void:
 		13,
 		Color(NetboundUITheme.INK, 0.62)
 	)
+	if not price_text.is_empty() and not unlocked:
+		draw_string(
+			NetboundUITheme.FONT_BOLD,
+			Vector2(58.0, 88.0),
+			price_text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			maxf(40.0, size.x - 70.0),
+			12,
+			NetboundUITheme.CORAL
+		)
 	if previewed:
 		draw_arc(Vector2(size.x - 22.0, size.y - 22.0), 9.0, 0.0, TAU, 20, NetboundUITheme.CORAL, 3.0, true)
 		draw_circle(Vector2(size.x - 22.0, size.y - 22.0), 3.0, NetboundUITheme.CORAL)

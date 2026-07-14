@@ -66,6 +66,7 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Success shows level name, run stars, shots used, par, total stars, best result comparison, and unlock messages.
 - If a rewarded continue was used, success states that the run is capped at one star.
 - Newly unlocked cosmetics from the actual progression update appear in a compact unlock section.
+- Arcade Coin rewards appear only after the saved completion and show completion, first-clear, new-star, and personal-best components.
 - Result labels/buttons reveal with a short stagger unless Reduced Motion is enabled.
 - Next Level is enabled only if a valid registered next level is unlocked.
 - Level 10 disables Next Level and displays an all-levels-complete message.
@@ -78,19 +79,23 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 
 - Store is reachable from Main Menu and from locked supporter cosmetics in the Cosmetics screen.
 - Store shows Remove Ads, Starter Pack, Restore Purchases, owned states, unavailable states, pending state, and concise status feedback.
+- Store shows Arcade Coin/Net Token balances, five simulated Token packs, and the optional daily rewarded-Token action.
 - Store uses simulated providers only in development builds and labels the build accordingly.
 - Release-mode builds disable simulated providers and show offline/unavailable messaging until real SDKs are integrated in a later phase.
 - Remove Ads disables interstitials but keeps voluntary rewarded continues available.
-- Starter Pack includes Remove Ads plus Supporter Ball, Supporter Trail, and Supporter Goal Effect.
+- Starter Pack includes Remove Ads, Supporter Ball/Trail/Goal Effect, 2,500 Coins, and 300 Tokens; currency grants once.
 - Purchase/restore failures return control immediately and do not corrupt save data.
 
 ### Cosmetics
 
 - Category tabs switch between Balls, Trails, and Goal Effects.
+- Rarity and ownership filters support a 38-item launch catalog.
 - The large preview uses a dedicated lightweight `SubViewport`; it does not load a production level.
 - Compact cut-corner item markers can always be previewed.
 - The large focused detail panel shows description, unlock requirement, and Equip state without repeating that copy in every catalog item.
 - Locked items cannot be equipped.
+- Coin items purchase immediately when affordable; Token items require confirmation.
+- Insufficient funds never changes ownership or selection.
 - Supporter cosmetics show the Starter Pack requirement and can open Store while locked.
 - Previewing a locked item does not mutate save data.
 - Unlocked items can be equipped with the Equip button and save immediately.

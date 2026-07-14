@@ -11,6 +11,7 @@ const LevelRouteScript := preload("res://scripts/ui/level_route.gd")
 const StarDisplayScript := preload("res://scripts/ui/star_display.gd")
 const ResultMotifScript := preload("res://scripts/ui/result_motif.gd")
 const CosmeticChoiceButtonScript := preload("res://scripts/ui/cosmetic_choice_button.gd")
+const CurrencyProductRegistryScript := preload("res://scripts/monetization/currency_product_registry.gd")
 
 const MAX_STARS := 30
 const SAFE_MARGIN := 28
@@ -22,6 +23,7 @@ const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
 const CONTEXT_REWARDED_CONTINUE := "rewarded_continue"
+const CONTEXT_REWARDED_TOKENS := "rewarded_tokens"
 const CONTEXT_NEXT_LEVEL := "next_level"
 const CONTEXT_LEVEL_SELECT_AFTER_SUCCESS := "level_select_after_success"
 const COSMETIC_CATEGORIES := [
@@ -64,14 +66,26 @@ var cosmetic_preview
 var cosmetic_name_label: Label
 var cosmetic_description_label: Label
 var cosmetic_requirement_label: Label
+var cosmetic_rarity_label: Label
 var cosmetic_status_label: Label
 var cosmetic_equip_button: Button
+var cosmetic_purchase_button: Button
 var cosmetic_store_button: Button
+var cosmetic_balance_label: Label
+var cosmetic_rarity_filter: OptionButton
+var cosmetic_ownership_filter: OptionButton
+var current_cosmetic_rarity_filter: String = "all"
+var current_cosmetic_ownership_filter: String = "all"
+var token_purchase_confirmation: Control
 var store_status_label: Label
 var store_remove_ads_button: Button
 var store_starter_pack_button: Button
 var store_restore_button: Button
 var store_product_buttons: Dictionary = {}
+var store_token_pack_buttons: Dictionary = {}
+var store_wallet_label: Label
+var store_rewarded_token_button: Button
+var store_rewarded_token_status_label: Label
 var gameplay_pause_button: Button
 var store_request_in_progress: bool = false
 var store_pending_product_id: String = ""
@@ -708,11 +722,18 @@ func _show_cosmetics_internal() -> void:
 	subtitle.theme_type_variation = "MetaLabel"
 	title_stack.add_child(subtitle)
 
+	var balances := VBoxContainer.new()
+	balances.add_theme_constant_override("separation", 0)
+	header.add_child(balances)
 	var stars := Label.new()
 	stars.text = "STARS  %d / %d" % [_get_save_service().get_total_stars(), MAX_STARS]
 	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	stars.theme_type_variation = "NumericLabel"
-	header.add_child(stars)
+	balances.add_child(stars)
+	cosmetic_balance_label = Label.new()
+	cosmetic_balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cosmetic_balance_label.theme_type_variation = "LightMetaLabel"
+	balances.add_child(cosmetic_balance_label)
 
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
@@ -728,6 +749,34 @@ func _show_cosmetics_internal() -> void:
 		tab.pressed.connect(func() -> void: _select_cosmetic_category(category_copy))
 		tabs.add_child(tab)
 		cosmetic_category_buttons[category_copy] = tab
+
+	var filters := HBoxContainer.new()
+	filters.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	outer.add_child(filters)
+	var filter_label := Label.new()
+	filter_label.text = "BROWSE"
+	filter_label.theme_type_variation = "LightSectionLabel"
+	filter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	filters.add_child(filter_label)
+	cosmetic_rarity_filter = OptionButton.new()
+	cosmetic_rarity_filter.custom_minimum_size = Vector2(170.0, 48.0)
+	for rarity_name in ["ALL RARITIES", "COMMON", "RARE", "EPIC", "LEGENDARY"]:
+		cosmetic_rarity_filter.add_item(rarity_name)
+	cosmetic_rarity_filter.item_selected.connect(_on_cosmetic_rarity_filter_selected)
+	filters.add_child(cosmetic_rarity_filter)
+	cosmetic_ownership_filter = OptionButton.new()
+	cosmetic_ownership_filter.custom_minimum_size = Vector2(150.0, 48.0)
+	for ownership_name in ["ALL ITEMS", "OWNED", "UNOWNED"]:
+		cosmetic_ownership_filter.add_item(ownership_name)
+	cosmetic_ownership_filter.item_selected.connect(_on_cosmetic_ownership_filter_selected)
+	filters.add_child(cosmetic_ownership_filter)
+	var shop_note := Label.new()
+	shop_note.text = "GAMEPLAY REWARDS + COSMETIC-ONLY SHOP"
+	shop_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	shop_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	shop_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_note.theme_type_variation = "LightMetaLabel"
+	filters.add_child(shop_note)
 
 	var showcase := HBoxContainer.new()
 	showcase.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
@@ -774,6 +823,10 @@ func _show_cosmetics_internal() -> void:
 	cosmetic_description_label.theme_type_variation = "LightBodyLabel"
 	detail_box.add_child(cosmetic_description_label)
 
+	cosmetic_rarity_label = Label.new()
+	cosmetic_rarity_label.theme_type_variation = "LightSectionLabel"
+	detail_box.add_child(cosmetic_rarity_label)
+
 	cosmetic_requirement_label = Label.new()
 	cosmetic_requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cosmetic_requirement_label.theme_type_variation = "LightMetaLabel"
@@ -782,6 +835,11 @@ func _show_cosmetics_internal() -> void:
 	var detail_spacer := Control.new()
 	detail_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	detail_box.add_child(detail_spacer)
+
+	cosmetic_purchase_button = _new_menu_button("PURCHASE", true)
+	cosmetic_purchase_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cosmetic_purchase_button.pressed.connect(_purchase_previewed_cosmetic)
+	detail_box.add_child(cosmetic_purchase_button)
 
 	cosmetic_equip_button = _new_menu_button("EQUIP", true)
 	cosmetic_equip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -822,6 +880,16 @@ func _select_cosmetic_category(category: String) -> void:
 	_refresh_cosmetics_screen()
 
 
+func _on_cosmetic_rarity_filter_selected(index: int) -> void:
+	current_cosmetic_rarity_filter = ["all", "common", "rare", "epic", "legendary"][clampi(index, 0, 4)]
+	_refresh_cosmetics_screen()
+
+
+func _on_cosmetic_ownership_filter_selected(index: int) -> void:
+	current_cosmetic_ownership_filter = ["all", "owned", "unowned"][clampi(index, 0, 2)]
+	_refresh_cosmetics_screen()
+
+
 func _preview_cosmetic(cosmetic_id: String) -> void:
 	var definition := CosmeticRegistryScript.get_definition(cosmetic_id)
 	if definition.is_empty():
@@ -846,6 +914,83 @@ func _equip_previewed_cosmetic() -> void:
 	_refresh_cosmetics_screen()
 
 
+func _purchase_previewed_cosmetic() -> void:
+	var definition := CosmeticRegistryScript.get_definition(previewed_cosmetic_id)
+	if definition.is_empty() or not CosmeticRegistryScript.is_currency_purchase(previewed_cosmetic_id):
+		cosmetic_status_label.text = "NOT FOR SALE"
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
+		return
+	if String(definition.get("acquisition_method", "")) == CosmeticRegistryScript.ACQUISITION_TOKEN_PURCHASE:
+		_show_token_purchase_confirmation(definition)
+		return
+	_complete_cosmetic_purchase()
+
+
+func _complete_cosmetic_purchase() -> void:
+	var wallet := _get_wallet_service()
+	var result := (
+		wallet.call("purchase_cosmetic", previewed_cosmetic_id)
+		if wallet
+		else {"purchased": false, "reason": "wallet unavailable"}
+	) as Dictionary
+	if bool(result.get("purchased", false)):
+		cosmetic_status_label.text = "PURCHASED"
+		_play_ui_feedback("ui_confirm", "ui_tap", 0.7)
+	else:
+		cosmetic_status_label.text = _friendly_economy_reason(String(result.get("reason", "purchase failed")))
+		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
+	_refresh_cosmetics_screen()
+
+
+func _show_token_purchase_confirmation(definition: Dictionary) -> void:
+	if token_purchase_confirmation:
+		return
+	var overlay := _new_modal_overlay("TokenPurchaseConfirmation")
+	overlay.theme = NetboundUITheme.get_theme()
+	var panel := _new_center_panel(Vector2(480.0, 280.0))
+	panel.theme_type_variation = "LockerDetailPanel"
+	overlay.add_child(panel)
+	var box := _panel_vbox(panel)
+	var title := Label.new()
+	title.text = "SPEND NET TOKENS?"
+	title.theme_type_variation = "LightScreenTitle"
+	box.add_child(title)
+	var detail := Label.new()
+	detail.text = "%s  //  %d TOKENS\nThis is a cosmetic-only purchase." % [
+		String(definition.get("display_name", "")),
+		int(definition.get("token_price", 0)),
+	]
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.theme_type_variation = "LightBodyLabel"
+	box.add_child(detail)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+	box.add_child(actions)
+	var cancel := _new_small_button("CANCEL")
+	cancel.theme_type_variation = "LightQuietButton"
+	cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel.pressed.connect(_close_token_purchase_confirmation)
+	actions.add_child(cancel)
+	var confirm := _new_menu_button("CONFIRM", true)
+	confirm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm.pressed.connect(_confirm_token_purchase)
+	actions.add_child(confirm)
+	token_purchase_confirmation = overlay
+	screen_root.add_child(overlay)
+	_animate_modal_entrance(overlay)
+
+
+func _confirm_token_purchase() -> void:
+	_close_token_purchase_confirmation()
+	_complete_cosmetic_purchase()
+
+
+func _close_token_purchase_confirmation() -> void:
+	if token_purchase_confirmation:
+		token_purchase_confirmation.queue_free()
+		token_purchase_confirmation = null
+
+
 func _refresh_cosmetics_screen() -> void:
 	if not cosmetic_items_box:
 		return
@@ -853,6 +998,16 @@ func _refresh_cosmetics_screen() -> void:
 		current_cosmetic_category = CosmeticRegistryScript.CATEGORY_BALL
 
 	var service := _get_save_service()
+	var wallet := _get_wallet_service()
+	if cosmetic_balance_label and wallet:
+		cosmetic_balance_label.text = "COINS  %s   //   TOKENS  %s" % [
+			_format_number(int(wallet.call("get_coin_balance"))),
+			_format_number(int(wallet.call("get_token_balance"))),
+		]
+	if cosmetic_rarity_filter:
+		cosmetic_rarity_filter.select(["all", "common", "rare", "epic", "legendary"].find(current_cosmetic_rarity_filter))
+	if cosmetic_ownership_filter:
+		cosmetic_ownership_filter.select(["all", "owned", "unowned"].find(current_cosmetic_ownership_filter))
 	for category in cosmetic_category_buttons.keys():
 		var tab := cosmetic_category_buttons[category] as Button
 		if tab:
@@ -873,6 +1028,14 @@ func _refresh_cosmetics_screen() -> void:
 	cosmetic_card_buttons.clear()
 
 	for definition in CosmeticRegistryScript.get_by_category(current_cosmetic_category):
+		var cosmetic_id := String(definition.get("cosmetic_id", ""))
+		var owned: bool = service.is_cosmetic_unlocked(cosmetic_id)
+		if current_cosmetic_rarity_filter != "all" and String(definition.get("rarity", "")) != current_cosmetic_rarity_filter:
+			continue
+		if current_cosmetic_ownership_filter == "owned" and not owned:
+			continue
+		if current_cosmetic_ownership_filter == "unowned" and owned:
+			continue
 		var card := _build_cosmetic_card(definition)
 		cosmetic_items_box.add_child(card)
 		cosmetic_card_buttons[String(definition.get("cosmetic_id", ""))] = card
@@ -895,7 +1058,9 @@ func _build_cosmetic_card(definition: Dictionary) -> Button:
 		current_cosmetic_category,
 		unlocked,
 		selected,
-		previewed
+		previewed,
+		String(definition.get("rarity", "common")),
+		CosmeticRegistryScript.get_price_text(cosmetic_id)
 	)
 	var cosmetic_id_copy := cosmetic_id
 	card.pressed.connect(func() -> void: _preview_cosmetic(cosmetic_id_copy))
@@ -916,16 +1081,25 @@ func _refresh_cosmetic_preview_panel(definition: Dictionary) -> void:
 		cosmetic_name_label.text = String(definition.get("display_name", cosmetic_id))
 	if cosmetic_description_label:
 		cosmetic_description_label.text = String(definition.get("description", ""))
+	if cosmetic_rarity_label:
+		cosmetic_rarity_label.text = String(definition.get("rarity", "common")).to_upper()
 	if cosmetic_requirement_label:
 		cosmetic_requirement_label.text = CosmeticRegistryScript.get_unlock_requirement_text(cosmetic_id)
 	if cosmetic_equip_button:
 		cosmetic_equip_button.disabled = not unlocked or selected
 		cosmetic_equip_button.text = "EQUIPPED" if selected else ("EQUIP" if unlocked else "LOCKED")
+	if cosmetic_purchase_button:
+		var purchasable := CosmeticRegistryScript.is_currency_purchase(cosmetic_id) and not unlocked
+		cosmetic_purchase_button.visible = purchasable
+		cosmetic_purchase_button.disabled = not purchasable
+		cosmetic_purchase_button.text = (
+			"BUY  //  %s" % CosmeticRegistryScript.get_price_text(cosmetic_id)
+			if purchasable
+			else "PURCHASED"
+		)
 	if cosmetic_store_button:
 		var requirement := definition.get("unlock_requirement", {}) as Dictionary
-		var requires_starter_pack := (
-			String(requirement.get("type", "")) == CosmeticRegistryScript.REQUIREMENT_ENTITLEMENT
-		)
+		var requires_starter_pack := String(definition.get("acquisition_method", "")) == CosmeticRegistryScript.ACQUISITION_SUPPORTER
 		cosmetic_store_button.visible = requires_starter_pack and not unlocked
 		cosmetic_store_button.disabled = not cosmetic_store_button.visible
 	if cosmetic_status_label:
@@ -947,6 +1121,7 @@ func _show_store_internal() -> void:
 		pause_overlay = null
 	gameplay_overlay_root.visible = previous_menu_screen == "pause"
 	store_product_buttons.clear()
+	store_token_pack_buttons.clear()
 
 	var screen := _new_screen("Store")
 	screen.theme = NetboundUITheme.get_theme()
@@ -987,6 +1162,13 @@ func _show_store_internal() -> void:
 	subtitle.text = "OPTIONAL EXTRAS. THE FULL ROUTE STAYS FREE."
 	subtitle.theme_type_variation = "LightMetaLabel"
 	title_stack.add_child(subtitle)
+	store_wallet_label = Label.new()
+	store_wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	store_wallet_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	store_wallet_label.theme_type_variation = "NumericLabel"
+	store_wallet_label.custom_minimum_size = Vector2(150.0, 0.0)
+	store_wallet_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	header.add_child(store_wallet_label)
 
 	var note_band := PanelContainer.new()
 	note_band.theme_type_variation = "InfoBand"
@@ -1023,12 +1205,68 @@ func _show_store_internal() -> void:
 		PRODUCT_STARTER_PACK,
 		"SUPPORTER STYLE",
 		"STARTER PACK",
-		"Remove Ads plus the Supporter ball, trail, and goal effect.",
+		"Remove Ads + Supporter cosmetics.\n2,500 Coins + 300 Net Tokens.",
 		true
 	)
 	store_starter_pack_button = starter_offer.button as Button
 	store_starter_pack_button.pressed.connect(_purchase_starter_pack)
 	products.add_child(starter_offer.panel as PanelContainer)
+
+	var economy_band := PanelContainer.new()
+	economy_band.theme_type_variation = "SettingsPanel"
+	outer.add_child(economy_band)
+	var economy_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		economy_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_4)
+	economy_band.add_child(economy_margin)
+	var economy_box := VBoxContainer.new()
+	economy_box.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	economy_margin.add_child(economy_box)
+	var economy_header := HBoxContainer.new()
+	economy_header.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	economy_box.add_child(economy_header)
+	var economy_title := Label.new()
+	economy_title.text = "NET TOKENS"
+	economy_title.theme_type_variation = "LightSectionLabel"
+	economy_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	economy_header.add_child(economy_title)
+	store_rewarded_token_status_label = Label.new()
+	store_rewarded_token_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	store_rewarded_token_status_label.theme_type_variation = "LightMetaLabel"
+	economy_header.add_child(store_rewarded_token_status_label)
+	var reward_row := HBoxContainer.new()
+	reward_row.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+	economy_box.add_child(reward_row)
+	var reward_copy := Label.new()
+	reward_copy.text = "OPTIONAL REWARDED AD  //  +2 TOKENS"
+	reward_copy.theme_type_variation = "LightBodyLabel"
+	reward_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reward_copy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	reward_row.add_child(reward_copy)
+	store_rewarded_token_button = _new_small_button("WATCH  +2 TOKENS")
+	store_rewarded_token_button.custom_minimum_size = Vector2(220.0, 54.0)
+	store_rewarded_token_button.pressed.connect(_request_rewarded_tokens)
+	reward_row.add_child(store_rewarded_token_button)
+
+	var token_packs := GridContainer.new()
+	token_packs.columns = 5
+	token_packs.add_theme_constant_override("h_separation", NetboundUITheme.SPACE_2)
+	token_packs.add_theme_constant_override("v_separation", NetboundUITheme.SPACE_2)
+	economy_box.add_child(token_packs)
+	for product_id in CurrencyProductRegistryScript.get_product_ids():
+		var amount := CurrencyProductRegistryScript.get_token_amount(product_id)
+		var pack_button := _build_store_product_button(
+			product_id,
+			"%s TOKENS" % _format_number(amount),
+			"Consumable development product"
+		)
+		pack_button.custom_minimum_size = Vector2(120.0, 64.0)
+		pack_button.add_theme_font_size_override("font_size", 18)
+		pack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var product_copy := product_id
+		pack_button.pressed.connect(func() -> void: _start_store_purchase(product_copy))
+		token_packs.add_child(pack_button)
+		store_token_pack_buttons[product_id] = pack_button
 
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
@@ -1059,7 +1297,7 @@ func _build_store_offer(
 ) -> Dictionary:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = "StoreOfferAccentPanel" if accented else "StoreOfferPanel"
-	panel.custom_minimum_size = Vector2(0.0, 350.0)
+	panel.custom_minimum_size = Vector2(0.0, 330.0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var margin := MarginContainer.new()
 	for side in ["left", "top", "right", "bottom"]:
@@ -1083,10 +1321,11 @@ func _build_store_offer(
 	box.add_child(description_label)
 	var facts := Label.new()
 	facts.theme_type_variation = "LightMetaLabel"
+	facts.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	facts.text = (
-		"INTERSTITIAL ADS: OFF\nREWARDED CONTINUES: YOUR CHOICE"
+		"INTERSTITIAL ADS: OFF\nREWARDED CONTINUES\nYOUR CHOICE"
 		if product_id == PRODUCT_REMOVE_ADS
-		else "SUPPORTER BALL + TRAIL + GOAL FX\nREMOVE ADS: INCLUDED"
+		else "SUPPORTER BALL + TRAIL + GOAL FX\n2,500 COINS + 300 TOKENS\nREMOVE ADS"
 	)
 	box.add_child(facts)
 	var spacer := Control.new()
@@ -1121,11 +1360,38 @@ func _refresh_store_screen() -> void:
 		and monetization.has_method("is_purchase_available")
 		and monetization.call("is_purchase_available")
 	)
+	var wallet := _get_wallet_service()
+	if store_wallet_label and wallet:
+		store_wallet_label.text = "COINS  %s\nTOKENS  %s" % [
+			_format_number(int(wallet.call("get_coin_balance"))),
+			_format_number(int(wallet.call("get_token_balance"))),
+		]
 	_refresh_store_product_button(
 		store_remove_ads_button,
 		save_service.has_entitlement(ENTITLEMENT_REMOVE_ADS),
 		purchase_available
 	)
+	for product_id in store_token_pack_buttons.keys():
+		_refresh_store_product_button(store_token_pack_buttons[product_id] as Button, false, purchase_available)
+	var rewarded_available := bool(
+		monetization
+		and monetization.has_method("is_rewarded_ad_available")
+		and monetization.call("is_rewarded_ad_available")
+	)
+	var daily_status := (
+		wallet.call("get_rewarded_token_status")
+		if wallet
+		else {"available": false, "rewards_remaining": 0, "reason": "wallet unavailable"}
+	) as Dictionary
+	if store_rewarded_token_button:
+		store_rewarded_token_button.disabled = store_request_in_progress or not rewarded_available or not bool(daily_status.get("available", false))
+		store_rewarded_token_button.text = (
+			"DAILY LIMIT REACHED"
+			if String(daily_status.get("reason", "")) == "daily_limit"
+			else ("UNAVAILABLE" if not rewarded_available else "WATCH  +2 TOKENS")
+		)
+	if store_rewarded_token_status_label:
+		store_rewarded_token_status_label.text = "%d / 5 REWARDS LEFT TODAY" % int(daily_status.get("rewards_remaining", 0))
 	_refresh_store_product_button(
 		store_starter_pack_button,
 		save_service.has_entitlement(ENTITLEMENT_STARTER_PACK),
@@ -1153,9 +1419,15 @@ func _refresh_store_product_button(button: Button, owned: bool, purchase_availab
 		else {"price_text": "Unavailable", "available": false}
 	) as Dictionary
 	var product_available := purchase_available and bool(product_info.get("available", false))
-	var action_text := "Owned" if owned else (
-		"Unavailable" if not product_available else "Purchase - %s" % String(product_info.get("price_text", ""))
-	)
+	var action_text := "Owned" if owned else "Unavailable"
+	if product_available and not owned:
+		if CurrencyProductRegistryScript.is_token_product(product_id):
+			action_text = "%s TOKENS\n%s" % [
+				_format_number(CurrencyProductRegistryScript.get_token_amount(product_id)),
+				String(product_info.get("price_text", "")),
+			]
+		else:
+			action_text = "Purchase - %s" % String(product_info.get("price_text", ""))
 	if store_request_in_progress and product_id == store_pending_product_id:
 		action_text = "Processing..."
 	button.disabled = store_request_in_progress or owned or not product_available
@@ -1182,6 +1454,8 @@ func _start_store_purchase(product_id: String) -> void:
 		result = monetization.call("purchase_remove_ads")
 	elif product_id == PRODUCT_STARTER_PACK:
 		result = monetization.call("purchase_starter_pack")
+	elif CurrencyProductRegistryScript.is_token_product(product_id):
+		result = monetization.call("purchase_token_pack", product_id)
 	else:
 		result = {"accepted": false, "reason": "unknown product"}
 	if bool(result.get("accepted", false)):
@@ -1190,6 +1464,23 @@ func _start_store_purchase(product_id: String) -> void:
 		_set_store_status("Purchase simulation in progress...")
 	else:
 		_set_store_status(String(result.get("reason", "Purchase unavailable.")))
+	_refresh_store_screen()
+
+
+func _request_rewarded_tokens() -> void:
+	if store_request_in_progress:
+		return
+	var monetization := _get_monetization_service()
+	if not monetization or not monetization.has_method("request_rewarded_tokens"):
+		_set_store_status("Rewarded Tokens unavailable.")
+		return
+	var result := monetization.call("request_rewarded_tokens") as Dictionary
+	if bool(result.get("accepted", false)):
+		store_request_in_progress = true
+		store_pending_product_id = "rewarded_tokens"
+		_set_store_status("Watching simulated rewarded ad...")
+	else:
+		_set_store_status(_friendly_economy_reason(String(result.get("reason", "unavailable"))))
 	_refresh_store_screen()
 
 
@@ -1375,6 +1666,39 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	]
 	result_best_label.theme_type_variation = "LightSuccessLabel" if improved else "LightMetaLabel"
 	box.add_child(result_best_label)
+
+	var coins_earned := _get_update_int(progression_update, "coins_earned", 0)
+	if coins_earned > 0:
+		var reward_panel := PanelContainer.new()
+		reward_panel.theme_type_variation = "InfoBand"
+		box.add_child(reward_panel)
+		var reward_margin := MarginContainer.new()
+		for side in ["left", "top", "right", "bottom"]:
+			reward_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_2)
+		reward_panel.add_child(reward_margin)
+		var reward_box := VBoxContainer.new()
+		reward_box.add_theme_constant_override("separation", 2)
+		reward_margin.add_child(reward_box)
+		var reward_title := Label.new()
+		reward_title.text = "ARCADE COINS  +%s" % _format_number(coins_earned)
+		reward_title.theme_type_variation = "LightSectionLabel"
+		reward_box.add_child(reward_title)
+		var reward_parts: Array[String] = []
+		var completion_coins := _get_update_int(progression_update, "completion_coins", 0)
+		var first_coins := _get_update_int(progression_update, "first_completion_coins", 0)
+		var star_coins := _get_update_int(progression_update, "new_star_coins", 0)
+		var best_coins := _get_update_int(progression_update, "personal_best_coins", 0)
+		if completion_coins > 0: reward_parts.append("FINISH +%d" % completion_coins)
+		if first_coins > 0: reward_parts.append("FIRST CLEAR +%d" % first_coins)
+		if star_coins > 0: reward_parts.append("NEW STARS +%d" % star_coins)
+		if best_coins > 0: reward_parts.append("NEW BEST +%d" % best_coins)
+		var reward_detail := Label.new()
+		reward_detail.text = "%s  //  BALANCE %s" % [
+			"  /  ".join(reward_parts),
+			_format_number(_get_update_int(progression_update, "coin_balance_after", 0)),
+		]
+		reward_detail.theme_type_variation = "MetaLabel"
+		reward_box.add_child(reward_detail)
 
 	result_unlock_label = Label.new()
 	result_unlock_label.theme_type_variation = "LightSuccessLabel"
@@ -1626,6 +1950,12 @@ func _on_monetization_reward_granted(
 	_request_id: int,
 	metadata: Dictionary
 ) -> void:
+	if context == CONTEXT_REWARDED_TOKENS:
+		store_request_in_progress = false
+		store_pending_product_id = ""
+		_set_store_status("+%d Net Tokens added." % int(metadata.get("amount", 0)))
+		_refresh_store_screen()
+		return
 	if context != CONTEXT_REWARDED_CONTINUE:
 		return
 	rewarded_continue_request_in_progress = false
@@ -1648,6 +1978,12 @@ func _on_monetization_reward_granted(
 
 
 func _on_monetization_reward_failed(context: String, _request_id: int, reason: String) -> void:
+	if context == CONTEXT_REWARDED_TOKENS:
+		store_request_in_progress = false
+		store_pending_product_id = ""
+		_set_store_status(_friendly_economy_reason(reason))
+		_refresh_store_screen()
+		return
 	if context != CONTEXT_REWARDED_CONTINUE:
 		return
 	rewarded_continue_request_in_progress = false
@@ -1665,7 +2001,11 @@ func _on_monetization_purchase_started(product_id: String, _request_id: int) -> 
 func _on_monetization_purchase_completed(product_id: String, _request_id: int) -> void:
 	store_request_in_progress = false
 	store_pending_product_id = ""
-	_set_store_status("%s owned." % _product_display_name(product_id))
+	_set_store_status(
+		"%s added." % _product_display_name(product_id)
+		if CurrencyProductRegistryScript.is_token_product(product_id)
+		else "%s owned." % _product_display_name(product_id)
+	)
 	_refresh_store_screen()
 	if current_screen_name == "cosmetics":
 		_refresh_cosmetics_screen()
@@ -1764,14 +2104,24 @@ func _clear_screen() -> void:
 	cosmetic_name_label = null
 	cosmetic_description_label = null
 	cosmetic_requirement_label = null
+	cosmetic_rarity_label = null
 	cosmetic_status_label = null
 	cosmetic_equip_button = null
+	cosmetic_purchase_button = null
 	cosmetic_store_button = null
+	cosmetic_balance_label = null
+	cosmetic_rarity_filter = null
+	cosmetic_ownership_filter = null
+	token_purchase_confirmation = null
 	store_status_label = null
 	store_remove_ads_button = null
 	store_starter_pack_button = null
 	store_restore_button = null
+	store_wallet_label = null
+	store_rewarded_token_button = null
+	store_rewarded_token_status_label = null
 	store_product_buttons.clear()
+	store_token_pack_buttons.clear()
 	cosmetic_category_buttons.clear()
 	cosmetic_card_buttons.clear()
 
@@ -1818,6 +2168,12 @@ func _get_monetization_service() -> Node:
 	if not is_inside_tree():
 		return null
 	return get_node_or_null("/root/MonetizationService")
+
+
+func _get_wallet_service() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/WalletService")
 
 
 func _get_mobile_runtime_service() -> Node:
@@ -2219,6 +2575,8 @@ func _format_cosmetic_unlock_text(cosmetic_ids: Array[String]) -> String:
 
 
 func _product_display_name(product_id: String) -> String:
+	if CurrencyProductRegistryScript.is_token_product(product_id):
+		return "%s Net Tokens" % _format_number(CurrencyProductRegistryScript.get_token_amount(product_id))
 	match product_id:
 		PRODUCT_REMOVE_ADS:
 			return "Remove Ads"
@@ -2244,6 +2602,35 @@ func _friendly_monetization_reason(reason: String) -> String:
 			return "Already in progress."
 		_:
 			return reason if not reason.is_empty() else "Unavailable."
+
+
+func _friendly_economy_reason(reason: String) -> String:
+	match reason:
+		"insufficient_funds":
+			return "NOT ENOUGH CURRENCY"
+		"already_owned", "already_processed", "duplicate_transaction":
+			return "ALREADY OWNED"
+		"daily_limit":
+			return "DAILY TOKEN LIMIT REACHED"
+		"clock_rollback":
+			return "DEVICE DATE MOVED BACK; TOKEN REWARDS PAUSED"
+		"cancelled":
+			return "CANCELLED"
+		"failed", "save_failed", "grant_failed":
+			return "COULD NOT COMPLETE PURCHASE"
+		"not_purchasable":
+			return "EARN THIS ITEM THROUGH PLAY"
+		_:
+			return reason.replace("_", " ").to_upper() if not reason.is_empty() else "UNAVAILABLE"
+
+
+func _format_number(value: int) -> String:
+	var text := str(maxi(value, 0))
+	var result := ""
+	while text.length() > 3:
+		result = ",%s%s" % [text.right(3), result]
+		text = text.left(text.length() - 3)
+	return "%s%s" % [text, result]
 
 
 func _store_note_text() -> String:

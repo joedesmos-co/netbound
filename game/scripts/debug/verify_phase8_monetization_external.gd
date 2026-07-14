@@ -286,10 +286,24 @@ func _test_interstitial_policy() -> bool:
 		var definition := LevelRegistryScript.load_definition("level_%02d" % index)
 		service.record_level_result(LevelResult.completed_result(definition, definition.par_shots), definition)
 		monetization.call("record_level_completion_for_ads")
-	var passed := bool(monetization.call("should_show_interstitial", CONTEXT_NEXT_LEVEL))
+	var passed := not bool(monetization.call("should_show_interstitial", CONTEXT_NEXT_LEVEL))
+	var level_04 := LevelRegistryScript.load_definition("level_04")
+	service.record_level_result(LevelResult.completed_result(level_04, level_04.par_shots), level_04)
+	monetization.call("record_level_completion_for_ads")
+	passed = bool(monetization.call("should_show_interstitial", CONTEXT_NEXT_LEVEL)) and passed
 	var request: Dictionary = monetization.call("request_interstitial", CONTEXT_NEXT_LEVEL)
 	await _wait_frames(4)
 	passed = bool(request.get("accepted", false)) and passed
+	passed = not bool(monetization.call("should_show_interstitial", CONTEXT_NEXT_LEVEL)) and passed
+	monetization.set("last_interstitial_msec", -999999999)
+	for count in range(3):
+		monetization.call("record_level_completion_for_ads")
+	var second_request: Dictionary = monetization.call("request_interstitial", CONTEXT_NEXT_LEVEL)
+	await _wait_frames(4)
+	passed = bool(second_request.get("accepted", false)) and passed
+	monetization.set("last_interstitial_msec", -999999999)
+	for count in range(3):
+		monetization.call("record_level_completion_for_ads")
 	passed = not bool(monetization.call("should_show_interstitial", CONTEXT_NEXT_LEVEL)) and passed
 
 	monetization.call("reset_session_frequency_for_tests")

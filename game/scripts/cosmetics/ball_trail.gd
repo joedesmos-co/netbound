@@ -31,6 +31,7 @@ func configure(new_trail_id: String) -> void:
 		set_physics_process(trail_id != "trail_none")
 		return
 	trail_id = normalized_id
+	_configure_point_meshes()
 	_configure_materials()
 	reset_trail()
 	set_physics_process(trail_id != "trail_none")
@@ -85,7 +86,20 @@ func _physics_process(_delta: float) -> void:
 		var speed_scale := clampf(speed / 18.0, 0.55, 1.35)
 		point.visible = true
 		point.global_position = _positions[i]
-		point.scale = Vector3.ONE * lerpf(0.18, 0.035, age_ratio) * speed_scale
+		var point_size := lerpf(0.18, 0.035, age_ratio) * speed_scale
+		match trail_id:
+			"trail_bubble":
+				point.scale = Vector3.ONE * point_size * (1.0 + sin(float(i) * 1.7) * 0.28)
+			"trail_streamers":
+				point.scale = Vector3(point_size * 1.8, point_size * 0.32, point_size * 0.42)
+			"trail_comet":
+				point.scale = Vector3(point_size * 1.45, point_size * 0.7, point_size * 0.7)
+			"trail_pixel":
+				point.scale = Vector3.ONE * point_size * (1.15 if i % 2 == 0 else 0.72)
+			"trail_starfall":
+				point.scale = Vector3.ONE * point_size * (1.4 if i % 3 == 0 else 0.62)
+			_:
+				point.scale = Vector3.ONE * point_size
 		if i < _materials.size():
 			var material := _materials[i]
 			var color := _color_for_index(i)
@@ -125,6 +139,23 @@ func _configure_materials() -> void:
 		_materials.append(material)
 
 
+func _configure_point_meshes() -> void:
+	for point in _points:
+		if trail_id in ["trail_chalk", "trail_streamers", "trail_pixel"]:
+			var box := BoxMesh.new()
+			box.size = Vector3(0.22, 0.08, 0.08)
+			point.mesh = box
+		elif trail_id == "trail_starfall":
+			var prism := PrismMesh.new()
+			prism.size = Vector3(0.2, 0.2, 0.08)
+			point.mesh = prism
+		else:
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.12
+			sphere.height = 0.24
+			point.mesh = sphere
+
+
 func _color_for_index(index: int) -> Color:
 	var ratio := float(index) / float(maxi(MAX_POINTS - 1, 1))
 	match trail_id:
@@ -143,6 +174,18 @@ func _color_for_index(index: int) -> Color:
 				lerpf(0.78, 0.18, ratio),
 				1.0
 			)
+		"trail_chalk":
+			return Color(0.96, 0.94, 0.84, 1.0)
+		"trail_bubble":
+			return Color(lerpf(0.35, 0.72, ratio), lerpf(0.92, 0.55, ratio), 1.0, 1.0)
+		"trail_streamers":
+			return Color("ff665f") if index % 2 == 0 else Color("ffd63f")
+		"trail_comet":
+			return Color(lerpf(0.9, 0.18, ratio), lerpf(0.98, 0.42, ratio), 1.0, 1.0)
+		"trail_pixel":
+			return Color.from_hsv(lerpf(0.72, 0.83, ratio), 0.72, 1.0, 1.0)
+		"trail_starfall":
+			return Color("ffd84d") if index % 3 == 0 else Color("3159c7")
 		_:
 			return Color(0.0, 0.0, 0.0, 0.0)
 

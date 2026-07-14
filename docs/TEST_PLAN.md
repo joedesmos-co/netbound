@@ -767,3 +767,39 @@ Visible audit assets:
 - initial and iterative review captures: `docs/ui_art_direction/before/`, `vertical_slice/`, and `secondary_review/`
 
 The audit capture script uses isolated save paths and fixture states. It is external-only and is never connected to a production scene.
+
+## Cosmetic Economy And Shop Verification - July 14, 2026
+
+Primary focused verifier:
+
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_economy_external.gd
+```
+
+Coverage:
+
+- 38-item registry counts, IDs, categories, rarity, acquisition rules, prices, defaults, and procedural resource references;
+- fresh wallet defaults, integer grants/spends, insufficient funds, malformed balance normalization, reload persistence, and bounded transaction history;
+- completion, first-clear, new-star, and personal-best Coin rewards with no failure/reopened-result duplication;
+- v1 migration, existing-progression reward seeding, corrupt-save recovery, and v2 reload;
+- rewarded Token completion/cancel/failure/duplicate handling, five-ad/ten-Token daily limit, date rollover, rollback guard, and Remove Ads compatibility;
+- Coin/Token cosmetic purchase, atomic ownership/deduction, duplicate purchase rejection, equip persistence, and non-purchasable progression items;
+- all five consumable Token products, invalid products, delayed/duplicate callbacks, and non-restoration;
+- Starter Pack permanent ownership, one-time 2,500 Coin/300 Token fulfillment, and restore without repeated currency;
+- Store/Locker/result bindings and visual-only gameplay invariance.
+
+Final gate outcome:
+
+- Godot import and configured startup: passed.
+- Strict parser sweep: `64/64`.
+- Production level startup: `10/10`.
+- External regression scripts: `23/23`.
+- Output audit: no parser errors, runtime errors, warnings, or unexpected logs.
+- Android debug APK export: passed.
+- Android debug AAB export from a temporary build-template project: passed.
+- APK archive/signature validation: passed with v2/v3 debug signing.
+- AAB archive integrity: passed; local Gradle AAB remains unsigned as documented for future upload signing.
+
+Visible isolated-save captures are stored in `docs/economy_review/`, including empty/affordable/insufficient/purchased Locker states, Token confirmation, daily limit, simulated purchase success/failure, Starter Pack ownership, and result reward breakdown.

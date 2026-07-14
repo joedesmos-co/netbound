@@ -235,10 +235,10 @@ func _trigger_goal_preview() -> void:
 	var colors := _goal_preview_colors()
 	for index in _goal_preview_pieces.size():
 		var piece := _goal_preview_pieces[index]
-		piece.visible = current_cosmetic_id != "goal_shockwave" or index < 6
+		piece.visible = current_cosmetic_id not in ["goal_shockwave", "goal_portal"] or index < 6
 		var material := piece.material_override as StandardMaterial3D
 		material.albedo_color = colors[index % colors.size()]
-	_goal_preview_ring.visible = current_cosmetic_id in ["goal_shockwave", "goal_supporter"]
+	_goal_preview_ring.visible = current_cosmetic_id in ["goal_shockwave", "goal_supporter", "goal_fireworks", "goal_portal"]
 
 
 func _update_goal_preview(delta: float) -> void:
@@ -293,5 +293,13 @@ func _goal_preview_colors() -> Array[Color]:
 			return [NetboundUITheme.CURVE, Color("b8f4ff")]
 		"goal_supporter":
 			return [NetboundUITheme.SUCCESS, NetboundUITheme.SIGNAL]
+		"goal_ribbons":
+			return [NetboundUITheme.CORAL, NetboundUITheme.SIGNAL, NetboundUITheme.CHALK]
+		"goal_splash":
+			return [NetboundUITheme.SUCCESS, NetboundUITheme.CURVE, NetboundUITheme.CHALK]
+		"goal_fireworks":
+			return [NetboundUITheme.SIGNAL, NetboundUITheme.CORAL, NetboundUITheme.CURVE]
+		"goal_portal":
+			return [Color("8c58ff"), NetboundUITheme.CURVE]
 		_:
 			return [NetboundUITheme.SIGNAL, NetboundUITheme.CHALK]

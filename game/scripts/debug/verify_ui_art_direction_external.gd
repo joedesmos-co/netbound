@@ -102,7 +102,9 @@ func _test_secondary_screens() -> bool:
 	app.show_store("main_menu")
 	await process_frame
 	passed = app.current_screen_name == "store" \
-		and app.store_product_buttons.size() == 2 \
+		and app.store_product_buttons.size() == 7 \
+		and app.store_token_pack_buttons.size() == 5 \
+		and app.store_rewarded_token_button != null \
 		and app.store_restore_button != null \
 		and passed
 	app.show_settings("main_menu")

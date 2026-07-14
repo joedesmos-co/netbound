@@ -242,3 +242,27 @@ Current local blockers:
 - No connected Android device/emulator for install/run.
 - No Apple Team ID, signing identity, or provisioning profile.
 - No physical iOS device build or simulator app was generated because Godot requires a real Team ID before project generation.
+
+## Local Cosmetic Economy
+
+Verified locally:
+
+- Arcade Coin and Net Token balances normalize, persist, and never enter gameplay calculations.
+- Result rewards are saved before presentation and are idempotent across retries/reloads.
+- Rewarded Token ads are voluntary and bounded to five completions/ten Tokens per local day.
+- Token products are simulated consumables and do not restore.
+- Remove Ads and Starter Pack are permanent simulated products; Starter Pack currency grants once.
+- Coin/Token cosmetic purchases commit ownership and deduction together.
+- All 38 cosmetics keep the existing ball body, collision radius, mass, shot tuning, and scoring path unchanged.
+- Shop and Locker fit 1280x720 and native 1024x768 captures with mobile-sized controls.
+- Android APK/AAB exports include economy runtime scripts and exclude external verification/debug resources.
+
+Still required on physical devices and again after real SDK selection:
+
+- confirm wallet/Shop readability under platform font scaling and display accessibility settings;
+- confirm horizontal Locker browsing does not accidentally purchase during a touch drag;
+- confirm Store vertical scrolling and Token confirmation around real safe areas;
+- test app kill/resume during delayed billing and ad callbacks;
+- replace local-date reward limits with an approved trusted-time strategy if abuse resistance becomes a requirement;
+- validate receipts, pending/deferred purchases, refunds, family/account restore behavior, and store-owned consumable rules;
+- provide real Android upload signing and Apple Team/provisioning before distribution.

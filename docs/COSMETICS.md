@@ -1,6 +1,6 @@
 # Netbound Cosmetics
 
-Phase 6 implements offline, gameplay-earned cosmetics. Phase 8 adds purchase-entitlement supporter cosmetics through the simulated Starter Pack. Cosmetics are visual-only and must never alter ball physics, collision, scoring, shot tuning, camera behavior, level unlocks, or star calculation.
+Phase 6 implements offline gameplay cosmetics. The economy phase expands the same visual-only system with Coin and Token purchases while preserving Phase 8 supporter entitlements. Cosmetics must never alter ball physics, collision, scoring, shot tuning, camera behavior, level unlocks, or star calculation.
 
 ## Registry
 
@@ -13,12 +13,19 @@ Each definition includes:
 - `category`
 - `description`
 - `unlock_requirement`
+- `rarity`
+- `acquisition_method`
+- `coin_price`
+- `token_price`
 - `preview_color`
+- `preview_resource`
+- `gameplay_visual_resource`
+- `visual_style`
 - `sort_order`
 - `is_default`
 - `default_unlocked`
 
-The registry validates unique IDs, valid categories, one default per category, and valid unlock requirements. Gameplay resources are procedural, so there are no external texture or scene paths to resolve.
+The registry validates unique IDs, valid categories and rarities, one default per category, acquisition/price combinations, unlock requirements, and referenced procedural resources. The launch catalog contains 38 items; the complete table is in `docs/CURRENCY_PRODUCTS.md`.
 
 ## IDs
 
@@ -31,6 +38,9 @@ Ball skins:
 - `ball_galaxy`
 - `ball_gold`
 - `ball_supporter`
+- `ball_candy`, `ball_mint`, `ball_watermelon`, `ball_sunset`, `ball_checker`, `ball_cloud`
+- `ball_comet`, `ball_lava`, `ball_prism`, `ball_void`
+- `ball_champion`
 
 Trails:
 
@@ -40,6 +50,8 @@ Trails:
 - `trail_spark`
 - `trail_rainbow`
 - `trail_supporter`
+- `trail_chalk`, `trail_bubble`, `trail_streamers`
+- `trail_comet`, `trail_pixel`, `trail_starfall`
 
 Goal effects:
 
@@ -47,6 +59,7 @@ Goal effects:
 - `goal_confetti`
 - `goal_shockwave`
 - `goal_supporter`
+- `goal_ribbons`, `goal_splash`, `goal_fireworks`, `goal_portal`
 
 ## Unlocks
 
@@ -82,8 +95,9 @@ Unlocks are monotonic. Worse replays cannot remove cosmetics, and repeated evalu
 - `selected_trail`
 - `selected_goal_effect`
 - `unlocked`
+- `purchased`
 
-No save-version bump was required because Phase 4 already had these fields. Phase 6 migrates legacy placeholder values such as `classic`, `ball:classic`, and `trail:none` into stable registry IDs. Phase 8 keeps the same selection/unlocked fields; Starter Pack entitlement simply unlocks the three supporter IDs through `SaveService` normalization and purchase recording.
+Save version `2` adds purchased ownership while preserving selection and unlocked arrays. Phase 6 legacy IDs still migrate into stable registry IDs. Starter Pack entitlement still unlocks its three supporter IDs; Coin/Token purchase ownership is committed atomically with wallet deduction.
 
 Selection rules:
 
@@ -93,6 +107,7 @@ Selection rules:
 - selection saves immediately
 - previewing a locked item never saves
 - supporter cosmetics cannot be selected until `entitlement_starter_pack` exists
+- Coin/Token catalog items cannot be selected until purchased
 
 ## Phase 8 Supporter Cosmetics
 

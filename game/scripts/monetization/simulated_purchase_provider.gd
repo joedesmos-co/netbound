@@ -12,10 +12,16 @@ var purchase_mode: String = MODE_SUCCESS
 var restore_mode: String = MODE_SUCCESS
 var delayed_callback_frames: int = 1
 var duplicate_callback_enabled: bool = false
+var forced_transaction_id: String = ""
 var restored_product_ids: Array[String] = []
 var product_prices: Dictionary = {
 	"netbound_remove_ads": "DEV $2.99",
 	"netbound_starter_pack": "DEV $5.99",
+	"netbound_tokens_100": "DEV $0.99",
+	"netbound_tokens_275": "DEV $1.99",
+	"netbound_tokens_600": "DEV $3.99",
+	"netbound_tokens_1300": "DEV $6.99",
+	"netbound_tokens_3000": "DEV $12.99",
 }
 
 
@@ -41,6 +47,10 @@ func set_restored_products(product_ids: Array[String]) -> void:
 	restored_product_ids = product_ids.duplicate()
 
 
+func set_forced_transaction_id(transaction_id: String) -> void:
+	forced_transaction_id = transaction_id
+
+
 func get_product_info(product_id: String) -> Dictionary:
 	return {
 		"product_id": product_id,
@@ -55,7 +65,7 @@ func purchase(request_id: int, product_id: String, callback: Callable) -> void:
 		"request_id": request_id,
 		"product_id": product_id,
 		"result": _mode_to_result(purchase_mode, false),
-		"transaction_id": "sim_%s_%d" % [product_id, request_id],
+		"transaction_id": forced_transaction_id if not forced_transaction_id.is_empty() else "sim_%s_%d" % [product_id, request_id],
 		"provider": "simulated",
 	}, callback)
 

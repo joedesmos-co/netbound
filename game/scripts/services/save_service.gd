@@ -5,7 +5,7 @@ signal progression_changed(update)
 signal save_loaded(save_data: Dictionary)
 signal save_failed(message: String)
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const DEFAULT_SAVE_PATH := "user://netbound_save.json"
 const DEFAULT_TEMP_PATH := "user://netbound_save.tmp"
 const DEFAULT_BACKUP_PATH := "user://netbound_save.bak"
@@ -46,6 +46,9 @@ const VALID_PRODUCTS := [
 	PRODUCT_STARTER_PACK,
 ]
 
+const MAX_PROCESSED_TRANSACTIONS := 2048
+const MAX_TRANSACTION_HISTORY := 64
+
 var recording_enabled: bool = true
 var developer_diagnostics_enabled: bool = false
 
@@ -59,6 +62,7 @@ var _diagnostics: PackedStringArray = PackedStringArray()
 var _simulate_next_write_failure: bool = false
 var _dirty: bool = false
 var _last_successful_save_msec: int = 0
+var _wallet_service_override: Node
 
 
 func _ready() -> void:
@@ -109,6 +113,10 @@ func clear_diagnostics() -> void:
 func get_save_data() -> Dictionary:
 	_ensure_loaded()
 	return _save_data.duplicate(true)
+
+
+func configure_wallet_service(service: Node) -> void:
+	_wallet_service_override = service
 
 
 func load_or_create() -> bool:
@@ -335,6 +343,7 @@ func record_level_result(
 
 	_ensure_loaded()
 	update.total_stars_before = get_total_stars()
+	update.first_completion = not is_level_completed(update.level_id)
 	update.previous_best_stars = get_best_stars(update.level_id)
 	update.previous_fewest_shots = get_fewest_shots(update.level_id)
 	update.new_best_stars = update.previous_best_stars
@@ -392,6 +401,9 @@ func record_level_result(
 	update.unlocked_cosmetic_ids = _evaluate_cosmetic_unlocks_for_current_save()
 	if not update.unlocked_cosmetic_ids.is_empty():
 		update.changed = true
+	var wallet_service := _wallet_service()
+	if wallet_service and wallet_service.has_method("process_level_completion_rewards"):
+		wallet_service.call("process_level_completion_rewards", update)
 	update.save_succeeded = save()
 	progression_changed.emit(update)
 	return update
@@ -442,6 +454,19 @@ func get_unlocked_cosmetics() -> Array[String]:
 	for cosmetic_id in (_save_data.cosmetics as Dictionary).unlocked as Array:
 		result.append(String(cosmetic_id))
 	return result
+
+
+func get_purchased_cosmetics() -> Array[String]:
+	_ensure_loaded()
+	var result: Array[String] = []
+	for cosmetic_id in (_save_data.cosmetics as Dictionary).purchased as Array:
+		result.append(String(cosmetic_id))
+	return result
+
+
+func is_cosmetic_purchased(cosmetic_id: String) -> bool:
+	var normalized := CosmeticRegistryScript.normalize_any_id(cosmetic_id)
+	return _string_array_contains(get_purchased_cosmetics(), normalized)
 
 
 func unlock_cosmetic(cosmetic_id: String) -> bool:
@@ -496,6 +521,47 @@ func set_selected_goal_effect(effect_id: String) -> bool:
 	return set_selected_cosmetic(CosmeticRegistryScript.CATEGORY_GOAL_EFFECT, effect_id)
 
 
+func get_economy_state() -> Dictionary:
+	_ensure_loaded()
+	return (_save_data.economy as Dictionary).duplicate(true)
+
+
+func set_economy_state_from_wallet(state: Dictionary, save_to_disk: bool = true) -> bool:
+	_ensure_loaded()
+	var previous_economy := (_save_data.economy as Dictionary).duplicate(true)
+	_save_data.economy = _normalize_economy(state, _save_data.progression as Dictionary, false)
+	if not save_to_disk or save():
+		return true
+	_save_data.economy = previous_economy
+	return false
+
+
+func commit_cosmetic_purchase(cosmetic_id: String, economy_state: Dictionary) -> bool:
+	_ensure_loaded()
+	var normalized := CosmeticRegistryScript.normalize_any_id(cosmetic_id)
+	var definition := CosmeticRegistryScript.get_definition(normalized)
+	if definition.is_empty() or not CosmeticRegistryScript.is_currency_purchase(normalized):
+		return false
+	var old_cosmetics := (_save_data.cosmetics as Dictionary).duplicate(true)
+	var old_economy := (_save_data.economy as Dictionary).duplicate(true)
+	var cosmetics := _save_data.cosmetics as Dictionary
+	var purchased := cosmetics.purchased as Array
+	var unlocked := cosmetics.unlocked as Array
+	if not _string_array_contains(purchased, normalized):
+		purchased.append(normalized)
+	if not _string_array_contains(unlocked, normalized):
+		unlocked.append(normalized)
+	cosmetics.purchased = CosmeticRegistryScript.get_sorted_ids(purchased)
+	cosmetics.unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
+	_save_data.cosmetics = cosmetics
+	_save_data.economy = _normalize_economy(economy_state, _save_data.progression as Dictionary, false)
+	if save():
+		return true
+	_save_data.cosmetics = old_cosmetics
+	_save_data.economy = old_economy
+	return false
+
+
 func unlock_all_cosmetics_for_development(save_to_disk: bool = true) -> bool:
 	_ensure_loaded()
 	var unlocked := (_save_data.cosmetics as Dictionary).unlocked as Array
@@ -513,6 +579,7 @@ func reset_cosmetics_to_defaults_for_development(save_to_disk: bool = true) -> b
 	(_save_data.cosmetics as Dictionary).selected_trail = DEFAULT_TRAIL
 	(_save_data.cosmetics as Dictionary).selected_goal_effect = DEFAULT_GOAL_EFFECT
 	(_save_data.cosmetics as Dictionary).unlocked = DEFAULT_UNLOCKED_COSMETICS.duplicate()
+	(_save_data.cosmetics as Dictionary).purchased = []
 	_save_data = _normalize_save(_save_data)
 	return save() if save_to_disk else true
 
@@ -617,6 +684,7 @@ func _create_default_save() -> Dictionary:
 			"selected_trail": DEFAULT_TRAIL,
 			"selected_goal_effect": DEFAULT_GOAL_EFFECT,
 			"unlocked": DEFAULT_UNLOCKED_COSMETICS.duplicate(),
+			"purchased": [],
 		},
 		"settings": {
 			"master_volume": 1.0,
@@ -629,6 +697,7 @@ func _create_default_save() -> Dictionary:
 			"developer_debug": false,
 		},
 		"monetization": _default_monetization(),
+		"economy": _default_economy(),
 	}
 
 
@@ -675,6 +744,12 @@ func _normalize_save(raw: Dictionary) -> Dictionary:
 	normalized.cosmetics = cosmetics
 	normalized.settings = _normalize_settings(_dict_or_empty(raw.get("settings", {})))
 	normalized.monetization = _normalize_monetization(_dict_or_empty(raw.get("monetization", {})))
+	var migrating_without_economy := version < 2 and not raw.has("economy")
+	normalized.economy = _normalize_economy(
+		_dict_or_empty(raw.get("economy", {})),
+		progression,
+		migrating_without_economy
+	)
 	_apply_entitlement_cosmetic_unlocks(normalized)
 	return normalized
 
@@ -744,6 +819,20 @@ func _normalize_cosmetics(raw: Dictionary) -> Dictionary:
 		if not _string_array_contains(unlocked, default_cosmetic):
 			unlocked.append(default_cosmetic)
 	unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
+	var purchased: Array = []
+	var raw_purchased: Variant = raw.get("purchased", [])
+	if typeof(raw_purchased) == TYPE_ARRAY:
+		for item in raw_purchased as Array:
+			var cosmetic_id := CosmeticRegistryScript.normalize_any_id(String(item))
+			if (
+				CosmeticRegistryScript.is_currency_purchase(cosmetic_id)
+				and not _string_array_contains(purchased, cosmetic_id)
+			):
+				purchased.append(cosmetic_id)
+				if not _string_array_contains(unlocked, cosmetic_id):
+					unlocked.append(cosmetic_id)
+	unlocked = CosmeticRegistryScript.get_sorted_ids(unlocked)
+	purchased = CosmeticRegistryScript.get_sorted_ids(purchased)
 
 	var selected_ball := CosmeticRegistryScript.normalize_id_for_category(
 		CosmeticRegistryScript.CATEGORY_BALL,
@@ -769,7 +858,96 @@ func _normalize_cosmetics(raw: Dictionary) -> Dictionary:
 		"selected_trail": selected_trail,
 		"selected_goal_effect": selected_goal_effect,
 		"unlocked": unlocked,
+		"purchased": purchased,
 	}
+
+
+func _default_economy() -> Dictionary:
+	return {
+		"arcade_coins": 0,
+		"net_tokens": 0,
+		"processed_transaction_ids": [],
+		"transaction_history": [],
+		"daily_rewarded_tokens": {
+			"local_date": "",
+			"completed_rewards": 0,
+			"tokens_granted": 0,
+		},
+		"first_completion_rewards": [],
+		"rewarded_star_milestones": {},
+		"rewarded_best_shots": {},
+		"next_transaction_sequence": 1,
+	}
+
+
+func _normalize_economy(raw: Dictionary, progression: Dictionary, seed_from_progress: bool) -> Dictionary:
+	var first_rewards: Array = _normalized_level_array(raw.get("first_completion_rewards", []))
+	var star_rewards := _normalized_reward_milestones(raw.get("rewarded_star_milestones", {}), 0, 3)
+	var best_rewards := _normalized_reward_milestones(raw.get("rewarded_best_shots", {}), 1, 99)
+	if seed_from_progress:
+		first_rewards = (progression.get("completed_levels", []) as Array).duplicate()
+		star_rewards = (progression.get("best_stars", {}) as Dictionary).duplicate(true)
+		best_rewards = (progression.get("fewest_shots", {}) as Dictionary).duplicate(true)
+	var processed := _normalized_unique_strings(raw.get("processed_transaction_ids", []), MAX_PROCESSED_TRANSACTIONS)
+	var history := _normalized_transaction_history(raw.get("transaction_history", []))
+	var daily_raw := _dict_or_empty(raw.get("daily_rewarded_tokens", {}))
+	return {
+		"arcade_coins": clampi(int(raw.get("arcade_coins", 0)), 0, 2000000000),
+		"net_tokens": clampi(int(raw.get("net_tokens", 0)), 0, 2000000000),
+		"processed_transaction_ids": processed,
+		"transaction_history": history,
+		"daily_rewarded_tokens": {
+			"local_date": String(daily_raw.get("local_date", "")),
+			"completed_rewards": clampi(int(daily_raw.get("completed_rewards", 0)), 0, 5),
+			"tokens_granted": clampi(int(daily_raw.get("tokens_granted", 0)), 0, 10),
+		},
+		"first_completion_rewards": _ordered_level_array(first_rewards),
+		"rewarded_star_milestones": star_rewards,
+		"rewarded_best_shots": best_rewards,
+		"next_transaction_sequence": maxi(int(raw.get("next_transaction_sequence", 1)), 1),
+	}
+
+
+func _normalized_reward_milestones(value: Variant, minimum: int, maximum: int) -> Dictionary:
+	var result: Dictionary = {}
+	var source := _dict_or_empty(value)
+	for level_id in LevelRegistryScript.get_level_ids():
+		if source.has(level_id):
+			result[level_id] = clampi(int(source[level_id]), minimum, maximum)
+	return result
+
+
+func _normalized_unique_strings(value: Variant, maximum: int) -> Array:
+	var result: Array = []
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	for item in value as Array:
+		var text := String(item).strip_edges()
+		if not text.is_empty() and not _string_array_contains(result, text):
+			result.append(text)
+	while result.size() > maximum:
+		result.pop_front()
+	return result
+
+
+func _normalized_transaction_history(value: Variant) -> Array:
+	var result: Array = []
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	for item in value as Array:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var entry := item as Dictionary
+		result.append({
+			"transaction_id": String(entry.get("transaction_id", "")),
+			"currency": String(entry.get("currency", "")),
+			"delta": int(entry.get("delta", 0)),
+			"reason": String(entry.get("reason", "")),
+			"unix_time": maxf(float(entry.get("unix_time", 0.0)), 0.0),
+		})
+	while result.size() > MAX_TRANSACTION_HISTORY:
+		result.pop_front()
+	return result
 
 
 func _default_monetization() -> Dictionary:
@@ -1001,6 +1179,14 @@ func _ensure_loaded_without_saving() -> void:
 		return
 	_save_data = _create_default_save()
 	_loaded = true
+
+
+func _wallet_service() -> Node:
+	if _wallet_service_override:
+		return _wallet_service_override
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/WalletService")
 
 
 func _dict_or_empty(value: Variant) -> Dictionary:

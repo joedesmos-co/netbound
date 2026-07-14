@@ -75,10 +75,17 @@ static func trigger_goal_effect(
 	if goal_particles:
 		goal_particles.restart()
 		goal_particles.emitting = true
-	if effect_id == "goal_confetti":
-		_spawn_confetti(level_root, goal_root)
-	elif effect_id == "goal_shockwave" or effect_id == "goal_supporter":
-		_spawn_shockwave(level_root, goal_root)
+	match effect_id:
+		"goal_confetti", "goal_ribbons", "goal_splash":
+			_spawn_confetti(level_root, goal_root, effect_id)
+		"goal_shockwave", "goal_supporter":
+			_spawn_shockwave(level_root, goal_root, _goal_effect_color(effect_id))
+		"goal_fireworks":
+			_spawn_confetti(level_root, goal_root, effect_id)
+			_spawn_shockwave(level_root, goal_root, _goal_effect_color(effect_id), 0.85)
+		"goal_portal":
+			_spawn_shockwave(level_root, goal_root, _goal_effect_color(effect_id), 1.0)
+			_spawn_shockwave(level_root, goal_root, Color(0.25, 0.92, 1.0, 1.0), 0.72, 0.1)
 
 
 static func clear_goal_effects(level_root: Node) -> void:
@@ -124,6 +131,50 @@ static func _ball_main_material(skin_id: String) -> StandardMaterial3D:
 			material.roughness = 0.24
 			material.emission_enabled = true
 			material.emission = Color(0.0, 0.32, 0.28, 1.0)
+		"ball_champion":
+			material.albedo_color = Color(0.03, 0.28, 0.72, 1.0)
+			material.metallic = 0.32
+			material.emission_enabled = true
+			material.emission = Color(0.02, 0.12, 0.35, 1.0)
+		"ball_candy":
+			material.albedo_color = Color(1.0, 0.91, 0.83, 1.0)
+		"ball_mint":
+			material.albedo_color = Color(0.42, 0.9, 0.7, 1.0)
+		"ball_watermelon":
+			material.albedo_color = Color(1.0, 0.3, 0.45, 1.0)
+		"ball_sunset":
+			material.albedo_color = Color(1.0, 0.32, 0.18, 1.0)
+			material.emission_enabled = true
+			material.emission = Color(0.28, 0.04, 0.12, 1.0)
+		"ball_checker":
+			material.albedo_color = Color(0.97, 0.94, 0.82, 1.0)
+			material.roughness = 0.5
+		"ball_cloud":
+			material.albedo_color = Color(0.5, 0.83, 1.0, 1.0)
+			material.metallic = 0.18
+			material.roughness = 0.2
+		"ball_comet":
+			material.albedo_color = Color(0.025, 0.07, 0.16, 1.0)
+			material.metallic = 0.48
+			material.emission_enabled = true
+			material.emission = Color(0.04, 0.14, 0.32, 1.0)
+		"ball_lava":
+			material.albedo_color = Color(0.055, 0.045, 0.04, 1.0)
+			material.roughness = 0.62
+			material.emission_enabled = true
+			material.emission = Color(0.42, 0.055, 0.0, 1.0)
+		"ball_prism":
+			material.albedo_color = Color(0.82, 0.96, 1.0, 1.0)
+			material.metallic = 0.55
+			material.roughness = 0.12
+			material.emission_enabled = true
+			material.emission = Color(0.15, 0.22, 0.3, 1.0)
+		"ball_void":
+			material.albedo_color = Color(0.005, 0.004, 0.012, 1.0)
+			material.metallic = 0.62
+			material.roughness = 0.18
+			material.emission_enabled = true
+			material.emission = Color(0.05, 0.0, 0.12, 1.0)
 		_:
 			material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 			material.emission_enabled = true
@@ -165,6 +216,43 @@ static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
 			material.roughness = 0.2
 			material.emission_enabled = true
 			material.emission = Color(0.28, 0.72, 0.55, 1.0)
+		"ball_champion":
+			material.albedo_color = Color(1.0, 0.72, 0.12, 1.0)
+			material.metallic = 0.58
+			material.emission_enabled = true
+			material.emission = Color(0.35, 0.18, 0.01, 1.0)
+		"ball_candy":
+			material.albedo_color = Color(0.96, 0.12, 0.24, 1.0)
+		"ball_mint":
+			material.albedo_color = Color(0.12, 0.055, 0.035, 1.0)
+		"ball_watermelon":
+			material.albedo_color = Color(0.05, 0.58, 0.24, 1.0)
+		"ball_sunset":
+			material.albedo_color = Color(0.34, 0.08, 0.62, 1.0)
+			material.emission_enabled = true
+			material.emission = Color(0.28, 0.04, 0.42, 1.0)
+		"ball_checker":
+			material.albedo_color = Color(0.015, 0.018, 0.025, 1.0)
+		"ball_cloud":
+			material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+			material.metallic = 0.3
+		"ball_comet":
+			material.albedo_color = Color(0.86, 0.96, 1.0, 1.0)
+			material.emission_enabled = true
+			material.emission = Color(0.62, 0.9, 1.0, 1.0)
+		"ball_lava":
+			material.albedo_color = Color(1.0, 0.2, 0.01, 1.0)
+			material.emission_enabled = true
+			material.emission = Color(1.0, 0.14, 0.0, 1.0)
+		"ball_prism":
+			material.albedo_color = Color(0.8, 0.34, 1.0, 1.0)
+			material.metallic = 0.38
+			material.emission_enabled = true
+			material.emission = Color(0.2, 0.65, 1.0, 1.0)
+		"ball_void":
+			material.albedo_color = Color(0.48, 0.18, 1.0, 1.0)
+			material.emission_enabled = true
+			material.emission = Color(0.42, 0.06, 1.0, 1.0)
 		_:
 			material.albedo_color = Color(0.035, 0.035, 0.035, 1.0)
 	_ball_accent_material_cache[skin_id] = material
@@ -181,6 +269,14 @@ static func _configure_goal_flash(goal_flash: ColorRect, effect_id: String) -> v
 			goal_flash.color = Color(0.22, 0.82, 1.0, 1.0)
 		"goal_supporter":
 			goal_flash.color = Color(0.08, 0.95, 0.72, 1.0)
+		"goal_ribbons":
+			goal_flash.color = Color(1.0, 0.34, 0.3, 1.0)
+		"goal_splash":
+			goal_flash.color = Color(0.1, 0.84, 0.72, 1.0)
+		"goal_fireworks":
+			goal_flash.color = Color(1.0, 0.62, 0.12, 1.0)
+		"goal_portal":
+			goal_flash.color = Color(0.48, 0.22, 1.0, 1.0)
 		_:
 			goal_flash.color = Color(1.0, 0.9, 0.22, 1.0)
 
@@ -207,6 +303,30 @@ static func _configure_goal_particles(goal_particles: CPUParticles3D, effect_id:
 			goal_particles.color = Color(0.16, 1.0, 0.72, 1.0)
 			goal_particles.initial_velocity_min = 2.0
 			goal_particles.initial_velocity_max = 4.5
+		"goal_ribbons":
+			goal_particles.amount = 72
+			goal_particles.lifetime = 0.78
+			goal_particles.color = Color(1.0, 0.36, 0.3, 1.0)
+			goal_particles.initial_velocity_min = 2.0
+			goal_particles.initial_velocity_max = 4.8
+		"goal_splash":
+			goal_particles.amount = 56
+			goal_particles.lifetime = 0.62
+			goal_particles.color = Color(0.12, 0.9, 0.75, 1.0)
+			goal_particles.initial_velocity_min = 1.7
+			goal_particles.initial_velocity_max = 4.0
+		"goal_fireworks":
+			goal_particles.amount = 80
+			goal_particles.lifetime = 0.85
+			goal_particles.color = Color(1.0, 0.66, 0.18, 1.0)
+			goal_particles.initial_velocity_min = 2.6
+			goal_particles.initial_velocity_max = 6.0
+		"goal_portal":
+			goal_particles.amount = 40
+			goal_particles.lifetime = 0.7
+			goal_particles.color = Color(0.52, 0.28, 1.0, 1.0)
+			goal_particles.initial_velocity_min = 1.0
+			goal_particles.initial_velocity_max = 2.4
 		_:
 			goal_particles.amount = 64
 			goal_particles.lifetime = 0.8
@@ -215,25 +335,24 @@ static func _configure_goal_particles(goal_particles: CPUParticles3D, effect_id:
 			goal_particles.initial_velocity_max = 5.0
 
 
-static func _spawn_confetti(level_root: Node, goal_root: Node3D) -> void:
+static func _spawn_confetti(level_root: Node, goal_root: Node3D, effect_id: String) -> void:
 	var origin := _goal_effect_origin(goal_root)
 	var container := Node3D.new()
 	container.name = "NetboundConfettiEffect"
 	container.add_to_group(GOAL_EFFECT_GROUP)
 	level_root.add_child(container)
 	container.global_position = origin
-	var colors := [
-		Color(1.0, 0.2, 0.24, 1.0),
-		Color(0.2, 0.78, 1.0, 1.0),
-		Color(1.0, 0.9, 0.16, 1.0),
-		Color(0.32, 1.0, 0.5, 1.0),
-		Color(0.95, 0.35, 1.0, 1.0),
-	]
-	for i in 24:
+	var colors := _goal_effect_colors(effect_id)
+	var piece_count := 16 if effect_id == "goal_splash" else 24
+	for i in piece_count:
 		var piece := MeshInstance3D.new()
 		piece.name = "Confetti%02d" % i
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.16, 0.035, 0.09)
+		mesh.size = (
+			Vector3(0.24, 0.025, 0.055)
+			if effect_id == "goal_ribbons"
+			else Vector3(0.16, 0.055, 0.11)
+		)
 		piece.mesh = mesh
 		var material := StandardMaterial3D.new()
 		material.albedo_color = colors[i % colors.size()]
@@ -255,7 +374,13 @@ static func _spawn_confetti(level_root: Node, goal_root: Node3D) -> void:
 	cleanup.tween_callback(container.queue_free)
 
 
-static func _spawn_shockwave(level_root: Node, goal_root: Node3D) -> void:
+static func _spawn_shockwave(
+	level_root: Node,
+	goal_root: Node3D,
+	color: Color,
+	scale_multiplier: float = 1.0,
+	delay: float = 0.0
+) -> void:
 	var ring := MeshInstance3D.new()
 	ring.name = "NetboundShockwaveEffect"
 	ring.add_to_group(GOAL_EFFECT_GROUP)
@@ -268,16 +393,18 @@ static func _spawn_shockwave(level_root: Node, goal_root: Node3D) -> void:
 	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.2, 0.9, 1.0, 0.62)
+	material.albedo_color = Color(color.r, color.g, color.b, 0.62)
 	material.emission_enabled = true
-	material.emission = Color(0.18, 0.78, 1.0, 1.0)
+	material.emission = color
 	ring.material_override = material
 	level_root.add_child(ring)
 	ring.global_position = _goal_effect_origin(goal_root)
 	ring.rotation_degrees.x = 90.0
 	var tween := ring.create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
 	tween.set_parallel(true)
-	tween.tween_property(ring, "scale", Vector3.ONE * 7.5, 0.65)
+	tween.tween_property(ring, "scale", Vector3.ONE * 7.5 * scale_multiplier, 0.65)
 	tween.tween_property(material, "albedo_color:a", 0.0, 0.65)
 	tween.chain().tween_callback(ring.queue_free)
 
@@ -286,3 +413,25 @@ static func _goal_effect_origin(goal_root: Node3D) -> Vector3:
 	if goal_root:
 		return goal_root.global_position + Vector3(0.0, 3.6, 0.35)
 	return Vector3(0.0, 3.6, -10.0)
+
+
+static func _goal_effect_color(effect_id: String) -> Color:
+	return _goal_effect_colors(effect_id)[0]
+
+
+static func _goal_effect_colors(effect_id: String) -> Array[Color]:
+	match effect_id:
+		"goal_ribbons":
+			return [Color("ff5f65"), Color("ffd739"), Color("ffffff")]
+		"goal_splash":
+			return [Color("24d6b0"), Color("2a9df4"), Color("f4f0d9")]
+		"goal_fireworks":
+			return [Color("ffb52e"), Color("ff4e78"), Color("58d5ff"), Color("fff3ca")]
+		"goal_portal":
+			return [Color("8c58ff"), Color("4ce7ff")]
+		"goal_supporter":
+			return [Color("26efb4"), Color("ffc83d")]
+		"goal_shockwave":
+			return [Color("3edcff"), Color("b8f4ff")]
+		_:
+			return [Color("ff4258"), Color("36c7ff"), Color("ffe52d"), Color("4df28a"), Color("ef58ff")]
