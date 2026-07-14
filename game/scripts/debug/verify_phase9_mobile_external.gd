@@ -66,6 +66,7 @@ func _test_project_and_export_config() -> bool:
 	passed = export_text.contains("permissions/internet=false") and export_text.contains("permissions/vibrate=true") and passed
 	var development_excludes := 'exclude_filter="scripts/debug/*,levels/debug/*,scenes/prototype.tscn,levels/definitions/level_architecture_test.tres"'
 	passed = export_text.count(development_excludes) == 5 and passed
+	passed = export_text.count('application/min_ios_version="16.0"') == 2 and passed
 	print("PHASE9 project_export_config ok=", passed)
 	return passed
 
