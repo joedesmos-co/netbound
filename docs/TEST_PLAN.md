@@ -4,7 +4,7 @@ Phase 0 documents the current baseline. Later phases should turn this into an au
 
 ## Baseline Environment
 
-- Godot: `/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot`
+- Godot: `/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot`
 - Required version: `4.7.stable.official.5b4e0cb0f`
 - Project path: `/Users/ryland/Documents/NetBound/game`
 - Current main scene: `res://app/netbound_app.tscn`
@@ -14,7 +14,7 @@ Phase 0 documents the current baseline. Later phases should turn this into an au
 Version:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --version
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --version
 ```
 
 Outcome: passed, `4.7.stable.official.5b4e0cb0f`.
@@ -22,7 +22,7 @@ Outcome: passed, `4.7.stable.official.5b4e0cb0f`.
 Import:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
 ```
 
 Outcome: passed.
@@ -30,7 +30,7 @@ Outcome: passed.
 Configured scene startup:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 5
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 5
 ```
 
 Outcome: passed. Phase 0 startup emitted debug logs but no errors. Phase 1 later moved normal gameplay logs behind debug toggles.
@@ -39,7 +39,7 @@ Parser check:
 
 ```sh
 for f in $(find scripts -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --check-only \
@@ -53,7 +53,7 @@ External debug scripts:
 
 ```sh
 for f in $(find scripts/debug -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --script "res://${f}"
@@ -116,9 +116,9 @@ Phase 1 added and updated regression coverage around the production scene and la
 Commands:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 10
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 30
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 10
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 30
 ```
 
 Outcomes:
@@ -132,7 +132,7 @@ Strict parser check:
 
 ```sh
 for f in $(find scripts -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --check-only \
@@ -195,9 +195,9 @@ Phase 2 adds reusable level architecture without changing global shooting tuning
 Commands:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game res://levels/debug/level_architecture_test.tscn --quit-after 3
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game res://levels/debug/level_architecture_test.tscn --quit-after 3
 ```
 
 Outcomes:
@@ -210,7 +210,7 @@ Strict parser check:
 
 ```sh
 for f in $(find scripts -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --check-only \
@@ -248,10 +248,10 @@ Phase 3 adds exactly 10 authored production levels without changing global shoot
 Commands:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
 
 for f in $(find scripts -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --check-only \
@@ -269,16 +269,16 @@ for scene in \
   res://levels/level_08.tscn \
   res://levels/level_09.tscn \
   res://levels/level_10.tscn; do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     "$scene" \
     --quit-after 3
 done
 
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
 ```
 
 Outcomes:
@@ -329,7 +329,7 @@ Phase 4 adds offline progression, star ratings, an explicit level registry, and 
 Command:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
   --headless \
   --path /Users/ryland/Documents/NetBound/game \
   --script res://scripts/debug/verify_phase4_progression_external.gd
@@ -376,7 +376,7 @@ Phase 5 added the production app shell, main menu, level select, pause menu, set
 Command:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
   --headless \
   --path /Users/ryland/Documents/NetBound/game \
   --script res://scripts/debug/verify_phase5_navigation_external.gd
@@ -418,7 +418,7 @@ Phase 6 adds the offline cosmetic registry, unlockable ball skins, trails, goal 
 Command:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
   --headless \
   --path /Users/ryland/Documents/NetBound/game \
   --script res://scripts/debug/verify_phase6_cosmetics_external.gd
@@ -464,7 +464,7 @@ Phase 7 adds the presentation service layer, generated original audio assets, au
 Command:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
   --headless \
   --path /Users/ryland/Documents/NetBound/game \
   --script res://scripts/debug/verify_phase7_presentation_external.gd
@@ -497,34 +497,34 @@ Coverage:
 Final Phase 7 audit commands and outcomes:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
 for f in $(find /Users/ryland/Documents/NetBound/game/scripts -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --check-only \
     --script "res://${f#/Users/ryland/Documents/NetBound/game/}"
 done
 for f in $(find /Users/ryland/Documents/NetBound/game/scripts/debug -type f -name '*.gd' | sort); do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     --script "res://${f#/Users/ryland/Documents/NetBound/game/}"
 done
 for scene in res://levels/level_01.tscn res://levels/level_02.tscn res://levels/level_03.tscn res://levels/level_04.tscn res://levels/level_05.tscn res://levels/level_06.tscn res://levels/level_07.tscn res://levels/level_08.tscn res://levels/level_09.tscn res://levels/level_10.tscn; do
-  /Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot \
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
     --headless \
     --path /Users/ryland/Documents/NetBound/game \
     "$scene" \
     --quit-after 3
 done
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 4
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_01.tscn --quit-after 4
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_05.tscn --quit-after 4
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_07.tscn --quit-after 4
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_10.tscn --quit-after 4
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 4
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_01.tscn --quit-after 4
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_05.tscn --quit-after 4
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_07.tscn --quit-after 4
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game res://levels/level_10.tscn --quit-after 4
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
 git diff --check
 ```
 
@@ -571,16 +571,16 @@ Coverage:
 Commands run for Phase 8:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 3
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --path /Users/ryland/Documents/NetBound/game --quit-after 3
 ```
 
 Outcomes:
@@ -611,15 +611,15 @@ Coverage:
 Commands run for Phase 9 regression:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase9_mobile_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase1_shooting_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase2_level_architecture_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase3_levels_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase4_progression_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase5_navigation_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase6_cosmetics_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase7_presentation_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase8_monetization_external.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --script res://scripts/debug/verify_phase9_mobile_external.gd
 ```
 
 Outcome: all Phase 1 through Phase 9 regression scripts passed after the mobile runtime changes.
@@ -634,8 +634,8 @@ xcrun --find xcodebuild
 which sdkmanager
 which apksigner
 which jarsigner
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "Android Debug" /tmp/netbound-phase9/android/netbound-debug.apk
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "iOS Debug" /tmp/netbound-phase9/ios/netbound-debug
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "Android Debug" /tmp/netbound-phase9/android/netbound-debug.apk
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --export-debug "iOS Debug" /tmp/netbound-phase9/ios/netbound-debug
 ```
 
 Export/toolchain outcomes:
@@ -705,3 +705,38 @@ Still required on physical iOS/Android hardware:
 ## Runtime Output Policy
 
 Unexpected parser errors, runtime errors, warnings, or console spam should fail the phase being worked on. Expected gameplay conditions should not use `push_error()`.
+
+## Final Release-Candidate Regression - July 14, 2026
+
+The final candidate adds `res://scripts/debug/verify_final_rc_flow_external.gd`. It uses isolated save paths and verifies:
+
+- fresh-save main-menu state
+- Level 01 production launch
+- three real swipe/miss cycles and failure
+- one simulated rewarded continue
+- a production swipe and swept goal
+- one-star assisted completion and Level 02 unlock
+- cosmetic preview/equip persistence
+- settings persistence
+- Level 02 pause/resume
+- app teardown, disk reload, and persisted state
+
+Final matrix outcome:
+
+- headless import: passed
+- configured app startup: passed
+- GDScript parser sweep: 52/52
+- direct level startup: 10/10
+- debug regression scripts: 21/21
+- unexpected error/warning/leak matches: zero
+- three-run final-flow soak: passed, stable at approximately 163-164 MB peak resident memory
+
+Run the focused integration check with:
+
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path game \
+  --script res://scripts/debug/verify_final_rc_flow_external.gd
+```
+
+The physical-device items in the manual checklist remain mandatory and are not implied by these local results.

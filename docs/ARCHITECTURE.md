@@ -805,10 +805,10 @@ There are also `.uid` files for missing `_validate_*.gd` scripts:
 Commands run from `game/`:
 
 ```sh
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --version
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 5
-/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --check-only --script res://scripts/prototype_controller.gd
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --version
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --import
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --quit-after 5
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot --headless --path /Users/ryland/Documents/NetBound/game --check-only --script res://scripts/prototype_controller.gd
 ```
 
 The parser check was run for every `.gd` file, including debug scripts.

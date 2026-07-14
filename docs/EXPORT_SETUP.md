@@ -1,21 +1,20 @@
 # Netbound Export Setup
 
-Phase 9 prepares export presets but does not perform store submission, real signing, SDK integration, analytics, cloud save, or app-store listing work.
+The current presets support local release-candidate builds. They do not start store submission, real monetization integration, analytics, cloud save, or production signing.
 
-## Package IDs
-
-Placeholder identifiers:
+## Identifiers and versions
 
 - Android package: `com.netbound.game`
 - iOS bundle identifier: `com.netbound.game`
+- Version name/short version: `0.9.0`
+- Version code/build: `9`
+- In-app candidate label: `v0.9.0 RC`
 
-These must be reviewed before production release.
+Review the identifiers and increment versions before public distribution.
 
 ## Presets
 
-File: `game/export_presets.cfg`
-
-Presets:
+`game/export_presets.cfg` defines:
 
 - `Android Debug`
 - `Android Debug AAB`
@@ -23,79 +22,105 @@ Presets:
 - `iOS Debug`
 - `iOS Release`
 
-Feature tags:
+Debug presets use `mobile,netbound_development`; release presets use `mobile,netbound_release`.
 
-- Debug presets: `mobile,netbound_development`
-- Release presets: `mobile,netbound_release`
+Every preset excludes:
 
-## Android Notes
+- `scripts/debug/*`
+- `levels/debug/*`
+- `scenes/prototype.tscn`
+- `levels/definitions/level_architecture_test.tres`
 
-Current Android preset intent:
+This keeps automated harnesses and legacy prototypes out of mobile packages.
 
-- landscape/immersive orientation
-- arm64 enabled
-- no Internet permission
-- vibration permission enabled for haptics
+Local exports under `game/build`, `game/builds`, `game/android`, and common Android/iOS binary extensions are ignored. Do not commit generated packages.
+
+## Android
+
+Current intent:
+
+- landscape immersive mode
+- ARM64 only
+- target SDK 36
+- Gradle/AAB minimum SDK 29
+- vibration permission enabled
+- Internet permission disabled
 - no real ad or purchase SDK
-- debug APK export uses Godot's local debug keystore
-- debug AAB export uses a Gradle build template in a temporary project copy
 
-Expected blockers before a real Android build:
+Required local settings:
 
-- Release signing keystore must be created and configured.
-- Final package ID, version code, icons, splash, and store metadata must be reviewed.
-- Real ad, purchase, consent, analytics, and store SDKs are intentionally absent.
+- Android SDK at `/Users/ryland/Library/Android/sdk`
+- OpenJDK 17 at `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+- matching Godot 4.7 Android templates
+- local debug keystore for debug validation
 
-Phase 9.5 local Android status:
+APK export:
 
-- Godot editor: `/Users/ryland/Downloads/Godot.app/Contents/MacOS/Godot`
-- Godot version: `4.7.stable.official.5b4e0cb0f`
-- Export templates: `/Users/ryland/Library/Application Support/Godot/export_templates/4.7.stable`
-- Installed matching template files: `android_debug.apk`, `android_release.apk`, `android_source.zip`, `ios.zip`, `version.txt`
-- Android SDK: `/Users/ryland/Library/Android/sdk`
-- Command-line tools: `21.0`
-- Platform tools: `37.0.0`
-- Build tools: `36.0.0`
-- Platform: `android-36`
-- JDK used by Godot Android exports: `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` (`17.0.19`)
-- Local debug keystore: `/Users/ryland/Library/Application Support/Godot/keystores/debug.keystore`
-- Debug APK export succeeded at `/tmp/netbound-phase95/exports/android/netbound-debug.apk` (`28M`).
-- Debug AAB export succeeded from a temporary project copy at `/tmp/netbound-phase95/exports/android/netbound-debug.aab` (`27M`).
-- A debug-signed AAB copy was created at `/tmp/netbound-phase95/exports/android/netbound-debug-signed.aab` (`28M`) using the local debug keystore.
-- The debug AAB preset requires Gradle and a project Android build template. Phase 9.5 validates it with `--install-android-build-template` in `/tmp`; the generated `game/android` template is not committed.
-- APK metadata: package `com.netbound.game`, version code `9`, version name `0.9.0`, target SDK `36`, permission `android.permission.VIBRATE`, no Internet permission, native ABI `arm64-v8a`.
-- `aapt2 dump badging` reports a non-fatal Godot template themed-icon warning; icon/splash polish remains a later store-assets task.
-- `adb devices -l` found no connected devices or emulators, so install/run smoke tests were not attempted.
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path game \
+  --export-debug "Android Debug" /tmp/netbound-debug.apk
+```
 
-## iOS Notes
+AAB export requires the Gradle build template. To keep the repository clean, copy the project to `/tmp` and combine template installation with export:
 
-Current iOS preset intent:
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path /tmp/netbound-project/game \
+  --install-android-build-template \
+  --export-debug "Android Debug AAB" /tmp/netbound-debug.aab
+```
 
-- landscape orientation
-- arm64 enabled
-- minimum iOS version `14.0` for the Metal renderer
-- no camera/microphone/photo privacy strings because those APIs are unused
+The raw Godot debug AAB is valid but locally observed as JAR-unsigned. A debug-only copy can be signed with the local debug keystore for validation. Public release requires a protected release/upload key and Google Play signing configuration; never commit a keystore or password.
+
+Validate package ID, version, min/target SDK, ARM64 libraries, permissions, archive exclusions, and signatures after each export. Bundletool validation and universal APK generation are part of the final RC process.
+
+Before Google Play work:
+
+- confirm the final package ID and version code
+- create/protect the upload key
+- configure Play App Signing
+- inspect icon/splash on hardware
+- run the AAB through an internal-test track
+- complete privacy/data-safety forms only after final SDK selection
+
+## iOS
+
+Current intent:
+
+- landscape
+- ARM64
+- minimum iOS 16.0 for Godot 4.7 Mobile/Metal
+- no camera, microphone, or photo-library access
 - no real ad or purchase SDK
-- placeholder signing/team fields only
 
-Expected blockers before a real iOS build:
+Local toolchain:
 
-- Apple Team ID, signing identity, and provisioning profiles must be configured.
-- Final bundle ID, version, icons, launch screen, and store metadata must be reviewed.
+- Xcode `/Applications/Xcode.app`
+- developer directory `/Applications/Xcode.app/Contents/Developer`
+- Xcode 26.6
+- iOS/iOS Simulator 26.5
+- matching Godot 4.7 `ios.zip` template
 
-Phase 9.5 local iOS status:
+Current blocker:
 
-- The matching Godot `ios.zip` template is installed.
-- `xcode-select -p` reports `/Library/Developer/CommandLineTools`.
-- Full Xcode is not installed/selected; `xcodebuild -version` fails because Command Line Tools are active instead of Xcode.
-- `xcrun simctl` is unavailable in this state.
-- `iOS Debug` export now reaches preset validation and fails on `App Store Team ID not specified.`
-- No Xcode project was generated because no Apple Team ID, signing identity, or provisioning profile is configured.
-- A free Apple account in full Xcode may be enough for local personal-device signing after the user signs in and supplies a valid Team ID.
-- Paid Apple Developer Program membership is still required for TestFlight/App Store distribution and durable production provisioning.
+- no Apple Team ID
+- no signing identity
+- no provisioning profile
 
-## Validation
+Godot stops before project generation with `App Store Team ID not specified.` Do not insert a placeholder Team ID.
 
-Phase 9 validates that presets exist and contain the expected IDs, feature tags, and permissions. Phase 9.5 validates local Android debug exports and iOS preset blockers. Device runtime validation still requires connected/trusted hardware or a configured simulator.
+Next local steps when the user is ready:
 
-Phase 9.5 verification commands and outcomes are recorded in `docs/LOCAL_BUILD_STATUS.md`.
+1. Sign into Xcode with the intended Apple ID.
+2. Identify the real Personal Team or organization Team ID.
+3. Add that Team ID locally to the iOS preset.
+4. Export an iOS Xcode project/zip.
+5. Open the project in Xcode and let automatic signing create a local profile.
+6. Build to a connected trusted iPhone and run the physical checklist.
+
+A free Personal Team can support local device testing subject to Apple's limitations. TestFlight/App Store distribution and durable production provisioning require the appropriate paid program membership.
+
+## Validation status
+
+Android APK/AAB local exports pass. Xcode and simulator tooling are installed and enumerate correctly. iOS export is honestly signing-blocked. Device validation and store-account work remain deferred; see `docs/LOCAL_BUILD_STATUS.md` and `docs/FINAL_RC_AUDIT.md`.
