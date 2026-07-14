@@ -53,12 +53,12 @@ func _shoot_and_measure(
 		end,
 	])
 	var world_dir: Vector3 = controller._screen_swipe_to_world_direction(ball_screen, end)
-	var impulse: Vector3 = controller._compute_shot_impulse(
+	var launch_velocity: Vector3 = controller._compute_launch_velocity(
 		power_ratio, world_dir, straight_samples
 	)
 
 	ball.sleeping = false
-	ball.apply_central_impulse(impulse)
+	ball.linear_velocity = launch_velocity
 
 	var peak_y := ball.global_position.y
 	for _i in range(240):
@@ -68,9 +68,9 @@ func _shoot_and_measure(
 	print(
 		"TRAJ ", label,
 		" ratio=", power_ratio,
-		" horizontal=", controller.get("last_horizontal_impulse"),
-		" lift=", controller.get("last_lift_impulse"),
-		" impulse=", impulse,
+		" horizontal=", controller.get("last_horizontal_launch_speed"),
+		" lift=", controller.get("last_vertical_launch_speed"),
+		" launch_velocity=", launch_velocity,
 		" peak_y=", peak_y,
 		" dir_z=", world_dir.z
 	)

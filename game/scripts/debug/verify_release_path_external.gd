@@ -73,11 +73,11 @@ func _shoot_once(
 	var freeze_before := ball.freeze
 	level.call("_end_swipe", end, -2)
 
-	var impulse: Vector3 = level.get("last_final_impulse")
+	var launch_velocity: Vector3 = level.get("last_launch_velocity")
 	var vel_immediate := ball.linear_velocity
 	print(
 		"REGRESS ", label,
-		" distance_ok samples fired impulse=", impulse,
+		" distance_ok samples fired launch_velocity=", launch_velocity,
 		" state_before=", state_before,
 		" state_after=", level.get("level_state"),
 		" freeze_before=", freeze_before,
@@ -90,7 +90,7 @@ func _shoot_once(
 	print(
 		"REGRESS ", label,
 		" vel_frame+1=", vel1,
-		" safeguard=", level.get("launch_safeguard_pending")
+		" ready=", level.get("level_state") == level.LevelState.SHOT_ACTIVE
 	)
 	await physics_frame
 	await physics_frame
@@ -99,7 +99,7 @@ func _shoot_once(
 	var moved := ball.global_position.distance_to(Vector3(0.0, ball.global_position.y, 0.0)) > 0.2 \
 		or absf(ball.global_position.z) > 0.2
 	var ok := (
-		impulse.length() > 1.0
+		launch_velocity.length() > 1.0
 		and not ball.freeze
 		and vel_immediate.length() > 0.5
 		and xz > 0.5

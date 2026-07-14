@@ -4,6 +4,70 @@ Phase 0 audit date: 2026-07-14
 Godot version used for baseline: 4.7.stable.official.5b4e0cb0f  
 Project root: `game/`
 
+## Phase 1 Shooting Stabilization Update
+
+Phase 1 replaces the previous mixed impulse/velocity launch path with one canonical arcade launch velocity.
+
+Current launch model:
+
+- Swipe endpoint direction determines horizontal aim.
+- Swipe distance determines `launch_speed`.
+- Upward screen angle determines `elevation_degrees`.
+- Launch direction is:
+  - `horizontal_direction * cos(elevation)`
+  - plus `Vector3.UP * sin(elevation)`
+- `ball.linear_velocity` is assigned directly to `launch_direction * launch_speed`.
+- The launch vector is no longer divided by ball mass.
+
+Current global launch tuning:
+
+- `minimum_launch_speed = 5.0`
+- `maximum_launch_speed = 25.0`
+- `power_curve_exponent = 0.72`
+- `minimum_elevation_degrees = 0.0`
+- `driven_elevation_degrees = 6.5`
+- `normal_air_elevation_degrees = 18.0`
+- `maximum_elevation_degrees = 38.0`
+- `elevation_response_exponent = 1.15`
+
+Measured Phase 1 peak heights in Level 01:
+
+- Ground: about `0.53`
+- Driven: about `1.05`
+- Air: about `4.04`
+- Lob: about `10.49`
+
+Curve is now deterministic and bounded:
+
+- Curve rotates horizontal velocity over `curve_duration = 1.35`.
+- Height velocity is not modified by curve.
+- Horizontal speed is preserved during curve rotation.
+- `maximum_curve_heading_degrees = 78.0`.
+- Regression measurements:
+  - mild curve cap: about `19.5` degrees
+  - strong curve cap: about `39.0` degrees
+  - extreme curve cap: `78.0` degrees
+
+Reset ownership now uses one physics-safe reset path:
+
+- `_apply_physics_safe_reset()` repositions the ball, zeros forces/velocities, unfreezes it, and leaves it sleeping at contact height.
+- READY means the ball is visible, unfrozen, stationary, and shootable.
+- Manual Reset Ball invalidates the active shot and returns to READY if shots remain, without refunding the spent shot.
+- Retry restores all attempts.
+- Auto-reset, goal feedback, and continue callbacks use generation guards so stale callbacks cannot mutate newer shots.
+
+Camera behavior:
+
+- Setup framing remains goal-facing.
+- During a shot, the camera smoothly follows ball x/z and rises for high lobs.
+- Reset/retry disables shot follow and smoothly returns to setup framing.
+
+Debug cleanup:
+
+- Normal gameplay hides numeric debug labels.
+- Production gameplay logs are behind `developer_debug_enabled`.
+- `GoalDetector.debug_goal_detection` defaults to `false`.
+
 ## Current Entry Points
 
 - `game/project.godot` runs `res://levels/level_01.tscn`.
@@ -77,11 +141,11 @@ Base shooting prototype controller. Responsibilities include:
 - Aim guide and swipe overlay updates.
 - Shot power, elevation, and curve calculations.
 - Direct launch velocity assignment.
-- Runtime curve force application.
+- Runtime bounded curve rotation.
 - Manual reset.
 - Debug UI updates.
 
-This file is currently 893 lines and mixes production mechanics, UI, debug reporting, physics safeguards, and prototype-only behavior.
+This file is currently 1017 lines and mixes production mechanics, UI, debug reporting, physics safeguards, and prototype-only behavior.
 
 ### `level_controller.gd`
 
@@ -131,12 +195,12 @@ Shot flow:
 2. `_update_swipe()` samples and recalculates shot state.
 3. `_end_swipe()` validates the gesture and calls `_fire_shot()` if valid.
 4. `level_controller._fire_shot()` consumes a shot only when state is `READY`, increments `active_shot_id`, ensures the ball is awake, sets `SHOT_ACTIVE`, then calls `super._fire_shot()`.
-5. `prototype_controller._fire_shot()` computes a vector named `impulse`, divides by mass into `launch_velocity`, directly assigns `ball.linear_velocity`, starts curve state, and clears the swipe.
+5. `prototype_controller._fire_shot()` computes the canonical launch velocity, directly assigns `ball.linear_velocity`, starts bounded curve state when needed, and clears the swipe.
 6. Goal tracking begins after the base launch call.
 
 Shot resolution flow:
 
-1. During `SHOT_ACTIVE`, `level_controller._physics_process()` first lets the base class apply curve force and peak tracking.
+1. During `SHOT_ACTIVE`, `level_controller._physics_process()` first lets the base class apply bounded curve rotation, peak tracking, and smart camera follow.
 2. It then evaluates goal crossing, bounds, timeout, and stopped-ball miss.
 3. A valid goal emits `goal_scored` and enters `GOAL`.
 4. A miss with remaining shots enters `AUTO_RESETTING` and schedules a timer.
@@ -152,62 +216,28 @@ Current gesture model:
 - Overall screen upward angle controls elevation.
 - Lateral path deviation controls curve.
 
-Current exported launch tuning:
-
-- `minimum_impulse = 3.5`
-- `maximum_impulse = 20.0`
-- `power_curve_exponent = 0.68`
-- `minimum_elevation_degrees = 0.0`
-- `driven_elevation_degrees = 8.0`
-- `maximum_elevation_degrees = 55.0`
-- `elevation_response_exponent = 1.0`
+Current exported launch tuning is documented in the Phase 1 update above.
 
 Important implementation detail:
 
-- `_compute_shot_impulse()` uses the desired arcade launch formula:
-  - horizontal direction
-  - elevation angle
-  - shot speed
-  - launch direction = horizontal * cos(elevation) + up * sin(elevation)
-- However, the returned vector is named and treated as an impulse. `_fire_shot()` divides it by ball mass to produce velocity.
-- With ball mass `0.43`, a nominal speed of `20` becomes a velocity around `46.5`.
-- This explains the current full-lob peak measurements of roughly `47` to `51` world units.
-
-Additional mismatch:
-
-- `_recalculate_swipe_state()` already applies `power_curve_exponent` to `current_power_ratio`.
-- `_compute_shot_impulse()` applies `power_curve_exponent` again.
-- UI power and actual launch speed can therefore diverge.
+- `_compute_launch_velocity()` is the canonical launch calculation.
+- It returns a velocity, not an impulse.
+- `_fire_shot()` assigns that velocity directly to `ball.linear_velocity`.
+- Ball mass no longer affects launch speed.
 
 ## Curve Calculation
 
 Current curve flow:
 
-- `_calculate_curve_amount()` measures lateral deviation of swipe samples from the start-to-end line.
-- The result is signed and capped by `maximum_curve_strength = 1.75`.
-- On launch, the ball receives a torque impulse around `Vector3.UP`.
-- During physics frames, while `curve_force_time_remaining > 0`, the ball receives lateral central force:
-  - lateral = `travel_direction.cross(Vector3.UP).normalized()`
-  - force = lateral * sign * strength * `curve_force_multiplier` * mass
-
-Current curve tuning:
-
-- `curve_force_duration = 1.7`
-- `curve_force_multiplier = 22.0`
-- `curve_spin_impulse = 7.5`
-- `curve_full_bend_ratio = 0.28`
-- `curve_response_exponent = 0.7`
-
-Risks:
-
-- No total heading-change cap.
-- Curve force can add energy and does not preserve a fixed forward-speed budget.
-- Curve behavior is tied to physics integration and current velocity direction.
-- Curve has duration and low-speed gates, but no explicit "maximum 80 degrees from original heading" bound.
+- `_calculate_curve_amount()` measures signed lateral deviation of swipe samples from the start-to-end line.
+- `_begin_bounded_curve()` maps signed curve amount to a total heading target.
+- `_apply_arcade_curve()` rotates horizontal velocity over time.
+- Curve does not modify vertical velocity.
+- Curve is capped at `maximum_curve_heading_degrees`.
 
 ## Velocity Application
 
-The current launch path uses direct velocity assignment, not an impulse:
+The current launch path uses direct velocity assignment:
 
 1. `ball.freeze = false`
 2. `ball.sleeping = false`
@@ -216,7 +246,7 @@ The current launch path uses direct velocity assignment, not an impulse:
 5. `ball.global_position.y` is lifted to at least spawn height plus launch clearance.
 6. `ball.linear_velocity = launch_velocity`
 
-The code still uses names such as `minimum_impulse`, `maximum_impulse`, `last_final_impulse`, and `_compute_shot_impulse()`, which are misleading for the current deterministic arcade behavior.
+Launch tuning and debug fields now use velocity terminology.
 
 ## Async Methods And Awaiting
 
@@ -225,8 +255,7 @@ Async methods:
 - `prototype_controller._ready()` awaits `_apply_physics_safe_reset()`.
 - `prototype_controller._run_reset()` awaits `_apply_physics_safe_reset()` and a physics frame.
 - `prototype_controller._apply_physics_safe_reset()` awaits one physics frame.
-- `prototype_controller._run_launch_y_safeguard()` awaits one physics frame.
-- `prototype_controller._log_shot_velocity_next_frame()` awaits one physics frame and appears unused.
+- `prototype_controller._validate_launch_next_frame()` awaits one physics frame and only restores velocity if a stale freeze somehow returned.
 - `level_controller._ready()` awaits `super._ready()` and `_restart_level()`.
 - `level_controller._on_retry_level_pressed()` awaits `_restart_level()`.
 - `level_controller._restart_level()` awaits `_apply_physics_safe_reset()`.
@@ -234,28 +263,26 @@ Async methods:
 
 Non-awaited or callback-driven async risks:
 
-- `level_controller._on_reset_button_pressed()` calls `super._on_reset_button_pressed()` without awaiting the base reset flow.
-- `prototype_controller._fire_shot()` calls `_run_launch_y_safeguard()` without awaiting it. This may be intentional, but it must be token-safe.
-- `level_controller._on_continue_pressed()` connects a timer callback that calls `_restart_level()` without awaiting it.
-- Timer callbacks for auto-reset, goal flash, time-scale restore, and reset labels can fire after state changes unless guarded.
+- `prototype_controller._fire_shot()` calls `_validate_launch_next_frame()` without awaiting it; the callback is token-guarded.
+- Timer callbacks for auto-reset, goal flash, time-scale restore, and continue are generation-guarded.
 
 ## Freeze, Unfreeze, And Reposition Sites
 
 Authoritative-ish reset flow today:
 
-- `_apply_physics_safe_reset()` increments `reset_generation`, freezes the ball, zeros forces and velocities, applies spawn transform, awaits a physics frame, validates the token, reapplies transform and zero velocities, resets interpolation, unfreezes, wakes the ball, and reapplies tuning.
-- `_ensure_ball_ready_for_play()` clears `reset_in_progress`, unfreezes, wakes, and zeroes tiny velocities.
+- `_apply_physics_safe_reset()` increments `reset_generation`, freezes the ball, zeros forces and velocities, applies spawn transform, awaits a physics frame, validates the token, reapplies transform and zero velocities, resets interpolation, unfreezes, leaves the ball sleeping at rest, and reapplies tuning.
+- `_ensure_ball_ready_for_play()` clears `reset_in_progress`, unfreezes, zeros velocities, and leaves the ball sleeping at rest.
 
 Other freeze/unfreeze sites:
 
-- `_fire_shot()` forcibly unfreezes and wakes before velocity assignment.
+- `_fire_shot()` unfreezes and wakes before velocity assignment.
 - `_on_goal_scored()` freezes the ball after scoring.
 - External debug scripts directly set `freeze`, `sleeping`, and velocities.
 
 Risk:
 
-- Reset ownership uses `reset_generation`, but shot launch currently captures the existing generation instead of incrementing or claiming ownership.
-- A reset, launch safeguard, or timer callback can still observe stale state if a newer shot or retry begins.
+- Reset ownership uses `reset_generation`.
+- Shot/miss/goal callback ownership uses `state_generation` in `level_controller.gd`.
 
 ## Callbacks That Can End Or Reset A Shot
 
@@ -306,10 +333,11 @@ There is no main menu, level select, pause menu, polished result screen, setting
 
 ## Camera Behavior
 
-- Current camera is static.
 - Level 01 sets camera position to `(0, 11.5, 14)` and look-at to `(0, 3.6, -8.5)`.
 - Prototype camera defaults to `(0, 6.5, 10)` looking at `(0, 0.65, -12)`.
-- No shot follow, high-lob tracking, curve tracking, reset transition, or mobile-safe framing is implemented yet.
+- During active shots, the camera smoothly follows horizontal ball movement and rises with high lobs.
+- Reset and retry disable shot follow and smoothly return to setup framing.
+- Phase 1 did not yet implement per-level camera volumes or mobile safe-area UI work.
 
 ## Physics And Collision
 
@@ -343,7 +371,12 @@ Missing:
 
 ## Production Debug Code
 
-Visible normal-game UI debug:
+Normal-game UI:
+
+- Numerical debug labels are hidden unless `developer_debug_enabled` is true.
+- The player still sees normal gameplay controls such as shots, Reset Ball, Retry Level, instructions, and the power bar.
+
+Developer-debug UI available behind the toggle:
 
 - `ResetOkLabel`
 - `PowerLabel`
@@ -352,17 +385,16 @@ Visible normal-game UI debug:
 - `LoftCategoryLabel`
 - `ShotDebugLabel`
 
-Console logging in production paths:
+Console logging:
 
-- Startup/reset: `INIT`, `RESTART_DONE`, `RESET`.
-- Release path: `RELEASE_RECEIVED`, `RELEASE_LEVEL`, `RELEASE_FIRE`, `LAUNCH_SAFEGUARD`.
-- Peak tracking: `PEAK`.
-- Goal detection: `GOAL sync`, `GOAL track_begin`, crossing detail, score messages.
+- Production gameplay paths are quiet by default.
+- `_debug_log()` prints only when `developer_debug_enabled` is true.
+- Goal detection logs print only when `GoalDetector.debug_goal_detection` is true.
 
 Debug scene data:
 
 - Goal debug volume meshes exist in Level 01.
-- `debug_goal_detection = true` in `level_01.tscn`.
+- `debug_goal_detection = false` in `level_01.tscn`.
 
 ## External Verification Scripts
 
@@ -374,8 +406,9 @@ Scripts under `game/scripts/debug/`:
 - `verify_goal_scale_external.gd`: checks visual/scoring goal dimensions and frustum visibility.
 - `verify_level01_external.gd`: checks basic Level 01 setup, scoring, retry, and reset behavior.
 - `verify_loft_external.gd`: checks elevation categories in the prototype scene.
+- `verify_phase1_shooting_external.gd`: covers Phase 1 production-scene launch, reset/retry, auto-reset, shot-height, curve, camera, final-shot, side-net, and cycle regressions.
 - `verify_release_path_external.gd`: drives the production release path and retry cycles.
-- `verify_release_shot_external.gd`: compares old impulse behavior with production fire path.
+- `verify_release_shot_external.gd`: verifies canonical launch velocity behavior and the production fire path.
 - `verify_reset_external.gd`: checks reset in prototype scene.
 - `verify_shot_order_external.gd`: checks final-shot goal/miss and stale callback cases.
 - `verify_trajectory_external.gd`: measures trajectory peaks in prototype scene.
@@ -384,8 +417,8 @@ Audit notes:
 
 - These scripts are useful regression references but are not a substitute for the real gameplay input path.
 - Some scripts call private methods directly or set physics state manually.
-- Several scripts still use older impulse assumptions.
-- Current "PASS" criteria allow the known bad 47-51 unit lob peaks.
+- Phase 1 updated the launch and trajectory scripts to use velocity terminology.
+- Current Phase 1 pass criteria reject the known bad 47-51 unit lob peaks.
 
 There are also `.uid` files for missing `_validate_*.gd` scripts:
 
@@ -417,7 +450,7 @@ Results:
 - Existing external debug scripts: all exited with code `0`.
 - No parser errors were observed.
 - No runtime errors were observed in the baseline startup.
-- Startup still produces production debug logs.
+- The Phase 0 baseline startup produced production debug logs; Phase 1 moved production logging behind debug toggles.
 
 Measured trajectory evidence from existing scripts:
 
@@ -425,7 +458,7 @@ Measured trajectory evidence from existing scripts:
 - `verify_arcade_redesign_external.gd` measured a lofted peak of about `51.14`.
 - `verify_trajectory_external.gd` measured strong prototype trajectory peak of about `48.16`.
 
-## Highest-Risk Regression Points
+## Phase 0 Highest-Risk Regression Points
 
 1. Shot launch naming and math: the code calls the launch vector an impulse, then divides by mass into velocity. This is a likely root cause of excessive lob height.
 2. Elevation cap: `maximum_elevation_degrees = 55` is too high for the desired arcade camera/readability target.
@@ -439,3 +472,5 @@ Measured trajectory evidence from existing scripts:
 10. Geometry drift: visual goal and scoring values are manually duplicated.
 11. Inheritance depth: `level_controller.gd` inherits a large prototype controller, making future reusable levels fragile.
 12. No save/progression layer: future menu and star work will need a clean offline persistence boundary.
+
+Phase 1 resolved the current-production portions of items 1 through 9. Items 10 through 12 remain future architecture risks for later phases.

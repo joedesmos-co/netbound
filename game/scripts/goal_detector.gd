@@ -8,7 +8,7 @@ signal goal_scored
 @export var crossbar_height: float = 8.4
 @export var interior_depth: float = 5.0
 @export var ball_radius: float = 0.49
-@export var debug_goal_detection: bool = true
+@export var debug_goal_detection: bool = false
 @export var show_debug_volumes: bool = false
 
 var crossed_goal_line: bool = false
@@ -48,12 +48,14 @@ func sync_geometry(
 	crossbar_height = bar_height
 	interior_depth = depth
 	ball_radius = radius
-	print(
-		"GOAL sync line_z=", goal_line_z,
-		" half_width=", post_half_width,
-		" bar=", crossbar_height,
-		" depth=", interior_depth,
-		" radius=", ball_radius
+	_debug_print(
+		"sync line_z=%s half_width=%s bar=%s depth=%s radius=%s" % [
+			goal_line_z,
+			post_half_width,
+			crossbar_height,
+			interior_depth,
+			ball_radius,
+		]
 	)
 
 
@@ -76,7 +78,7 @@ func begin_shot_tracking(shot_id: int, ball_position: Vector3) -> void:
 	_tracking_active = true
 	_tracked_shot_id = shot_id
 	_previous_ball_position = ball_position
-	print("GOAL track_begin shot_id=", shot_id, " prev=", ball_position)
+	_debug_print("track_begin shot_id=%d prev=%s" % [shot_id, ball_position])
 
 
 func process_ball(ball_position: Vector3, radius: float, shot_id: int) -> bool:
@@ -197,16 +199,18 @@ func _log_crossing_detail(
 	reason: String,
 	shot_id: int
 ) -> void:
-	print(
-		"GOAL crossing prev=", previous,
-		" curr=", current,
-		" point=", point,
-		" radius=", radius,
-		" half_width=", post_half_width,
-		" crossbar=", crossbar_height,
-		" reason=", reason,
-		" shot_id=", shot_id,
-		" state=", _active_level_state_name
+	_debug_print(
+		"crossing prev=%s curr=%s point=%s radius=%s half_width=%s crossbar=%s reason=%s shot_id=%d state=%s" % [
+			previous,
+			current,
+			point,
+			radius,
+			post_half_width,
+			crossbar_height,
+			reason,
+			shot_id,
+			_active_level_state_name,
+		]
 	)
 
 

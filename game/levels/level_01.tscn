@@ -305,7 +305,7 @@ post_half_width = 11.0
 crossbar_height = 8.4
 interior_depth = 5.0
 ball_radius = 0.49
-debug_goal_detection = true
+debug_goal_detection = false
 show_debug_volumes = false
 script = ExtResource("3_goal")
 

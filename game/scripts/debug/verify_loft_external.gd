@@ -38,7 +38,7 @@ func _run() -> void:
 	var lofted_cat: String = controller.get("current_shot_category")
 	var lofted_intent := float(controller.get("current_elevation_intent"))
 	var lofted_elev := float(controller.get("current_elevation_degrees"))
-	var lofted_ok := lofted_cat == "LOFTED" and lofted_intent > 0.35 and lofted_elev >= 24.0
+	var lofted_ok := lofted_cat == "LOB" and lofted_intent > 0.75 and lofted_elev >= 32.0
 	passed = passed and lofted_ok
 	print(
 		"ELEV lofted category=",
@@ -66,17 +66,17 @@ func _run() -> void:
 		ground_ok
 	)
 
-	controller._compute_shot_impulse(POWER_RATIO, world_dir, driven)
-	var driven_lift := float(controller.get("last_lift_impulse"))
-	controller._compute_shot_impulse(POWER_RATIO, world_dir, lofted)
-	var lofted_lift := float(controller.get("last_lift_impulse"))
-	controller._compute_shot_impulse(POWER_RATIO, world_dir, ground)
-	var ground_lift := float(controller.get("last_lift_impulse"))
+	controller._compute_launch_velocity(POWER_RATIO, world_dir, driven)
+	var driven_lift := float(controller.get("last_vertical_launch_speed"))
+	controller._compute_launch_velocity(POWER_RATIO, world_dir, lofted)
+	var lofted_lift := float(controller.get("last_vertical_launch_speed"))
+	controller._compute_launch_velocity(POWER_RATIO, world_dir, ground)
+	var ground_lift := float(controller.get("last_vertical_launch_speed"))
 	var lift_ok := (
-		driven_lift >= 1.2
-		and driven_lift <= 4.5
-		and lofted_lift >= 5.5
-		and lofted_lift > driven_lift * 1.35
+		driven_lift >= 0.5
+		and driven_lift <= 3.0
+		and lofted_lift >= 10.0
+		and lofted_lift > driven_lift * 3.0
 		and ground_lift <= 0.35
 	)
 	passed = passed and lift_ok
@@ -96,17 +96,17 @@ func _run() -> void:
 
 
 func _driven_swipe() -> PackedVector2Array:
-	# Nearly horizontal mild-up swipe → low driven elevation.
+	# Nearly horizontal mild-up swipe -> low driven elevation.
 	return _line_swipe(Vector2(400.0, 550.0), Vector2(580.0, 540.0))
 
 
 func _lofted_swipe() -> PackedVector2Array:
-	# Sharply upward overall swipe → high elevation.
+	# Sharply upward overall swipe -> high elevation.
 	return _line_swipe(Vector2(420.0, 680.0), Vector2(460.0, 240.0))
 
 
 func _ground_swipe() -> PackedVector2Array:
-	# Downward overall swipe → ground skim.
+	# Downward overall swipe -> ground skim.
 	return _line_swipe(Vector2(420.0, 360.0), Vector2(520.0, 620.0))
 
 

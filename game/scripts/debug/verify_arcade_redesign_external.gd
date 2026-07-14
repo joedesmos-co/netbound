@@ -62,16 +62,19 @@ func _run() -> void:
 	var spawn_y := ball.global_position.y
 
 	var driven_peak := await _shoot_samples(level, ball, _driven_swipe(), "DRIVEN")
-	var lofted_peak := await _shoot_samples(level, ball, _lofted_swipe(), "LOFTED")
+	var air_peak := await _shoot_samples(level, ball, _air_swipe(), "AIR")
+	var lob_peak := await _shoot_samples(level, ball, _lob_swipe(), "LOB")
 	var ground_peak := await _shoot_samples(level, ball, _ground_swipe(), "GROUND")
 
-	passed = passed and driven_peak > spawn_y + 0.35
-	passed = passed and lofted_peak > 2.5
-	passed = passed and lofted_peak > driven_peak + 0.6
-	passed = passed and ground_peak <= spawn_y + 0.35
+	passed = passed and ground_peak >= 0.5 and ground_peak <= 0.85
+	passed = passed and driven_peak >= 1.0 and driven_peak <= 2.0
+	passed = passed and air_peak >= 3.0 and air_peak <= 7.0
+	passed = passed and lob_peak >= 10.0 and lob_peak <= 18.0
+	passed = passed and lob_peak > air_peak and air_peak > driven_peak and driven_peak > ground_peak
 	print("ARCADE peak_spawn=", spawn_y)
 	print("ARCADE peak_driven=", driven_peak)
-	print("ARCADE peak_lofted=", lofted_peak)
+	print("ARCADE peak_air=", air_peak)
+	print("ARCADE peak_lob=", lob_peak)
 	print("ARCADE peak_ground=", ground_peak)
 	print("ARCADE verify=", "PASS" if passed else "FAIL")
 	quit(0 if passed else 1)
@@ -85,14 +88,12 @@ func _shoot_samples(level: Node, ball: RigidBody3D, samples: PackedVector2Array,
 	level.set("swipe_screen_points", samples)
 	level.call("_recalculate_swipe_state")
 
-	var impulse: Vector3 = level.call(
-		"_compute_shot_impulse",
+	var launch_velocity: Vector3 = level.call(
+		"_compute_launch_velocity",
 		level.get("current_power_ratio"),
 		level.get("current_shot_direction"),
 		samples
 	)
-	var launch_mass := maxf(ball.mass, 0.001)
-	var launch_velocity := impulse / launch_mass
 
 	ball.freeze = false
 	ball.sleeping = false
@@ -112,11 +113,6 @@ func _shoot_samples(level: Node, ball: RigidBody3D, samples: PackedVector2Array,
 	var peak_y := ball.global_position.y
 	for frame_i in range(5):
 		await physics_frame
-		if frame_i == 0 and impulse.y >= float(level.get("launch_y_restore_threshold")):
-			if ball.linear_velocity.y < launch_velocity.y * 0.45:
-				var restored := ball.linear_velocity
-				restored.y = launch_velocity.y
-				ball.linear_velocity = restored
 		peak_y = maxf(peak_y, ball.global_position.y)
 
 	for _i in range(180):
@@ -131,7 +127,7 @@ func _shoot_samples(level: Node, ball: RigidBody3D, samples: PackedVector2Array,
 		" elev=",
 		level.get("last_elevation_degrees"),
 		" lift=",
-		level.get("last_lift_impulse"),
+		level.get("last_vertical_launch_speed"),
 		" peak=",
 		peak_y
 	)
@@ -139,10 +135,14 @@ func _shoot_samples(level: Node, ball: RigidBody3D, samples: PackedVector2Array,
 
 
 func _driven_swipe() -> PackedVector2Array:
-	return _line_swipe(Vector2(400.0, 550.0), Vector2(580.0, 540.0))
+	return _line_swipe(Vector2(300.0, 550.0), Vector2(620.0, 500.0))
 
 
-func _lofted_swipe() -> PackedVector2Array:
+func _air_swipe() -> PackedVector2Array:
+	return _line_swipe(Vector2(300.0, 640.0), Vector2(600.0, 360.0))
+
+
+func _lob_swipe() -> PackedVector2Array:
 	return _line_swipe(Vector2(420.0, 680.0), Vector2(460.0, 240.0))
 
 

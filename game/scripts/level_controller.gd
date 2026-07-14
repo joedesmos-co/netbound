@@ -40,12 +40,14 @@ var shot_active_elapsed: float = 0.0
 var auto_reset_pending: bool = false
 var pending_auto_reset_shot_id: int = -1
 var shot_manually_reset: bool = false
+var state_generation: int = 0
 
 
 func _ready() -> void:
 	camera_position = Vector3(0.0, 11.5, 14.0)
 	camera_look_at = Vector3(0.0, 3.6, -8.5)
 	await super._ready()
+	goal_detector.debug_goal_detection = developer_debug_enabled
 	goal_detector.setup(ball)
 	goal_detector.sync_geometry(
 		goal_root.global_position.z,
@@ -64,7 +66,7 @@ func _ready() -> void:
 
 
 func is_gameplay_input_allowed() -> bool:
-	return level_state == LevelState.READY or level_state == LevelState.SHOT_ACTIVE
+	return level_state == LevelState.READY
 
 
 func _physics_process(delta: float) -> void:
@@ -99,34 +101,29 @@ func _begin_swipe(screen_position: Vector2, pointer_id: int) -> void:
 	super._begin_swipe(screen_position, pointer_id)
 
 
-func _fire_shot() -> void:
-	if level_state == LevelState.READY:
-		if shots_remaining <= 0:
-			print("RELEASE_BLOCKED reason=no_shots_remaining state=", level_state)
-			return
-		shots_remaining -= 1
-		shots_used += 1
-	elif level_state != LevelState.SHOT_ACTIVE:
-		print(
-			"RELEASE_BLOCKED reason=bad_level_state state=",
-			level_state,
-			" reset_in_progress=",
-			reset_in_progress
+func _fire_shot() -> bool:
+	if level_state != LevelState.READY:
+		_debug_log(
+			"RELEASE_BLOCKED reason=bad_level_state state=%d reset_in_progress=%s" % [
+				level_state,
+				reset_in_progress,
+			]
 		)
-		return
-
-	print(
-		"RELEASE_LEVEL state_before=",
-		level_state,
-		" reset_in_progress=",
-		reset_in_progress,
-		" freeze=",
-		ball.freeze
-	)
+		return false
+	if shots_remaining <= 0:
+		_debug_log("RELEASE_BLOCKED reason=no_shots_remaining state=%d" % level_state)
+		return false
 
 	_cancel_shot_callbacks()
 	active_shot_id += 1
 	_ensure_ball_ready_for_play()
+	_debug_log(
+		"RELEASE_LEVEL state_before=%d reset_in_progress=%s freeze=%s" % [
+			level_state,
+			reset_in_progress,
+			ball.freeze,
+		]
+	)
 
 	# Mark active before physics so settling logic and detector share the same shot id.
 	level_state = LevelState.SHOT_ACTIVE
@@ -135,19 +132,24 @@ func _fire_shot() -> void:
 	shot_active_elapsed = 0.0
 	shot_manually_reset = false
 
-	super._fire_shot()
-	print(
-		"RELEASE_LEVEL state_after=",
-		level_state,
-		" freeze=",
-		ball.freeze,
-		" vel=",
-		ball.linear_velocity,
-		" impulse=",
-		last_final_impulse
+	var launched := super._fire_shot()
+	if not launched:
+		level_state = LevelState.READY
+		_update_level_ui()
+		return false
+
+	shots_remaining -= 1
+	shots_used += 1
+	_debug_log(
+		"RELEASE_LEVEL state_after=%d freeze=%s vel=%s" % [
+			level_state,
+			ball.freeze,
+			ball.linear_velocity,
+		]
 	)
 	goal_detector.begin_shot_tracking(active_shot_id, ball.global_position)
 	_update_level_ui()
+	return true
 
 
 func _on_reset_button_pressed() -> void:
@@ -155,19 +157,38 @@ func _on_reset_button_pressed() -> void:
 		return
 	if level_state == LevelState.GOAL or level_state == LevelState.FAILED:
 		return
-	var was_active_shot := level_state == LevelState.SHOT_ACTIVE
-	goal_detector.reset_shot_tracking()
-	super._on_reset_button_pressed()
+
+	var reset_generation_token := _cancel_shot_callbacks()
+	var was_active_shot := level_state == LevelState.SHOT_ACTIVE or level_state == LevelState.AUTO_RESETTING
 	if was_active_shot:
-		shot_manually_reset = true
-		level_state = LevelState.SHOT_ACTIVE
-		call_deferred("_resume_goal_tracking_after_reset")
+		active_shot_id += 1
 
+	goal_detector.reset_shot_tracking()
+	shot_manually_reset = was_active_shot
+	shot_time_remaining = 0.0
+	shot_active_elapsed = 0.0
+	_clear_active_curve()
+	tracking_shot_peak = false
+	shot_peak_y = 0.0
+	level_state = LevelState.AUTO_RESETTING
+	reset_in_progress = true
+	_clear_swipe()
+	_update_level_ui()
 
-func _resume_goal_tracking_after_reset() -> void:
+	await _apply_physics_safe_reset()
+	if reset_generation_token != state_generation:
+		return
+
 	_ensure_ball_ready_for_play()
-	if level_state == LevelState.SHOT_ACTIVE:
-		goal_detector.begin_shot_tracking(active_shot_id, ball.global_position)
+	shot_manually_reset = false
+	if shots_remaining > 0:
+		level_state = LevelState.READY
+	else:
+		level_state = LevelState.FAILED
+		fail_panel.visible = true
+	_update_level_ui()
+	_update_instruction_visibility()
+	_update_debug_ui()
 
 
 func _on_retry_level_pressed() -> void:
@@ -176,7 +197,13 @@ func _on_retry_level_pressed() -> void:
 
 func _on_continue_pressed() -> void:
 	win_shots_used.text = "More levels coming next milestone"
-	get_tree().create_timer(1.5).timeout.connect(func() -> void: _restart_level())
+	var callback_generation := state_generation
+	get_tree().create_timer(1.5).timeout.connect(_restart_level_if_current.bind(callback_generation))
+
+
+func _restart_level_if_current(callback_generation: int) -> void:
+	if callback_generation == state_generation:
+		await _restart_level()
 
 
 func _restart_level() -> void:
@@ -189,9 +216,7 @@ func _restart_level() -> void:
 	shots_used = 0
 	shot_time_remaining = 0.0
 	shot_active_elapsed = 0.0
-	curve_force_time_remaining = 0.0
-	active_curve_sign = 0.0
-	active_curve_strength = 0.0
+	_clear_active_curve()
 	has_successful_shot = false
 	goal_detector.reset_shot_tracking()
 	_hide_overlays()
@@ -202,15 +227,13 @@ func _restart_level() -> void:
 	_update_level_ui()
 	_update_instruction_visibility()
 	_update_debug_ui()
-	print(
-		"RESTART_DONE freeze=",
-		ball.freeze,
-		" sleeping=",
-		ball.sleeping,
-		" reset_in_progress=",
-		reset_in_progress,
-		" state=",
-		level_state
+	_debug_log(
+		"RESTART_DONE freeze=%s sleeping=%s reset_in_progress=%s state=%d" % [
+			ball.freeze,
+			ball.sleeping,
+			reset_in_progress,
+			level_state,
+		]
 	)
 
 
@@ -220,9 +243,7 @@ func _on_goal_scored() -> void:
 
 	_cancel_shot_callbacks()
 	level_state = LevelState.GOAL
-	curve_force_time_remaining = 0.0
-	active_curve_sign = 0.0
-	active_curve_strength = 0.0
+	_clear_active_curve()
 	ball.freeze = true
 	_show_goal_feedback()
 	win_title.text = "GOAL!"
@@ -239,9 +260,7 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 
 	shot_time_remaining = 0.0
 	shot_active_elapsed = 0.0
-	curve_force_time_remaining = 0.0
-	active_curve_sign = 0.0
-	active_curve_strength = 0.0
+	_clear_active_curve()
 
 	if shots_remaining > 0:
 		level_state = LevelState.AUTO_RESETTING
@@ -258,10 +277,15 @@ func _schedule_auto_reset(shot_id: int) -> void:
 		return
 	auto_reset_pending = true
 	pending_auto_reset_shot_id = shot_id
-	get_tree().create_timer(miss_reset_delay).timeout.connect(_auto_reset_after_miss.bind(shot_id))
+	var callback_generation := state_generation
+	get_tree().create_timer(miss_reset_delay).timeout.connect(
+		_auto_reset_after_miss.bind(shot_id, callback_generation)
+	)
 
 
-func _auto_reset_after_miss(shot_id: int) -> void:
+func _auto_reset_after_miss(shot_id: int, callback_generation: int) -> void:
+	if callback_generation != state_generation:
+		return
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
 	if shot_id != active_shot_id:
@@ -269,18 +293,27 @@ func _auto_reset_after_miss(shot_id: int) -> void:
 	if level_state != LevelState.AUTO_RESETTING:
 		return
 
+	reset_in_progress = true
 	await _apply_physics_safe_reset()
-	if shot_id != active_shot_id or level_state != LevelState.AUTO_RESETTING:
+	if (
+		callback_generation != state_generation
+		or shot_id != active_shot_id
+		or level_state != LevelState.AUTO_RESETTING
+	):
 		return
 
 	_ensure_ball_ready_for_play()
 	level_state = LevelState.READY
 	_update_level_ui()
+	_update_instruction_visibility()
+	_update_debug_ui()
 
 
-func _cancel_shot_callbacks() -> void:
+func _cancel_shot_callbacks() -> int:
+	state_generation += 1
 	auto_reset_pending = false
 	pending_auto_reset_shot_id = -1
+	return state_generation
 
 
 func _is_ball_out_of_bounds() -> bool:
@@ -299,15 +332,22 @@ func _show_goal_feedback() -> void:
 	goal_flash.modulate.a = 0.85
 	goal_particles.emitting = true
 	Engine.time_scale = goal_slow_motion_scale
-	get_tree().create_timer(goal_slow_motion_duration).timeout.connect(_restore_time_scale)
-	get_tree().create_timer(0.35).timeout.connect(_hide_goal_flash)
+	var callback_generation := state_generation
+	get_tree().create_timer(goal_slow_motion_duration).timeout.connect(
+		_restore_time_scale.bind(callback_generation)
+	)
+	get_tree().create_timer(0.35).timeout.connect(_hide_goal_flash.bind(callback_generation))
 
 
-func _restore_time_scale() -> void:
+func _restore_time_scale(callback_generation: int = -1) -> void:
+	if callback_generation != -1 and callback_generation != state_generation:
+		return
 	Engine.time_scale = 1.0
 
 
-func _hide_goal_flash() -> void:
+func _hide_goal_flash(callback_generation: int = -1) -> void:
+	if callback_generation != -1 and callback_generation != state_generation:
+		return
 	goal_flash.visible = false
 
 

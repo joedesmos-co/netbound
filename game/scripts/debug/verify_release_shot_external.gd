@@ -30,8 +30,8 @@ func _run() -> void:
 	level.call("_recalculate_swipe_state")
 
 	var valid := bool(level.get("is_swipe_valid"))
-	var impulse: Vector3 = level.call(
-		"_compute_shot_impulse",
+	var launch_velocity: Vector3 = level.call(
+		"_compute_launch_velocity",
 		level.get("current_power_ratio"),
 		level.get("current_shot_direction"),
 		samples
@@ -41,16 +41,16 @@ func _run() -> void:
 	ball.sleeping = false
 	ball.linear_velocity = Vector3.ZERO
 	ball.angular_velocity = Vector3.ZERO
-	ball.apply_central_impulse(impulse)
+	ball.linear_velocity = launch_velocity
 	var vel_after := ball.linear_velocity
 	await physics_frame
 	var vel_next := ball.linear_velocity
 
-	print("RELEASE_TEST valid=", valid, " impulse=", impulse)
+	print("RELEASE_TEST valid=", valid, " launch_velocity=", launch_velocity)
 	print("RELEASE_TEST vel_after=", vel_after, " vel_next=", vel_next)
 
 	passed = passed and valid
-	passed = passed and impulse.length() > 0.1
+	passed = passed and launch_velocity.length() > 0.1
 	passed = passed and vel_next.length() > 0.05
 
 	level.set("is_swiping", true)

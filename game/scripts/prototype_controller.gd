@@ -5,17 +5,18 @@ const MOUSE_POINTER_ID: int = -2
 @export var minimum_swipe_distance: float = 24.0
 @export var maximum_swipe_distance: float = 320.0
 @export var max_swipe_screen_height_ratio: float = 0.32
-@export var minimum_impulse: float = 3.5
-@export var maximum_impulse: float = 20.0
-@export var power_curve_exponent: float = 0.68
+@export var minimum_launch_speed: float = 5.0
+@export var maximum_launch_speed: float = 25.0
+@export var power_curve_exponent: float = 0.72
 @export var minimum_elevation_degrees: float = 0.0
-@export var driven_elevation_degrees: float = 8.0
-@export var maximum_elevation_degrees: float = 55.0
-@export var upward_angle_deadzone: float = 0.1
-@export var elevation_response_exponent: float = 1.0
+@export var driven_elevation_degrees: float = 6.5
+@export var normal_air_elevation_degrees: float = 18.0
+@export var maximum_elevation_degrees: float = 38.0
+@export var upward_angle_deadzone: float = 0.08
+@export var elevation_response_exponent: float = 1.15
 @export var downward_ground_shot_threshold: float = 0.1
 @export var ball_radius: float = 0.49
-@export var ball_ground_clearance: float = 0.03
+@export var ball_ground_clearance: float = 0.0
 @export var launch_clearance_boost: float = 0.04
 @export var ball_mass: float = 0.43
 @export var linear_damping: float = 0.08
@@ -25,21 +26,34 @@ const MOUSE_POINTER_ID: int = -2
 @export var ground_friction: float = 0.28
 @export var ground_bounce: float = 0.22
 @export var ball_hit_radius: float = 90.0
-@export var launch_y_restore_threshold: float = 0.35
 @export var stopped_velocity_threshold: float = 0.08
-@export var maximum_curve_strength: float = 1.75
-@export var curve_force_duration: float = 1.7
-@export var curve_force_multiplier: float = 22.0
-@export var curve_spin_impulse: float = 7.5
+@export var maximum_curve_amount: float = 1.0
+@export var curve_duration: float = 1.35
+@export var maximum_curve_heading_degrees: float = 78.0
+@export var curve_heading_response_exponent: float = 1.0
+@export var curve_minimum_horizontal_speed: float = 0.75
 @export var curve_peak_threshold_px: float = 2.0
 @export var curve_full_bend_ratio: float = 0.28
 @export var curve_response_exponent: float = 0.7
 @export var swipe_sample_smoothing: float = 0.45
 @export var camera_position: Vector3 = Vector3(0.0, 6.5, 10.0)
 @export var camera_look_at: Vector3 = Vector3(0.0, 0.65, -12.0)
+@export var camera_setup_smoothing: float = 10.0
+@export var camera_follow_smoothing: float = 5.5
+@export var camera_follow_x_influence: float = 0.35
+@export var camera_follow_z_influence: float = 0.18
+@export var camera_follow_y_influence: float = 0.55
+@export var camera_follow_max_x_offset: float = 5.0
+@export var camera_follow_max_z_offset: float = 2.5
+@export var camera_follow_max_y_offset: float = 7.0
+@export var camera_follow_look_x_influence: float = 0.45
+@export var camera_follow_look_z_influence: float = 0.25
+@export var camera_follow_look_y_influence: float = 0.45
+@export var camera_follow_max_look_y_offset: float = 6.0
 @export var aim_arrow_min_length: float = 1.2
 @export var aim_arrow_max_length: float = 5.0
 @export var aim_guide_height_offset: float = 0.08
+@export var developer_debug_enabled: bool = false
 
 @onready var ball_spawn: Marker3D = $BallSpawn
 @onready var ball: RigidBody3D = $Ball
@@ -67,9 +81,10 @@ var reset_generation: int = 0
 var is_swiping: bool = false
 var is_swipe_valid: bool = false
 var has_successful_shot: bool = false
+var camera_follow_shot: bool = false
 var active_pointer_id: int = -1
 var swipe_screen_points: PackedVector2Array = PackedVector2Array()
-var current_shot_power: float = 0.0
+var current_launch_speed: float = 0.0
 var current_shot_direction: Vector3 = Vector3.ZERO
 var current_shot_direction_screen: Vector2 = Vector2.ZERO
 var current_power_ratio: float = 0.0
@@ -80,22 +95,25 @@ var current_elevation_degrees: float = 0.0
 var current_shot_category: String = "DRIVEN"
 var current_overall_screen_dir: Vector2 = Vector2.ZERO
 var current_curve_amount: float = 0.0
-var curve_force_time_remaining: float = 0.0
+var curve_time_remaining: float = 0.0
 var active_curve_sign: float = 0.0
-var active_curve_strength: float = 0.0
+var active_curve_amount: float = 0.0
+var active_curve_total_heading_radians: float = 0.0
+var active_curve_remaining_heading_radians: float = 0.0
+var active_curve_original_horizontal_direction: Vector3 = Vector3.ZERO
 var tracking_shot_peak: bool = false
 var shot_peak_y: float = 0.0
-var last_horizontal_impulse: float = 0.0
-var last_lift_impulse: float = 0.0
+var last_horizontal_launch_speed: float = 0.0
+var last_vertical_launch_speed: float = 0.0
 var last_loft_intent: float = 0.0
 var last_ground_intent: float = 0.0
 var last_elevation_intent: float = 0.0
 var last_elevation_degrees: float = 0.0
 var last_shot_category: String = "DRIVEN"
 var last_launch_direction: Vector3 = Vector3.ZERO
+var last_launch_velocity: Vector3 = Vector3.ZERO
+var last_curve_heading_degrees: float = 0.0
 var last_post_shot_y_velocity: float = 0.0
-var last_final_impulse: Vector3 = Vector3.ZERO
-var launch_safeguard_pending: bool = false
 
 
 func _ready() -> void:
@@ -108,7 +126,7 @@ func _ready() -> void:
 	_update_debug_ui()
 	_clear_swipe_visuals()
 	await _apply_physics_safe_reset()
-	print("INIT ball=", ball.global_position)
+	_debug_log("INIT ball=%s" % ball.global_position)
 
 
 func _notification(what: int) -> void:
@@ -121,28 +139,111 @@ func _physics_process(delta: float) -> void:
 		shot_peak_y = maxf(shot_peak_y, ball.global_position.y)
 		if _is_ball_stopped():
 			tracking_shot_peak = false
-			print("PEAK ball_y=", shot_peak_y)
+			_debug_log("PEAK ball_y=%s" % shot_peak_y)
 			_update_debug_ui()
 
-	if curve_force_time_remaining <= 0.0:
+	_apply_arcade_curve(delta)
+	_update_camera(delta)
+
+
+func _apply_arcade_curve(delta: float) -> void:
+	if curve_time_remaining <= 0.0 or absf(active_curve_remaining_heading_radians) <= 0.0001:
 		return
 
-	curve_force_time_remaining -= delta
+	curve_time_remaining = maxf(curve_time_remaining - delta, 0.0)
 	var velocity := ball.linear_velocity
-	if velocity.length() <= 0.15:
+	var horizontal_velocity := Vector3(velocity.x, 0.0, velocity.z)
+	var horizontal_speed := horizontal_velocity.length()
+	if horizontal_speed <= curve_minimum_horizontal_speed:
 		return
 
-	var travel_direction := velocity.normalized()
-	var lateral := travel_direction.cross(Vector3.UP).normalized()
-	ball.apply_central_force(
-		lateral * active_curve_sign * active_curve_strength * curve_force_multiplier * ball.mass
+	var step_limit := (
+		absf(active_curve_total_heading_radians)
+		/ maxf(curve_duration, 0.001)
+		* delta
 	)
+	var signed_step := active_curve_sign * minf(
+		absf(active_curve_remaining_heading_radians),
+		step_limit
+	)
+	var rotated_horizontal := horizontal_velocity.rotated(Vector3.UP, signed_step)
+	var total_heading_after_step := _signed_horizontal_angle(
+		active_curve_original_horizontal_direction,
+		rotated_horizontal.normalized()
+	)
+	var heading_cap := deg_to_rad(maximum_curve_heading_degrees)
+	if absf(total_heading_after_step) > heading_cap:
+		rotated_horizontal = (
+			active_curve_original_horizontal_direction.rotated(
+				Vector3.UP,
+				signf(total_heading_after_step) * heading_cap
+			)
+			* horizontal_speed
+		)
+		active_curve_remaining_heading_radians = 0.0
+	else:
+		active_curve_remaining_heading_radians -= signed_step
+
+	ball.linear_velocity = Vector3(rotated_horizontal.x, velocity.y, rotated_horizontal.z)
 
 
 func _setup_camera() -> void:
 	camera.global_position = camera_position
 	camera.look_at(camera_look_at, Vector3.UP)
 	camera.current = true
+
+
+func _update_camera(delta: float) -> void:
+	var desired_position := camera_position
+	var desired_look_at := camera_look_at
+	var smoothing := camera_setup_smoothing
+
+	if camera_follow_shot:
+		var ball_position := ball.global_position
+		var height_above_field := maxf(ball_position.y - ball_radius, 0.0)
+		desired_position += Vector3(
+			clampf(
+				ball_position.x * camera_follow_x_influence,
+				-camera_follow_max_x_offset,
+				camera_follow_max_x_offset
+			),
+			clampf(
+				height_above_field * camera_follow_y_influence,
+				0.0,
+				camera_follow_max_y_offset
+			),
+			clampf(
+				ball_position.z * camera_follow_z_influence,
+				-camera_follow_max_z_offset,
+				camera_follow_max_z_offset
+			)
+		)
+		desired_look_at += Vector3(
+			clampf(
+				ball_position.x * camera_follow_look_x_influence,
+				-camera_follow_max_x_offset,
+				camera_follow_max_x_offset
+			),
+			clampf(
+				height_above_field * camera_follow_look_y_influence,
+				0.0,
+				camera_follow_max_look_y_offset
+			),
+			clampf(
+				ball_position.z * camera_follow_look_z_influence,
+				-camera_follow_max_z_offset,
+				camera_follow_max_z_offset
+			)
+		)
+		smoothing = camera_follow_smoothing
+
+	var blend := 1.0 - exp(-maxf(smoothing, 0.001) * delta)
+	camera.global_position = camera.global_position.lerp(desired_position, blend)
+	camera.look_at(desired_look_at, Vector3.UP)
+
+
+func _set_camera_following_shot(enabled: bool) -> void:
+	camera_follow_shot = enabled
 
 
 func _configure_ball_spawn_height() -> void:
@@ -194,16 +295,19 @@ func _on_reset_button_pressed() -> void:
 	if reset_in_progress or not is_gameplay_input_allowed():
 		return
 
-	print("_on_reset_button_pressed called")
+	_debug_log("_on_reset_button_pressed called")
 	var before := ball.global_position
 	reset_count += 1
 	reset_ok_label.text = "RESET OK #%d" % reset_count
-	reset_ok_label.visible = true
-	get_tree().create_timer(1.0).timeout.connect(_hide_reset_ok_label)
-	_run_reset(before)
+	reset_ok_label.visible = developer_debug_enabled
+	var token := reset_generation + 1
+	get_tree().create_timer(1.0).timeout.connect(_hide_reset_ok_label.bind(token))
+	await _run_reset(before)
 
 
-func _hide_reset_ok_label() -> void:
+func _hide_reset_ok_label(token: int = -1) -> void:
+	if token != -1 and token != reset_generation:
+		return
 	reset_ok_label.visible = false
 
 
@@ -212,18 +316,17 @@ func _run_reset(before_position: Vector3) -> void:
 	_clear_swipe()
 	tracking_shot_peak = false
 	shot_peak_y = 0.0
-	curve_force_time_remaining = 0.0
-	active_curve_sign = 0.0
-	active_curve_strength = 0.0
+	_clear_active_curve()
 	has_successful_shot = false
 
 	await _apply_physics_safe_reset()
 
-	print("RESET before=", before_position, " after=", ball.global_position)
+	_debug_log("RESET before=%s after=%s" % [before_position, ball.global_position])
 	await get_tree().physics_frame
-	print("RESET frame+1 pos=", ball.global_position, " vel=", ball.linear_velocity)
+	_debug_log("RESET frame+1 pos=%s vel=%s" % [ball.global_position, ball.linear_velocity])
 
 	reset_in_progress = false
+	_set_camera_following_shot(false)
 	_update_instruction_visibility()
 	_update_debug_ui()
 
@@ -233,6 +336,7 @@ func _apply_physics_safe_reset() -> void:
 	var token := reset_generation
 	spawn_transform = ball_spawn.global_transform
 
+	_set_camera_following_shot(false)
 	ball.freeze = true
 	ball.linear_velocity = Vector3.ZERO
 	ball.angular_velocity = Vector3.ZERO
@@ -252,18 +356,16 @@ func _apply_physics_safe_reset() -> void:
 	ball.angular_velocity = Vector3.ZERO
 	ball.reset_physics_interpolation()
 	ball.freeze = false
-	ball.sleeping = false
+	ball.sleeping = true
 	_apply_ball_tuning()
 
 
 func _ensure_ball_ready_for_play() -> void:
 	reset_in_progress = false
 	ball.freeze = false
-	ball.sleeping = false
-	if ball.linear_velocity.length() < stopped_velocity_threshold:
-		ball.linear_velocity = Vector3.ZERO
-	if ball.angular_velocity.length() < stopped_velocity_threshold:
-		ball.angular_velocity = Vector3.ZERO
+	ball.linear_velocity = Vector3.ZERO
+	ball.angular_velocity = Vector3.ZERO
+	ball.sleeping = true
 
 
 func is_gameplay_input_allowed() -> bool:
@@ -298,10 +400,10 @@ func _end_swipe(screen_position: Vector2, pointer_id: int) -> void:
 	if not is_swiping or active_pointer_id != pointer_id:
 		return
 
-	print("RELEASE_RECEIVED pointer=", pointer_id, " pos=", screen_position)
+	_debug_log("RELEASE_RECEIVED pointer=%d pos=%s" % [pointer_id, screen_position])
 
 	if not _is_screen_position_in_viewport(screen_position):
-		print("RELEASE rejected reason=outside_viewport")
+		_debug_log("RELEASE rejected reason=outside_viewport")
 		_cancel_swipe()
 		return
 
@@ -326,37 +428,27 @@ func _end_swipe(screen_position: Vector2, pointer_id: int) -> void:
 		else:
 			invalid_reason = "unknown"
 
-	print(
-		"RELEASE_RECEIVED samples=",
-		swipe_screen_points.size(),
-		" distance=",
-		swipe_distance,
-		" valid=",
-		is_swipe_valid,
-		" reason=",
-		invalid_reason,
-		" power_ratio=",
-		current_power_ratio,
-		" category=",
-		current_shot_category,
-		" elev_deg=",
-		current_elevation_degrees,
-		" elev_intent=",
-		current_elevation_intent,
-		" curve=",
-		current_curve_amount,
-		" reset_in_progress=",
-		reset_in_progress,
-		" freeze=",
-		ball.freeze,
-		" sleeping=",
-		ball.sleeping
+	_debug_log(
+		"RELEASE_RECEIVED samples=%d distance=%.2f valid=%s reason=%s power_ratio=%.2f category=%s elev_deg=%.2f elev_intent=%.2f curve=%.2f reset_in_progress=%s freeze=%s sleeping=%s" % [
+			swipe_screen_points.size(),
+			swipe_distance,
+			is_swipe_valid,
+			invalid_reason,
+			current_power_ratio,
+			current_shot_category,
+			current_elevation_degrees,
+			current_elevation_intent,
+			current_curve_amount,
+			reset_in_progress,
+			ball.freeze,
+			ball.sleeping,
+		]
 	)
 
 	if is_swipe_valid:
 		_fire_shot()
 	else:
-		print("RELEASE rejected reason=", invalid_reason)
+		_debug_log("RELEASE rejected reason=%s" % invalid_reason)
 		_clear_swipe()
 
 	_update_debug_ui()
@@ -371,44 +463,36 @@ func _commit_swipe_release_sample(screen_position: Vector2) -> void:
 		swipe_screen_points.append(screen_position)
 
 
-func _fire_shot() -> void:
-	var impulse := _compute_shot_impulse(
+func _fire_shot() -> bool:
+	var launch_velocity := _compute_launch_velocity(
 		current_power_ratio,
 		current_shot_direction,
 		swipe_screen_points
 	)
-	last_final_impulse = impulse
+	if launch_velocity.length() <= 0.001:
+		return false
 
 	# Abort any in-flight reset ownership of the body for this launch.
 	if reset_in_progress:
-		print("RELEASE_FIRE forcing reset_in_progress clear before launch")
+		_debug_log("RELEASE_FIRE forcing reset_in_progress clear before launch")
 		reset_in_progress = false
 
 	var curve_sign := signf(current_curve_amount)
-	var curve_strength := clampf(absf(current_curve_amount), 0.0, maximum_curve_strength)
+	var curve_amount := clampf(absf(current_curve_amount), 0.0, maximum_curve_amount)
 	var shot_token := reset_generation
-	var launch_mass := maxf(ball.mass, 0.001)
-	var launch_velocity := impulse / launch_mass
 
-	print(
-		"RELEASE_FIRE impulse=",
-		impulse,
-		" mass=",
-		launch_mass,
-		" launch_vel=",
-		launch_velocity,
-		" freeze_before=",
-		ball.freeze,
-		" sleeping_before=",
-		ball.sleeping,
-		" reset_in_progress=",
-		reset_in_progress,
-		" generation=",
-		shot_token
+	_debug_log(
+		"RELEASE_FIRE launch_velocity=%s speed=%.2f freeze_before=%s sleeping_before=%s reset_in_progress=%s generation=%d" % [
+			launch_velocity,
+			launch_velocity.length(),
+			ball.freeze,
+			ball.sleeping,
+			reset_in_progress,
+			shot_token,
+		]
 	)
 
-	# Reliable launch: unfreeze first, then assign velocity directly.
-	# apply_central_impulse can be ignored on the same frame freeze flips false (Jolt).
+	# Reliable arcade launch: unfreeze first, then assign the canonical velocity.
 	ball.freeze = false
 	ball.sleeping = false
 	ball.linear_velocity = Vector3.ZERO
@@ -419,106 +503,116 @@ func _fire_shot() -> void:
 	)
 	ball.linear_velocity = launch_velocity
 	last_post_shot_y_velocity = launch_velocity.y
-	print(
-		"RELEASE_FIRE vel_set=",
-		ball.linear_velocity,
-		" pos_y=",
-		ball.global_position.y,
-		" freeze_after=",
-		ball.freeze,
-		" sleeping_after=",
-		ball.sleeping
+	_debug_log(
+		"RELEASE_FIRE vel_set=%s pos_y=%.2f freeze_after=%s sleeping_after=%s" % [
+			ball.linear_velocity,
+			ball.global_position.y,
+			ball.freeze,
+			ball.sleeping,
+		]
 	)
-	_run_launch_y_safeguard(shot_token, impulse.y, launch_velocity)
+	_validate_launch_next_frame(shot_token, launch_velocity)
 
 	tracking_shot_peak = true
 	shot_peak_y = ball.global_position.y
+	_set_camera_following_shot(true)
 
-	if curve_strength > 0.02:
-		ball.apply_torque_impulse(Vector3.UP * curve_sign * curve_strength * curve_spin_impulse)
-		active_curve_sign = curve_sign
-		active_curve_strength = curve_strength
-		curve_force_time_remaining = curve_force_duration
+	if curve_amount > 0.02:
+		_begin_bounded_curve(curve_sign, curve_amount, launch_velocity)
+	else:
+		_clear_active_curve()
 
 	has_successful_shot = true
 	_clear_swipe()
 	_update_instruction_visibility()
 	_update_debug_ui()
+	return true
 
 
-func _run_launch_y_safeguard(
+func _validate_launch_next_frame(
 	shot_token: int,
-	intended_lift: float,
 	expected_launch_velocity: Vector3
 ) -> void:
-	launch_safeguard_pending = true
 	await get_tree().physics_frame
 
 	if shot_token != reset_generation:
-		print(
-			"LAUNCH_SAFEGUARD skipped reset_generation changed ",
-			shot_token,
-			" -> ",
-			reset_generation
+		_debug_log(
+			"LAUNCH_CHECK skipped reset_generation changed %d -> %d" % [
+				shot_token,
+				reset_generation,
+			]
 		)
-		launch_safeguard_pending = false
 		return
 
 	var vel_before := ball.linear_velocity
-	print(
-		"LAUNCH_SAFEGUARD frame+1 vel=",
-		vel_before,
-		" freeze=",
-		ball.freeze,
-		" contacts=",
-		ball.get_contact_count() if ball.has_method("get_contact_count") else -1
+	_debug_log(
+		"LAUNCH_CHECK frame+1 vel=%s freeze=%s contacts=%d" % [
+			vel_before,
+			ball.freeze,
+			ball.get_contact_count() if ball.has_method("get_contact_count") else -1,
+		]
 	)
 
-	# Only restore missing Y once. Preserve XZ exactly.
-	if intended_lift >= launch_y_restore_threshold and vel_before.y < expected_launch_velocity.y * 0.45:
-		ball.linear_velocity = Vector3(
-			vel_before.x,
-			expected_launch_velocity.y,
-			vel_before.z
-		)
-		last_post_shot_y_velocity = expected_launch_velocity.y
-		print(
-			"LAUNCH_Y_RESTORE ran before=",
-			vel_before,
-			" after=",
-			ball.linear_velocity
-		)
-	else:
-		print("LAUNCH_SAFEGUARD ran no_y_restore")
-
-	# If a freeze race somehow returned, force the ball awake with expected XZ.
 	if ball.freeze:
 		ball.freeze = false
 		ball.sleeping = false
-		ball.linear_velocity = Vector3(
-			expected_launch_velocity.x,
-			maxf(ball.linear_velocity.y, expected_launch_velocity.y * 0.5),
-			expected_launch_velocity.z
-		)
-		print("LAUNCH_SAFEGUARD unfroze_and_restored vel=", ball.linear_velocity)
-
-	launch_safeguard_pending = false
+		ball.linear_velocity = expected_launch_velocity
+		_debug_log("LAUNCH_CHECK unfroze_and_restored vel=%s" % ball.linear_velocity)
 
 
-func _log_shot_velocity_next_frame(shot_token: int) -> void:
-	await get_tree().physics_frame
-	if shot_token != reset_generation:
+func _begin_bounded_curve(curve_sign: float, curve_amount: float, launch_velocity: Vector3) -> void:
+	var horizontal_velocity := Vector3(launch_velocity.x, 0.0, launch_velocity.z)
+	if horizontal_velocity.length() <= curve_minimum_horizontal_speed:
+		_clear_active_curve()
 		return
-	print("RELEASE_FIRE vel_frame+1=", ball.linear_velocity)
+
+	var normalized_amount := clampf(
+		curve_amount / maxf(maximum_curve_amount, 0.001),
+		0.0,
+		1.0
+	)
+	var heading_degrees := maximum_curve_heading_degrees * pow(
+		normalized_amount,
+		curve_heading_response_exponent
+	)
+	active_curve_sign = signf(curve_sign)
+	active_curve_amount = normalized_amount
+	active_curve_total_heading_radians = deg_to_rad(heading_degrees) * active_curve_sign
+	active_curve_remaining_heading_radians = active_curve_total_heading_radians
+	active_curve_original_horizontal_direction = horizontal_velocity.normalized()
+	curve_time_remaining = curve_duration
+	last_curve_heading_degrees = heading_degrees
 
 
-func _compute_shot_impulse(
+func _clear_active_curve() -> void:
+	curve_time_remaining = 0.0
+	active_curve_sign = 0.0
+	active_curve_amount = 0.0
+	active_curve_total_heading_radians = 0.0
+	active_curve_remaining_heading_radians = 0.0
+	active_curve_original_horizontal_direction = Vector3.ZERO
+	last_curve_heading_degrees = 0.0
+
+
+func _signed_horizontal_angle(from_direction: Vector3, to_direction: Vector3) -> float:
+	var from_flat := Vector3(from_direction.x, 0.0, from_direction.z)
+	var to_flat := Vector3(to_direction.x, 0.0, to_direction.z)
+	if from_flat.length() <= 0.001 or to_flat.length() <= 0.001:
+		return 0.0
+	from_flat = from_flat.normalized()
+	to_flat = to_flat.normalized()
+	var unsigned := acos(clampf(from_flat.dot(to_flat), -1.0, 1.0))
+	var sign_value := signf(from_flat.cross(to_flat).y)
+	return unsigned * sign_value
+
+
+func _compute_launch_velocity(
 	power_ratio: float,
 	horizontal_direction: Vector3,
 	swipe_samples: PackedVector2Array
 ) -> Vector3:
-	var curved_power := pow(clampf(power_ratio, 0.0, 1.0), power_curve_exponent)
-	var shot_speed := lerpf(minimum_impulse, maximum_impulse, curved_power)
+	var normalized_power := clampf(power_ratio, 0.0, 1.0)
+	var launch_speed := lerpf(minimum_launch_speed, maximum_launch_speed, normalized_power)
 	_analyze_elevation_from_samples(swipe_samples)
 
 	last_loft_intent = current_loft_intent
@@ -536,9 +630,10 @@ func _compute_shot_impulse(
 		horizontal_dir * cos(elevation_rad) + Vector3.UP * sin(elevation_rad)
 	).normalized()
 	last_launch_direction = launch_dir
-	last_horizontal_impulse = shot_speed * cos(elevation_rad)
-	last_lift_impulse = shot_speed * sin(elevation_rad)
-	return launch_dir * shot_speed
+	last_horizontal_launch_speed = launch_speed * cos(elevation_rad)
+	last_vertical_launch_speed = launch_speed * sin(elevation_rad)
+	last_launch_velocity = launch_dir * launch_speed
+	return last_launch_velocity
 
 
 func _analyze_elevation_from_samples(samples: PackedVector2Array) -> void:
@@ -613,13 +708,27 @@ func _apply_elevation_from_upward_component(upward_component: float) -> void:
 	current_elevation_intent = pow(current_elevation_intent, elevation_response_exponent)
 	current_loft_intent = current_elevation_intent
 	current_ground_intent = 0.0
-	current_elevation_degrees = lerpf(
-		driven_elevation_degrees,
-		maximum_elevation_degrees,
-		current_elevation_intent
-	)
-	if current_elevation_degrees >= lerpf(driven_elevation_degrees, maximum_elevation_degrees, 0.35):
-		current_shot_category = "LOFTED"
+
+	var normal_air_intent := 0.55
+	if current_elevation_intent <= normal_air_intent:
+		var air_blend := current_elevation_intent / normal_air_intent
+		current_elevation_degrees = lerpf(
+			driven_elevation_degrees,
+			normal_air_elevation_degrees,
+			air_blend
+		)
+	else:
+		var lob_blend := inverse_lerp(normal_air_intent, 1.0, current_elevation_intent)
+		current_elevation_degrees = lerpf(
+			normal_air_elevation_degrees,
+			maximum_elevation_degrees,
+			lob_blend
+		)
+
+	if current_elevation_degrees >= lerpf(normal_air_elevation_degrees, maximum_elevation_degrees, 0.55):
+		current_shot_category = "LOB"
+	elif current_elevation_degrees >= lerpf(driven_elevation_degrees, normal_air_elevation_degrees, 0.35):
+		current_shot_category = "AIR"
 	else:
 		current_shot_category = "DRIVEN"
 
@@ -634,7 +743,7 @@ func _clear_swipe() -> void:
 	is_swipe_valid = false
 	active_pointer_id = -1
 	swipe_screen_points = PackedVector2Array()
-	current_shot_power = 0.0
+	current_launch_speed = 0.0
 	current_shot_direction = Vector3.ZERO
 	current_shot_direction_screen = Vector2.ZERO
 	current_power_ratio = 0.0
@@ -686,7 +795,7 @@ func _recalculate_swipe_state() -> void:
 		clampf(swipe_distance / maxf(effective_max_swipe_distance, 1.0), 0.0, 1.0),
 		power_curve_exponent
 	)
-	current_shot_power = lerpf(minimum_impulse, maximum_impulse, current_power_ratio)
+	current_launch_speed = lerpf(minimum_launch_speed, maximum_launch_speed, current_power_ratio)
 	current_shot_direction = world_direction
 	current_shot_direction_screen = screen_delta.normalized()
 	_analyze_elevation_from_screen_delta(screen_delta)
@@ -694,7 +803,7 @@ func _recalculate_swipe_state() -> void:
 
 
 func _reset_aim_state() -> void:
-	current_shot_power = 0.0
+	current_launch_speed = 0.0
 	current_shot_direction = Vector3.ZERO
 	current_shot_direction_screen = Vector2.ZERO
 	current_power_ratio = 0.0
@@ -760,7 +869,7 @@ func _calculate_curve_amount(swipe_start: Vector2, swipe_end: Vector2) -> float:
 		1.0
 	)
 	strength_ratio = pow(strength_ratio, curve_response_exponent)
-	return signed_curve * strength_ratio * maximum_curve_strength
+	return signed_curve * strength_ratio * maximum_curve_amount
 
 
 func _update_swipe_visuals() -> void:
@@ -774,12 +883,12 @@ func _update_swipe_visuals() -> void:
 		arrow_pixels = Vector2.ZERO
 
 	swipe_overlay.set_swipe_visuals(
-		swipe_screen_points,
-		ball_screen,
-		arrow_pixels,
-		signf(current_curve_amount),
-		clampf(absf(current_curve_amount), 0.0, maximum_curve_strength),
-		true
+			swipe_screen_points,
+			ball_screen,
+			arrow_pixels,
+			signf(current_curve_amount),
+			clampf(absf(current_curve_amount), 0.0, maximum_curve_amount),
+			true
 	)
 
 
@@ -860,13 +969,23 @@ func _update_instruction_visibility() -> void:
 
 
 func _update_debug_ui() -> void:
-	power_label.text = "Shot Power: %.2f (ratio %.2f)" % [current_shot_power, current_power_ratio]
+	reset_ok_label.visible = reset_ok_label.visible and developer_debug_enabled
+	power_label.visible = developer_debug_enabled
+	direction_label.visible = developer_debug_enabled
+	curve_label.visible = developer_debug_enabled
+	loft_category_label.visible = developer_debug_enabled
+	shot_debug_label.visible = developer_debug_enabled
+
+	power_label.text = "Launch Speed: %.2f (ratio %.2f)" % [current_launch_speed, current_power_ratio]
 	direction_label.text = "Direction: (%.2f, %.2f, %.2f)" % [
 		current_shot_direction.x,
 		current_shot_direction.y,
 		current_shot_direction.z,
 	]
-	curve_label.text = "Curve: %.2f" % current_curve_amount
+	curve_label.text = "Curve: %.2f  cap %.1f deg" % [
+		current_curve_amount,
+		last_curve_heading_degrees,
+	]
 	var category := current_shot_category if is_swiping else last_shot_category
 	var elev_deg := current_elevation_degrees if is_swiping else last_elevation_degrees
 	var elev_intent := current_elevation_intent if is_swiping else last_elevation_intent
@@ -874,11 +993,11 @@ func _update_debug_ui() -> void:
 	var overall_dir := current_overall_screen_dir if is_swiping else Vector2.ZERO
 	if loft_category_label:
 		loft_category_label.text = (
-			"%s  elev %.1f°  intent %.2f  lift %.2f" % [
+			"%s  elev %.1f deg  intent %.2f  lift %.2f" % [
 				category,
 				elev_deg,
 				elev_intent,
-				last_lift_impulse,
+				last_vertical_launch_speed,
 			]
 		)
 	shot_debug_label.text = (
@@ -891,3 +1010,8 @@ func _update_debug_ui() -> void:
 		]
 	)
 	power_bar.value = current_power_ratio if is_swiping else 0.0
+
+
+func _debug_log(message: String) -> void:
+	if developer_debug_enabled:
+		print(message)
