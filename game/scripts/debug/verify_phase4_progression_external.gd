@@ -29,6 +29,7 @@ func _run() -> void:
 	passed = _test_recording() and passed
 	passed = _test_persistence() and passed
 	passed = _test_corruption() and passed
+	passed = _test_backup_recovery() and passed
 	passed = _test_atomic_write() and passed
 	var integration_ok := false
 	var autoload_service = get_root().get_node_or_null("SaveService")
@@ -292,6 +293,31 @@ func _test_corruption() -> bool:
 	return passed
 
 
+func _test_backup_recovery() -> bool:
+	_cleanup_paths("backup_recovery")
+	var source = _new_service("backup_recovery")
+	source.load_or_create()
+	var level_01 := LevelRegistryScript.load_definition("level_01")
+	source.record_level_result(LevelResult.completed_result(level_01, 1), level_01)
+	source.set_setting_value("master_volume", 0.42)
+	var save_path: String = source.get_save_path()
+	var backup_path: String = source.get_backup_path()
+	_write_text(backup_path, FileAccess.get_file_as_string(save_path))
+	_write_text(save_path, "{broken primary")
+
+	var recovered = _new_service("backup_recovery")
+	var passed: bool = recovered.load_or_create()
+	passed = recovered.is_level_completed("level_01") and passed
+	passed = recovered.is_level_unlocked("level_02") and passed
+	passed = recovered.get_best_stars("level_01") == 3 and passed
+	passed = is_equal_approx(float(recovered.get_setting_value("master_volume", 1.0)), 0.42) and passed
+	passed = FileAccess.file_exists(recovered.get_corrupt_path()) and passed
+	source.free()
+	recovered.free()
+	print("PHASE4 backup_recovery ok=", passed)
+	return passed
+
+
 func _test_atomic_write() -> bool:
 	_cleanup_paths("atomic")
 	var service = _new_service("atomic")
@@ -360,16 +386,24 @@ func _line_offsets(offset: Vector2, count: int) -> PackedVector2Array:
 
 
 func _cleanup_test_files() -> void:
-	for path in [TEST_SAVE, TEST_TMP, TEST_BAK, TEST_CORRUPT]:
+	for path in [
+		TEST_SAVE,
+		TEST_TMP,
+		TEST_BAK,
+		TEST_CORRUPT,
+		"%s.tmp" % TEST_SAVE,
+		"%s.bak" % TEST_SAVE,
+		"%s.corrupt" % TEST_SAVE,
+	]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
-	for suffix in ["stars", "persist", "corrupt", "atomic", "integration"]:
+	for suffix in ["stars", "persist", "corrupt", "backup_recovery", "atomic", "integration"]:
 		_cleanup_paths(suffix)
 
 
 func _cleanup_paths(suffix: String) -> void:
-	for extension in ["json", "tmp", "bak", "corrupt"]:
-		var path := "user://phase4_%s.%s" % [suffix, extension]
+	var save_path := "user://phase4_%s.json" % suffix
+	for path in [save_path, "%s.tmp" % save_path, "%s.bak" % save_path, "%s.corrupt" % save_path]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
 

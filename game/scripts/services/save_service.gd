@@ -123,6 +123,10 @@ func load_or_create() -> bool:
 			_diagnostic("cosmetic registry: %s" % String(error))
 
 	if not FileAccess.file_exists(_save_path):
+		var backup_data: Variant = _read_save_dictionary(_backup_path)
+		if typeof(backup_data) == TYPE_DICTIONARY:
+			_diagnostic("primary save missing; recovered from backup")
+			return _finish_loaded_save(backup_data as Dictionary, true)
 		_save_data = _create_default_save()
 		_loaded = true
 		var default_saved := save()
@@ -136,6 +140,18 @@ func load_or_create() -> bool:
 	if parse_error != OK or typeof(parsed) != TYPE_DICTIONARY:
 		_diagnostic("save file is malformed JSON; recreating defaults")
 		_preserve_corrupt_text(text)
+		var backup_data: Variant = _read_save_dictionary(_backup_path)
+		if typeof(backup_data) == TYPE_DICTIONARY:
+			_diagnostic("malformed primary save; recovered from backup")
+			var remove_error := DirAccess.remove_absolute(_save_path)
+			if remove_error != OK:
+				_diagnostic("failed to remove malformed primary save error=%s" % remove_error)
+				_save_data = _normalize_save(backup_data as Dictionary)
+				_evaluate_cosmetic_unlocks_for_current_save()
+				_loaded = true
+				save_loaded.emit(_save_data.duplicate(true))
+				return true
+			return _finish_loaded_save(backup_data as Dictionary, true)
 		_save_data = _create_default_save()
 		_loaded = true
 		var recovered_saved := save()
@@ -149,6 +165,27 @@ func load_or_create() -> bool:
 		save()
 	save_loaded.emit(_save_data.duplicate(true))
 	return true
+
+
+func _read_save_dictionary(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	var json := JSON.new()
+	var parse_error := json.parse(FileAccess.get_file_as_string(path))
+	if parse_error != OK or typeof(json.data) != TYPE_DICTIONARY:
+		return null
+	return json.data
+
+
+func _finish_loaded_save(raw: Dictionary, persist_recovery: bool) -> bool:
+	_save_data = _normalize_save(raw)
+	var migrated_cosmetics := _evaluate_cosmetic_unlocks_for_current_save()
+	_loaded = true
+	var saved := true
+	if persist_recovery or not migrated_cosmetics.is_empty():
+		saved = save()
+	save_loaded.emit(_save_data.duplicate(true))
+	return saved
 
 
 func save() -> bool:

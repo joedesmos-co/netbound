@@ -490,6 +490,7 @@ func _commit_swipe_release_sample(screen_position: Vector2) -> void:
 		return
 	if swipe_screen_points[-1].distance_to(screen_position) > 0.25:
 		swipe_screen_points.append(screen_position)
+		_trim_swipe_samples_to_limit()
 
 
 func _fire_shot() -> bool:
@@ -805,8 +806,13 @@ func _add_swipe_sample(screen_position: Vector2) -> void:
 	var smoothed := last_point.lerp(screen_position, swipe_sample_smoothing)
 	if smoothed.distance_to(last_point) >= 2.0:
 		swipe_screen_points.append(smoothed)
-		while swipe_screen_points.size() > maximum_swipe_samples:
-			swipe_screen_points.remove_at(1)
+		_trim_swipe_samples_to_limit()
+
+
+func _trim_swipe_samples_to_limit() -> void:
+	var sample_limit := maxi(maximum_swipe_samples, 2)
+	while swipe_screen_points.size() > sample_limit:
+		swipe_screen_points.remove_at(1)
 
 
 func _recalculate_swipe_state() -> void:

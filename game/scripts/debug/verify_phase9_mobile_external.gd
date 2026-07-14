@@ -41,6 +41,7 @@ func _run() -> void:
 	passed = _test_runtime_quality_and_release_mode() and passed
 	passed = await _test_safe_area_layouts() and passed
 	passed = await _test_touch_and_lifecycle() and passed
+	passed = await _test_bounded_release_samples() and passed
 	passed = await _test_audio_lifecycle() and passed
 	passed = await _test_quality_is_presentation_only() and passed
 	passed = await _test_release_ui_filters() and passed
@@ -241,6 +242,35 @@ func _test_touch_and_lifecycle() -> bool:
 	await process_frame
 	passed = not paused and app.current_screen_name == "gameplay" and passed
 	print("PHASE9 touch_lifecycle ok=", passed)
+	return passed
+
+
+func _test_bounded_release_samples() -> bool:
+	service.reset_to_defaults()
+	var launched := app.load_level("level_01")
+	await _warmup_level()
+	var level := app.current_level
+	var ball := level.get_node("Ball") as RigidBody3D
+	var camera := level.get_node("Camera3D") as Camera3D
+	var start := camera.unproject_position(ball.global_position)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = start
+	level._unhandled_input(press)
+	for index in range(int(level.get("maximum_swipe_samples")) + 20):
+		var motion := InputEventMouseMotion.new()
+		motion.position = start + Vector2(float(index % 7), -float(index + 1) * 4.0)
+		level._unhandled_input(motion)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = start + Vector2(40.0, -300.0)
+	level._commit_swipe_release_sample(release.position)
+	var sample_count := (level.get("swipe_screen_points") as PackedVector2Array).size()
+	var passed := launched and sample_count <= int(level.get("maximum_swipe_samples"))
+	level._cancel_swipe()
+	print("PHASE9 bounded_release_samples ok=", passed, " count=", sample_count)
 	return passed
 
 
