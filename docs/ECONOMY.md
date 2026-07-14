@@ -71,6 +71,7 @@ Every external grant carries a stable transaction ID. Completed IDs are persiste
 - Starter Pack currency uses `starter_pack_bonus_v1`.
 - Duplicate provider callbacks and app-resume callbacks are ignored.
 - Cosmetic ownership and its currency deduction are committed through one `SaveService.commit_cosmetic_purchase()` write.
+- Level completion snapshots progression, cosmetic, and wallet state before the final write. A failed write restores the entire snapshot and clears unsaved reward fields from the result update.
 
 Processed IDs are bounded to the most recent `2048`; developer transaction history is bounded to `64`. These bounds prevent unbounded save growth. Without a server, receipt ledger, or signed local storage, they are reliability guards rather than fraud prevention.
 
@@ -81,6 +82,8 @@ Processed IDs are bounded to the most recent `2048`; developer transaction histo
 3. `WalletService.process_level_completion_rewards()` applies only newly eligible rewards.
 4. Progression and economy are atomically saved before the result UI appears.
 5. The success rail displays the actual Coin breakdown and resulting balance.
+
+If step 4 fails, the in-memory transaction is rolled back. The result rail shows `SAVE FAILED // PROGRESS NOT RECORDED` and does not advertise an uncommitted Coin reward or new best.
 
 This ordering prevents a result overlay from inventing rewards or replaying a grant.
 

@@ -342,6 +342,7 @@ func record_level_result(
 		return update
 
 	_ensure_loaded()
+	var save_snapshot := _save_data.duplicate(true)
 	update.total_stars_before = get_total_stars()
 	update.first_completion = not is_level_completed(update.level_id)
 	update.previous_best_stars = get_best_stars(update.level_id)
@@ -405,6 +406,23 @@ func record_level_result(
 	if wallet_service and wallet_service.has_method("process_level_completion_rewards"):
 		wallet_service.call("process_level_completion_rewards", update)
 	update.save_succeeded = save()
+	if not update.save_succeeded:
+		_save_data = save_snapshot
+		update.first_completion = false
+		update.new_best_stars = update.previous_best_stars
+		update.new_fewest_shots = update.previous_fewest_shots
+		update.unlocked_level_id = ""
+		update.did_unlock_new_level = false
+		update.unlocked_cosmetic_ids = []
+		update.total_stars_after = update.total_stars_before
+		update.changed = false
+		update.reward_transaction_id = ""
+		update.completion_coins = 0
+		update.first_completion_coins = 0
+		update.new_star_coins = 0
+		update.personal_best_coins = 0
+		update.coins_earned = 0
+		update.coin_balance_after = update.coin_balance_before
 	progression_changed.emit(update)
 	return update
 

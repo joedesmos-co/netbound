@@ -192,6 +192,8 @@ func show_store(return_screen: String = "") -> bool:
 		previous_menu_screen = current_screen_name
 	else:
 		previous_menu_screen = "main_menu"
+	if previous_menu_screen != "pause":
+		_leave_current_level()
 	_show_store_internal()
 	return true
 
@@ -933,13 +935,16 @@ func _complete_cosmetic_purchase() -> void:
 		if wallet
 		else {"purchased": false, "reason": "wallet unavailable"}
 	) as Dictionary
+	var status_text := ""
 	if bool(result.get("purchased", false)):
-		cosmetic_status_label.text = "PURCHASED"
+		status_text = "PURCHASED"
 		_play_ui_feedback("ui_confirm", "ui_tap", 0.7)
 	else:
-		cosmetic_status_label.text = _friendly_economy_reason(String(result.get("reason", "purchase failed")))
+		status_text = _friendly_economy_reason(String(result.get("reason", "purchase failed")))
 		_play_ui_feedback("ui_locked", "ui_tap", 0.45)
 	_refresh_cosmetics_screen()
+	if cosmetic_status_label:
+		cosmetic_status_label.text = status_text
 
 
 func _show_token_purchase_confirmation(definition: Dictionary) -> void:
@@ -1657,7 +1662,12 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	var new_best := _get_update_int(progression_update, "new_best_stars", previous_best)
 	var previous_fewest := _get_update_int(progression_update, "previous_fewest_shots", -1)
 	var new_fewest := _get_update_int(progression_update, "new_fewest_shots", previous_fewest)
-	var improved := new_best > previous_best or (previous_fewest < 0 or new_fewest < previous_fewest)
+	var progress_saved := bool(progression_update and progression_update.get("save_succeeded"))
+	var improved := progress_saved and (
+		new_best > previous_best
+		or previous_fewest < 0
+		or new_fewest < previous_fewest
+	)
 	result_best_label = Label.new()
 	result_best_label.text = "%s  //  %d STARS  //  %s SHOTS" % [
 		"NEW BEST" if improved else "BEST",
@@ -1703,7 +1713,10 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	result_unlock_label = Label.new()
 	result_unlock_label.theme_type_variation = "LightSuccessLabel"
 	var unlocked_id := _get_update_string(progression_update, "unlocked_level_id", "")
-	if not unlocked_id.is_empty():
+	if not progress_saved:
+		result_unlock_label.text = "SAVE FAILED  //  PROGRESS NOT RECORDED"
+		result_unlock_label.theme_type_variation = "FailureLabel"
+	elif not unlocked_id.is_empty():
 		var unlocked_definition := LevelRegistryScript.load_definition(unlocked_id)
 		result_unlock_label.text = "ROUTE OPEN  //  %s" % String(unlocked_definition.display_name).to_upper()
 	elif level_result.level_id == LevelRegistryScript.get_level_ids()[-1]:

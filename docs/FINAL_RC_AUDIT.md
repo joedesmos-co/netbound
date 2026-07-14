@@ -203,3 +203,20 @@ Deferred until developer accounts/credentials exist:
 - `c357248` — `fix: align iOS deployment target with Metal`
 
 The documentation commit follows these changes.
+
+## Post-RC Economy And UI Audit
+
+The later production UI redesign and version 2 cosmetic economy were audited separately against the real `NetboundApp`, `LevelController`, Store, Locker, result, save, simulated-provider, and Low-quality paths.
+
+Outcome:
+
+- `65/65` GDScripts parsed;
+- `10/10` production levels started directly;
+- `24/24` external regression scripts passed;
+- exact 38-item catalog and five Token products passed;
+- real production completion reward/result flow passed;
+- malformed/migrated/backup/interrupted-write save cases passed;
+- preview and repeated Store/gameplay/result node/resource counts remained flat;
+- Android debug APK and AAB exports passed.
+
+Three production issues were fixed: atomic rollback of failed completion writes, persistent insufficient-funds feedback, and completed-level cleanup on non-Pause Store entry. Full evidence and remaining physical-device/platform limitations are in `docs/ECONOMY_SHOP_RC_AUDIT.md`.

@@ -803,3 +803,25 @@ Final gate outcome:
 - AAB archive integrity: passed; local Gradle AAB remains unsigned as documented for future upload signing.
 
 Visible isolated-save captures are stored in `docs/economy_review/`, including empty/affordable/insufficient/purchased Locker states, Token confirmation, daily limit, simulated purchase success/failure, Starter Pack ownership, and result reward breakdown.
+
+## Economy And Shop Release-Candidate Audit - July 14, 2026
+
+Dedicated verifier:
+
+```sh
+/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+  --headless --path /Users/ryland/Documents/NetBound/game \
+  --script res://scripts/debug/verify_economy_rc_external.gd
+```
+
+Additional coverage beyond `verify_economy_external.gd`:
+
+- production swipe, Reset Ball, Retry, auto-reset, failure, swept goal, progression, wallet, and result-label flow;
+- failed completion-write rollback across progression, wallet, cosmetic unlocks, reward history, and result presentation;
+- actual cosmetic card, filter, purchase, confirmation, equip, touch-drag, and release-mode Store controls;
+- delayed duplicated product callback after navigation and simulated background/foreground;
+- malformed v2 arrays/IDs/balances, valid-backup recovery, failed cosmetic purchase, and v1 anti-retroactive migration;
+- all 38 preview/gameplay cosmetics under Low quality;
+- bounded goal effects and stable preview/Store-gameplay-result node and resource counts.
+
+Result: passed. Preview remained at 150 nodes/65 resources; five navigation cycles remained at 83 nodes/108 resources. The complete matrix passed 65/65 parsers, 10/10 levels, and 24/24 external scripts with zero unexpected output matches. See `docs/ECONOMY_SHOP_RC_AUDIT.md`.

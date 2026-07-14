@@ -256,6 +256,10 @@ Verified locally:
 - All 38 cosmetics keep the existing ball body, collision radius, mass, shot tuning, and scoring path unchanged.
 - Shop and Locker fit 1280x720 and native 1024x768 captures with mobile-sized controls.
 - Android APK/AAB exports include economy runtime scripts and exclude external verification/debug resources.
+- Production touch-drag automation does not preview, equip, or purchase a cosmetic while horizontally scrolling.
+- All 38 cosmetics complete two Low-quality preview/application passes with stable node and resource counts.
+- Five Store -> Gameplay -> Result -> Store cycles remain flat at 83 nodes and 108 resources and unload gameplay outside the Pause path.
+- Failed completion writes restore wallet and progression together and never advertise uncommitted rewards.
 
 Still required on physical devices and again after real SDK selection:
 
