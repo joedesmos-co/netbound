@@ -117,6 +117,11 @@ Current screenshots are stored under:
 
 Representative final captures include Level 11 side-entry setup, Level 12's elevator, Level 14's precision gap, Level 17's moving goal, Level 20's final route, the 20-marker Level Select, and the 60-star final result.
 
+The later clarity audit removes Level 20's redundant colliding `CurveTower` while
+retaining its four independent timing/lift/curve/side-entry objects. Updated
+before/after evidence and the full 20-level collider inventory are in
+`docs/LEVEL_CLARITY_AUDIT.md`.
+
 ## Physical Device Work
 
 Desktop/native Metal and headless checks cannot certify touchscreen feel, safe-area behavior, thermal stability, haptic strength, audio focus, or sustained 30/60 FPS motion on physical iOS/Android hardware. Those checks remain in `docs/MOBILE_RELEASE_CHECKLIST.md`.

@@ -1,6 +1,6 @@
 # Netbound
 
-Netbound is an offline arcade trick-shot soccer game built with Godot 4.7. The current production slice contains twenty authored levels, arcade front/side-net scoring, swipe-driven shot height and curve, local progression, a 38-item cosmetic economy, settings, simulated development-only monetization flows, and mobile export presets.
+Netbound is an offline arcade trick-shot soccer game built with Godot 4.7. The current production slice contains twenty authored levels, arcade front/side-net scoring, swipe-driven shot height and curve, local progression, a 38-item cosmetic economy, settings, simulated development-only monetization flows, an optional five-miss assisted level clear, and mobile export presets.
 
 ## Run locally
 
@@ -27,6 +27,8 @@ The script uses isolated save paths and covers fresh launch, failure, free Try A
 - Final audit: `docs/FINAL_RC_AUDIT.md`
 - Player-feel audit: `docs/PLAYER_FEEL_AUDIT.md`
 - Environment art: `docs/ENVIRONMENT_ART.md`
+- Rewarded level skip: `docs/REWARDED_LEVEL_SKIP.md`
+- Level clarity audit: `docs/LEVEL_CLARITY_AUDIT.md`
 - Content expansion: `docs/CONTENT_EXPANSION.md`
 - Cosmetic visual audit: `docs/COSMETIC_VISUAL_AUDIT.md`
 - Test matrix: `docs/TEST_PLAN.md`

@@ -138,6 +138,7 @@ The Phase 3 regression suite uses production mouse-swipe input, not teleports or
 - Level 18 exposes two visible bank routes rather than one hidden solution.
 - Level 19 uses three short, deterministic phases without an excessive idle wait.
 - Level 20 combines a visible opening beat, moderate lift, bounded bend, and side entry. It accepts multiple nearby swipe/curve variants and does not require a maximum gesture.
+- Level 20 uses four meaningful course objects after the clarity audit: `CrossSlider` for horizontal timing, `LiftBar` for height choice, `FinalBeat` for the final timing window, and `FrontShield` for the curved side-entry finish. The colliding `CurveTower` was removed because it sat directly in front of `FrontShield`, obscured that decision, and added no independent route boundary.
 
 ## Level Design Rules
 
@@ -160,6 +161,9 @@ documented in `docs/ENVIRONMENT_ART.md`. Scene collision shapes, body transforms
 motion scripts, phase values, bounce materials, and verified swipe routes remain
 authored gameplay data. Visual wrappers follow those bodies and never determine
 motion. Goals remain white and are excluded from course-art replacement.
+
+The per-level purpose classification, collider inventory, screenshots, and Level
+20 before/after evidence are maintained in `docs/LEVEL_CLARITY_AUDIT.md`.
 
 ## Star Rating Notes
 

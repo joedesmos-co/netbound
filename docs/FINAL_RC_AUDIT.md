@@ -21,7 +21,28 @@ Current expansion verification passed `68/68` parsers, `20/20` scene startups, a
 
 ## July 15 Player-Feel Addendum
 
-The rewarded extra-shot continuation and its one-star cap were retired after direct play feedback showed that they competed with an immediate free restart without adding meaningful value. Failure now offers only `Try Again`; rewarded ads remain available for Net Tokens in the Store. The HUD reports shots used beside par, and historical version-2 data remains compatible.
+The rewarded extra-shot continuation and its one-star cap were retired after direct play feedback showed that they competed with an immediate free restart without adding meaningful value. At that checkpoint, failure offered only `Try Again`; rewarded ads remained available for Net Tokens in the Store. The HUD reports shots used beside par, and historical version-2 data remains compatible.
+
+## July 15 Rewarded-Skip And Level-Clarity Addendum
+
+The current candidate adds a different, non-interrupting recovery path: after
+five consumed misses on an uncleared level in one app session, the natural
+failure result may offer a voluntary simulated ad to clear with one star. Free
+retry remains dominant. The assisted transaction unlocks the next route but
+grants no Coins, Tokens, normal-completion credit, or best-shot record. It is
+persisted separately in save version `2`, guarded by a bounded fulfillment
+ledger, and can be replaced by a later rewarded normal replay.
+
+The same pass visually audited all 20 production courses. Level 20's colliding
+`CurveTower` was removed because it sat directly in front of `FrontShield` and
+added no independent decision. Four meaningful timing, lift, curve, and side-entry
+objects remain, and the production mouse route still scores through the right
+side. See `docs/REWARDED_LEVEL_SKIP.md` and `docs/LEVEL_CLARITY_AUDIT.md`.
+
+Closeout passed `73/73` parsers, `20/20` direct scene startups, and `31/31`
+retained external suites with zero matched Godot warning/error/leak output.
+Android debug APK/AAB exports and archive validation passed; exact hashes and log
+paths are recorded in `docs/REWARDED_LEVEL_SKIP.md`.
 
 ## Recommendation
 
@@ -51,7 +72,7 @@ Normal developer save data was not mutated by the final integration test. All sa
 
 - Shot power, height-category thresholds, curve strength/caps, goal geometry, star thresholds, and level tuning were not retuned because all existing acceptance tests passed.
 - Final-shot goal processing retains priority over failure.
-- Rewarded extra shots are retired; Store rewarded-Token ads and provider boundaries remain intact.
+- Rewarded extra shots are retired. Store rewarded-Token ads and the result-only five-miss assisted-clear choice share the provider boundary without altering shots in flight.
 - Store products remain simulated in development and unavailable in release mode. No real store, ad, consent, analytics, account, or cloud-save SDK was added.
 - Quality tiers remain presentation-only and do not alter physics or scoring.
 - Android stays ARM64-only and offline except for the `VIBRATE` permission.

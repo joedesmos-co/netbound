@@ -2,6 +2,41 @@
 
 Phase 0 documents the current baseline. Later phases should turn this into an automated regression suite that validates the real production scene and input path.
 
+## Rewarded Skip And Level-Clarity Contract
+
+Focused scripts:
+
+- `verify_rewarded_level_skip_external.gd`: production miss semantics, five-miss session threshold, Restart/switch/app-instance behavior, success/cancel/failure/unavailable outcomes, duplicate and delayed callback races, atomic rollback, old version-2 normalization, wallet exclusions, later normal rewards, and assisted Level 20.
+- `verify_level_clarity_audit_external.gd`: exactly 20 scenes, documented authoritative collider counts, exact visual/collider alignment, duplicate-transform rejection, no `CurveTower`, and the four-object Level 20 contract.
+- `verify_phase3_levels_external.gd`: all 20 production mouse-swipe completion routes after the cleanup, including Level 20 right-side entry.
+- `verify_environment_art_external.gd`: 34 synchronized wrappers, zero collision additions, bounded visual nodes, Low-quality identity, and cleanup.
+
+Focused commands:
+
+```sh
+for script in \
+  verify_rewarded_level_skip_external.gd \
+  verify_level_clarity_audit_external.gd \
+  verify_phase3_levels_external.gd \
+  verify_environment_art_external.gd; do
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+    --headless --path game \
+    --script "res://scripts/debug/${script}"
+done
+```
+
+The rewarded verifier uses isolated save files and confirms exactly one assisted
+star, no fewest-shot record, no Coin/Token grant, bounded fulfillment history,
+safe callback races, and a later normal clear with legitimate rewards. Visual
+states and all-level captures are indexed in `docs/REWARDED_LEVEL_SKIP.md` and
+`docs/LEVEL_CLARITY_AUDIT.md`.
+
+Closeout outcome: import and configured startup passed; `73/73` scripts parsed;
+`20/20` level scenes started directly; `31/31` retained external suites passed;
+all production mouse routes completed; Android debug APK/AAB exports and archive
+validation passed. The complete logs and hashes are recorded in
+`docs/REWARDED_LEVEL_SKIP.md`.
+
 ## Content Expansion Cosmetic Quality Contract
 
 `res://scripts/debug/verify_cosmetic_quality_external.gd` asserts:

@@ -23,7 +23,7 @@ Arcade Coins are earned through successful play:
 | Each newly earned best star | 75 |
 | Improved fewest-shots personal best | 50 |
 
-Failure, Retry, Reset Ball, auto-reset, and reopening a result screen grant nothing. Completion rewards are derived from the authoritative `ProgressionUpdate` after the result is accepted by `SaveService`. A rewarded-continue completion still follows the existing one-star cap.
+Failure, Retry, Reset Ball, auto-reset, reopening a result screen, and an assisted level skip grant nothing. Completion rewards are derived from the authoritative `ProgressionUpdate` after the result is accepted by `SaveService`. The assisted-clear path does not call `WalletService`; its one star and route unlock are progression only.
 
 ### Net Tokens
 
@@ -103,6 +103,11 @@ Processed IDs are bounded to the most recent `2048`; developer transaction histo
 If step 4 fails, the in-memory transaction is rolled back. The result rail shows `SAVE FAILED // PROGRESS NOT RECORDED` and does not advertise an uncommitted Coin reward or new best.
 
 This ordering prevents a result overlay from inventing rewards or replaying a grant.
+
+An assisted clear uses a separate atomic progression transaction. It does not
+touch completion, first-clear, star, or personal-best reward ledgers. A later
+normal clear therefore earns its legitimate normal rewards once, while the saved
+assisted fulfillment ID prevents an ad callback from applying twice.
 
 ## Starter Pack
 

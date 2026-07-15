@@ -65,7 +65,8 @@ Purchases and restores are idempotent. Duplicate provider callbacks cannot grant
 
 ## Rewarded Net Tokens
 
-The failure screen has no ad recovery. `Try Again` is free and immediately starts a fresh run.
+`Try Again` is free and immediately starts a fresh run. Netbound never offers a
+rewarded extra shot.
 
 Voluntary rewarded ads remain available in the Store for Net Tokens:
 
@@ -75,6 +76,20 @@ Voluntary rewarded ads remain available in the Store for Net Tokens:
 - local daily caps remain authoritative
 - Remove Ads does not disable this voluntary reward
 - offline/unavailable providers leave gameplay and free restart usable
+
+## Rewarded Level Skip
+
+After five consumed misses on an uncleared level in one app session, a failure
+result may offer a separate voluntary `rewarded_level_skip` request. A confirmed
+reward asks `SaveService` to record an assisted clear with one star. It grants no
+Coins, Tokens, normal completion, or best-shot record. Cancel, failure,
+unavailable, duplicate, and conflicting late callbacks grant nothing.
+
+Every request carries a unique fulfillment ID. Provider request deduplication is
+followed by a bounded persistent fulfillment ledger in progression. Remove Ads
+and Starter Pack do not disable this voluntary choice. Release mode keeps the
+offer hidden while only the simulated provider exists. See
+`docs/REWARDED_LEVEL_SKIP.md` for the complete transaction and callback contract.
 
 ## Interstitial Policy
 

@@ -227,6 +227,10 @@ func _show_requested_screen() -> void:
 		"failure_skip_eligible":
 			await _prepare_skip_offer("level_01")
 			app._show_failure_result(_failure_result("level_01"))
+		"fifth_failed_shot_result":
+			_complete_through_level("level_08")
+			await _prepare_skip_offer("level_09")
+			app._show_failure_result(_failure_result("level_09"))
 		"failure_skip_pending":
 			await _prepare_skip_offer("level_01")
 			var monetization := get_root().get_node("MonetizationService")

@@ -27,6 +27,9 @@ Older or malformed versions are normalized into the current schema. Unknown futu
   "progression": {
     "unlocked_levels": ["level_01"],
     "completed_levels": [],
+    "normal_completed_levels": [],
+    "assisted_levels": [],
+    "assisted_fulfillment_ids": [],
     "best_stars": {},
     "fewest_shots": {},
     "tutorial_completed": {},
@@ -103,6 +106,9 @@ The save service validates every loaded save:
 - Unknown level IDs are ignored.
 - Completion results for locked levels are ignored by the save service.
 - Completed levels remain completed and are forced unlocked.
+- Normal and assisted completion IDs must also exist in `completed_levels`; a normal completion supersedes assisted status.
+- Missing `normal_completed_levels` in an older version-2 save is seeded from its existing completed levels because assisted clears did not yet exist.
+- Assisted fulfillment IDs are strings bounded to the most recent `256` entries.
 - Completing a level unlocks its `next_level_id` when one exists.
 - Stars are clamped to `0..3`.
 - Fewest shots retain the historical `shot_limit + 1` normalization ceiling so version-2 saves produced before the extra-shot feature was retired remain lossless.
@@ -165,6 +171,13 @@ Phase 9 did not require a version bump. The economy phase increases the version 
 
 The 20-level content expansion also does not require a version bump. It changes registry content, not save shape. Version-2 normalization validates old level IDs against the expanded registry, preserves all prior results, unlocks Level 11 for a completed Level 10, and recalculates a maximum of `60` stars. Existing 6-30 star cosmetic milestones stay valid and monotonic; no retroactive economy rewards are created.
 
+The rewarded level-skip phase also keeps save version `2`. Its three progression
+arrays are optional, normalized fields rather than a reinterpretation of existing
+balances, rewards, best shots, or ownership. Older version-2 completions normalize
+as normal completions. Assisted clears store at least one best star but never
+write `fewest_shots`; their bounded fulfillment IDs provide persistent duplicate
+callback protection. A failed assisted write restores the full previous snapshot.
+
 ## Public API
 
 Primary service: Autoload `SaveService`, script class `NetboundSaveService`.
@@ -175,11 +188,14 @@ Important methods:
 - `save()`
 - `is_level_unlocked(level_id)`
 - `is_level_completed(level_id)`
+- `is_level_normally_completed(level_id)`
+- `is_level_assisted(level_id)`
 - `get_best_stars(level_id)`
 - `get_fewest_shots(level_id)`
 - `get_total_stars()`
 - `get_completed_level_count()`
 - `record_level_result(level_result, level_definition)`
+- `record_assisted_clear(level_id, level_definition, fulfillment_id)`
 - `mark_tutorial_complete(level_id)`
 - `is_tutorial_complete(level_id)`
 - `reset_to_defaults()`

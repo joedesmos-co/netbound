@@ -309,7 +309,10 @@ Shot and rewarded-ad flow:
 - `Reset Ball` remains inside the current run and never refunds a consumed shot.
 - The HUD presents shots used beside par; shot efficiency remains the authority for stars and mastery.
 - The old rewarded extra-shot grant path is retired. Its `LevelResult` flag remains readable for historical runtime fixtures but no longer affects star calculation.
-- Rewarded ads remain voluntary in the Store and grant Net Tokens through the existing request-ID and duplicate-callback guards.
+- A separate assisted-clear offer becomes eligible after five consumed misses on an uncleared level in the current app session. `LevelController` emits the semantic miss event; `NetboundApp` owns the temporary per-level counter and presents the offer only on a failure result.
+- `MonetizationService` validates the voluntary `rewarded_level_skip` request. `SaveService.record_assisted_clear()` atomically records one star, unlocks the next route, and persists a bounded fulfillment ID without calling `WalletService` or creating a best-shot record.
+- Rewarded ads also remain voluntary in the Store and grant Net Tokens through the existing request-ID and duplicate-callback guards.
+- A later normal completion replaces assisted status and follows the unchanged star, fewest-shot, cosmetic, and wallet flow. Full ownership details are in `docs/REWARDED_LEVEL_SKIP.md`.
 
 Interstitial policy:
 
@@ -698,6 +701,8 @@ UI art-direction components:
 - `res://scripts/ui/cosmetic_choice_button.gd`: bounded horizontal Locker marker with responsive label sizing.
 - `res://scripts/ui/menu_backdrop.gd`: primary and secondary sky/field trajectory backdrops.
 - `res://scripts/debug/capture_ui_audit_external.gd`: isolated-fixture production screen capture and native-canvas responsive stress utility; it is not connected to production scenes.
+- `res://scripts/debug/verify_rewarded_level_skip_external.gd`: validates session miss tracking, provider outcomes/races, atomic assisted persistence, wallet exclusions, normal replay, and Level 20 behavior.
+- `res://scripts/debug/verify_level_clarity_audit_external.gd`: validates all 20 authoritative collider inventories, wrapper alignment, duplicate placement rejection, and the simplified Level 20 contract.
 
 The visual system does not own navigation, save state, progression, monetization, shooting, collision, or scoring. Goal frames remain white; cosmetic and shared goal celebrations render around the frame without changing geometry or gameplay materials.
 

@@ -176,6 +176,11 @@ func _test_cancel_failure_and_unavailable() -> bool:
 	await _prepare_failure_offer("level_01")
 	app.call("_show_failure_result", _failed_result("level_01"))
 	passed = _find_button(app.result_overlay, "WATCH & SKIP") != null and passed
+	monetization.set_release_mode_enabled(true)
+	app.call("_show_failure_result", _failed_result("level_01"))
+	passed = _find_button(app.result_overlay, "WATCH & SKIP") == null and passed
+	passed = _find_button(app.result_overlay, "TRY AGAIN") != null and passed
+	monetization.set_release_mode_enabled(false)
 	print("REWARDED_LEVEL_SKIP cancel_failure_unavailable ok=", passed)
 	return passed
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## Rewarded Level Skip And Level Clarity - 2026-07-15
+
+### Added
+
+- Offer an optional simulated rewarded clear with one star after five consumed misses on an uncleared level in the current session.
+- Persist assisted status and bounded fulfillment IDs in the version-2 save while keeping normal completion and best-shot records separate.
+
+### Changed
+
+- Keep free retry visually dominant and show the ad action only on an eligible failure result.
+- Allow a later normal replay to replace assisted status and earn legitimate stars, best shots, and economy rewards once.
+- Remove Level 20's redundant colliding `CurveTower`, leaving four distinct timing, lift, curve, and side-entry decisions.
+- Document the gameplay purpose and authoritative collider count for all 20 production levels.
+
 ## Player Feel - 2026-07-15
 
 ### Changed

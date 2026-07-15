@@ -16,7 +16,7 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Reduced Motion and Camera Effects settings exist and persist.
 - Gameplay aim preview, launch/impact/goal feedback, near-miss presentation, level visual polish, contact shadows, and UI motion now exist.
 - Phase 7 presentation nodes are bounded, visual-only, and covered by headless regression checks.
-- Simulated monetization architecture now includes rewarded Net Tokens, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling. Failure restart is free and has no ad path.
+- Simulated monetization architecture now includes rewarded Net Tokens, an optional five-miss assisted level clear, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling. Failure restart remains free and dominant.
 - Phase 9 mobile runtime now handles lifecycle, safe-area margins, dirty save flush, quality tiers, release/development feature tags, and audio pause/resume.
 - Android and iOS export presets exist with placeholder package/bundle ID `com.netbound.game`.
 - Phase 9.5 installed matching Godot 4.7 export templates locally.
@@ -265,6 +265,7 @@ Verified locally:
 - All 38 cosmetics complete two Low-quality preview/application passes with stable node and resource counts.
 - Five Store -> Gameplay -> Result -> Store cycles remain flat at 83 nodes and 108 resources and unload gameplay outside the Pause path.
 - Failed completion writes restore wallet and progression together and never advertise uncommitted rewards.
+- Assisted clears are atomic one-star progression transactions: no Coins, Tokens, best-shot record, or normal reward-ledger mutation; duplicate fulfillment IDs are bounded and ignored.
 
 Still required on physical devices and again after real SDK selection:
 
@@ -272,6 +273,8 @@ Still required on physical devices and again after real SDK selection:
 - confirm horizontal Locker browsing does not accidentally purchase during a touch drag;
 - confirm Store vertical scrolling and Token confirmation around real safe areas;
 - test app kill/resume during delayed billing and ad callbacks;
+- test rewarded level-skip success, cancel, network loss, background/resume, and process termination with a real provider;
+- confirm the optional skip copy and free `Keep Trying` hierarchy remain readable around real notches and platform ad overlays;
 - replace local-date reward limits with an approved trusted-time strategy if abuse resistance becomes a requirement;
 - validate receipts, pending/deferred purchases, refunds, family/account restore behavior, and store-owned consumable rules;
 - provide real Android upload signing and Apple Team/provisioning before distribution.

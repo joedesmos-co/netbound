@@ -71,6 +71,8 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Level 20 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
 - Failure offers a dominant free `Try Again`; there is no rewarded extra-shot action.
+- After five consumed misses on the same uncleared level during the current app session, the natural failure result may add a secondary `Watch & Skip` action when the rewarded provider is available. The offer never appears during gameplay or before eligibility.
+- An earned skip shows a positive assisted-clear result with exactly one star, no Coin panel, no best-shot claim, and the unlocked next route. Cancel, failure, and unavailable outcomes preserve the ordinary free restart.
 - `Reset Ball` stays within the current run and preserves shots used. `Restart Level`/`Try Again` abandons the run and starts at zero.
 - Success and failure use right-edge score rails so gameplay context remains visible.
 

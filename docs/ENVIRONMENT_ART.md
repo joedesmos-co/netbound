@@ -83,16 +83,16 @@ essential face that identifies each object, while hiding smaller secondary marks
 | 17 | Moving goal plus flat track | White moving goal retained | Goal visuals/scoring stay synchronized and are deliberately not wrapped. |
 | 18 | Blocker and two cyan walls | Target pad and two rebound boards | Both bank options use one rebound language; collision angles remain authored. |
 | 19 | Three colored gate boxes | Three rhythm scoreboard panels | Matching faces emphasize phase rhythm rather than color guessing. |
-| 20 | Five unrelated finale boxes | Barricade, crash mats, and scoreboard gates | Finale now reads as coordinated stadium training equipment; all routes remain intact. |
+| 20 | Four meaningful finale objects after clarity cleanup | Barricade and scoreboard/lift equipment | The redundant crash-mat `CurveTower` was removed; timing, lift, curve, and right-side entry remain readable and intact. |
 
 ## Verification And Budgets
 
 `verify_environment_art_external.gd` instantiates all 20 production scenes and
 checks the scene collision signature before and after `_ready`. Current result:
 
-- wrapped course obstacles: `35`
+- wrapped course obstacles: `34`
 - reusable archetypes represented: `6/6`
-- maximum course-art visual nodes in one level: `24` (Level 20)
+- maximum course-art visual nodes in one level: `19`
 - shared material resources per level: `7`
 - new collision nodes: `0`
 - all visual bases equal the paired `BoxShape3D.size`
