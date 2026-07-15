@@ -49,7 +49,7 @@ func _draw() -> void:
 		var points := _star_points(center, 29.0)
 		if index < revealed_stars:
 			draw_colored_polygon(points, NetboundUITheme.SIGNAL)
-			draw_circle(center + Vector2(8.0, -8.0), 4.0, NetboundUITheme.CORAL)
+			draw_circle(center + Vector2(8.0, -8.0), 4.0, NetboundUITheme.SUCCESS)
 		else:
 			var outline := PackedVector2Array(points)
 			outline.append(points[0])

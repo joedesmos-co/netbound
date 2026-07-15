@@ -12,7 +12,21 @@ The script creates deterministic mono 44.1 kHz WAV files under:
 
 - `game/audio/generated/`
 
-The sounds are synthesized from sine/square tones, shaped noise, envelopes, and simple musical intervals. They are normalized to avoid clipping.
+The sounds are synthesized from sine/square tones, shaped noise, envelopes, and simple musical intervals. Most assets retain the original normalization target. Success cues use lower explicit peak targets so they sit comfortably beneath ordinary gameplay rather than becoming the loudest event.
+
+Current success hierarchy:
+
+1. `goal_scored.wav`: a 0.34-second soft net transient and two-note sporty chirp.
+2. The existing 0.35-second authoritative result delay keeps the goal cue separate from the overlay.
+3. `result_success.wav`: a lighter 0.58-second three-note flourish.
+4. Cosmetic-unlock audio waits 0.66 seconds and verifies the same result overlay is still current before playing.
+
+Measured mono 44.1 kHz output:
+
+| Asset | Duration | Peak | RMS |
+| --- | ---: | ---: | ---: |
+| `goal_scored.wav` | 0.340 s | -7.13 dBFS | -16.91 dBFS |
+| `result_success.wav` | 0.580 s | -8.87 dBFS | -18.13 dBFS |
 
 ## Buses
 
@@ -101,6 +115,8 @@ Important methods:
 - App foregrounding resumes the existing music player instead of creating a duplicate.
 - Music changes by replacing the reusable music stream.
 - Zero volume settings set buses to silence.
+- Goal and result cues use distinct timbres and do not begin simultaneously.
+- A goal cue is cooldown-guarded, and the authoritative goal state emits once per shot.
 
 ## Verification
 
@@ -113,3 +129,5 @@ Important methods:
 - music transitions reuse the music player
 - impact cooldown prevents spam
 - haptics setting is respected
+
+`verify_player_feel_external.gd` additionally validates success-cue duration/order, duplicate goal cooldown, immediate SFX mute behavior, and the absence of leaked audio/timer resources. Subjective speaker/headphone comfort remains a physical-device listening check.

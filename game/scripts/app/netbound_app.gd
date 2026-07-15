@@ -1564,7 +1564,7 @@ func _build_pause_overlay() -> Control:
 func _show_success_result(level_result: LevelResult, progression_update: RefCounted) -> void:
 	_clear_result_overlay()
 	current_screen_name = "result"
-	_play_sfx("result_success")
+	_play_sfx("result_success", 0.76)
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
 	var overlay := _new_modal_overlay("ResultOverlay")
 	overlay.theme = NetboundUITheme.get_theme()
@@ -1594,6 +1594,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	var result_eyebrow := Label.new()
 	result_eyebrow.text = "LEVEL %02d  /  CLEAN FINISH" % (LevelRegistryScript.get_level_ids().find(level_result.level_id) + 1)
 	result_eyebrow.theme_type_variation = "LightSectionLabel"
+	result_eyebrow.add_theme_color_override("font_color", NetboundUITheme.SUCCESS.darkened(0.25))
 	box.add_child(result_eyebrow)
 
 	var goal_display := Label.new()
@@ -1667,7 +1668,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 		reward_margin.add_child(reward_box)
 		var reward_title := Label.new()
 		reward_title.text = "ARCADE COINS  +%s" % _format_number(coins_earned)
-		reward_title.theme_type_variation = "LightSectionLabel"
+		reward_title.theme_type_variation = "LightSuccessLabel"
 		reward_box.add_child(reward_title)
 		var reward_parts: Array[String] = []
 		var completion_coins := _get_update_int(progression_update, "completion_coins", 0)
@@ -1703,10 +1704,9 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 
 	var cosmetic_unlock_ids := _get_update_string_array(progression_update, "unlocked_cosmetic_ids")
 	if not cosmetic_unlock_ids.is_empty():
-		_play_sfx("cosmetic_unlock")
 		var cosmetic_unlock_label := Label.new()
 		cosmetic_unlock_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cosmetic_unlock_label.theme_type_variation = "LightSectionLabel"
+		cosmetic_unlock_label.theme_type_variation = "LightSuccessLabel"
 		cosmetic_unlock_label.text = _format_cosmetic_unlock_text(cosmetic_unlock_ids)
 		box.add_child(cosmetic_unlock_label)
 
@@ -1748,6 +1748,8 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
+	if not cosmetic_unlock_ids.is_empty():
+		_schedule_result_unlock_sfx(result_overlay.get_instance_id())
 	_animate_modal_entrance(result_overlay)
 	_animate_result_reveal(box)
 	star_display.play_reveal(_motion_reduced_for_ui())
@@ -1821,6 +1823,22 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	gameplay_overlay_root.add_child(result_overlay)
 	_animate_modal_entrance(result_overlay)
 	_animate_result_reveal(box)
+
+
+func _schedule_result_unlock_sfx(expected_overlay_id: int) -> void:
+	get_tree().create_timer(0.66, false, false, true).timeout.connect(
+		_play_result_unlock_sfx_if_current.bind(expected_overlay_id)
+	)
+
+
+func _play_result_unlock_sfx_if_current(expected_overlay_id: int) -> void:
+	if (
+		result_overlay
+		and is_instance_valid(result_overlay)
+		and result_overlay.get_instance_id() == expected_overlay_id
+		and current_screen_name == "result"
+	):
+		_play_sfx("cosmetic_unlock", 0.58)
 
 
 func _on_level_completed(level_result: LevelResult, progression_update: RefCounted) -> void:

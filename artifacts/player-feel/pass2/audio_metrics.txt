@@ -1,0 +1,17 @@
+Netbound player-feel success audio measurements
+Generated: 2026-07-15
+Format: mono PCM16, 44.1 kHz
+
+goal_scored.wav
+duration_seconds=0.340
+peak_dbfs=-7.13
+rms_dbfs=-16.91
+
+result_success.wav
+duration_seconds=0.580
+peak_dbfs=-8.87
+rms_dbfs=-18.13
+
+Sequence timing
+result_reveal_delay_seconds=0.350
+cosmetic_unlock_delay_seconds=0.660

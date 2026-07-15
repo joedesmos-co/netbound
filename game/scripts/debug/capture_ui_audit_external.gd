@@ -45,7 +45,11 @@ func _run() -> void:
 	service.recording_enabled = true
 	_configure_capture_save()
 	await _show_requested_screen()
-	var capture_delay := 0.2 if screen_name.begins_with("gameplay_goal_") else 0.55
+	var capture_delay := (
+		0.08
+		if screen_name.begins_with("goal_feedback")
+		else (0.2 if screen_name.begins_with("gameplay_goal_") else 0.55)
+	)
 	await create_timer(capture_delay, true, false, true).timeout
 	await _wait_frames(10)
 	_stabilize_animated_previews()
@@ -66,6 +70,12 @@ func _run() -> void:
 
 
 func _show_requested_screen() -> void:
+	if screen_name.begins_with("goal_feedback"):
+		service.set_setting_value("reduced_motion_enabled", screen_name.ends_with("reduced"))
+		app.load_level("level_01")
+		await _wait_for_level()
+		app.current_level.call("_show_goal_feedback")
+		return
 	if screen_name.begins_with("cosmetics_ball_"):
 		_show_cosmetic_preview("ball", screen_name.trim_prefix("cosmetics_"))
 		return

@@ -9,6 +9,9 @@ const RESETTABLE_GROUP := "netbound_level_resettable"
 const GOAL_TARGET_GROUP := "netbound_goal_target"
 const CosmeticVisualsScript := preload("res://scripts/cosmetics/cosmetic_visuals.gd")
 const LevelVisualPolishScript := preload("res://scripts/presentation/level_visual_polish.gd")
+const SUCCESS_PULSE_COLOR := Color(0.18, 0.86, 0.42, 1.0)
+const GOAL_FLASH_ALPHA := 0.14
+const GOAL_FLASH_DURATION := 0.18
 
 @export var level_definition: LevelDefinition
 @export var max_shots: int = 3
@@ -555,17 +558,23 @@ func _show_goal_feedback() -> void:
 		goal_particles,
 		selected_goal_effect_id
 	)
+	# Cosmetic colors remain expressive; this base layer always communicates success.
+	goal_flash.color = SUCCESS_PULSE_COLOR
 	if goal_particles:
 		goal_particles.set_meta("phase9_base_amount", goal_particles.amount)
 	_apply_quality_to_goal_particles()
-	goal_flash.visible = true
-	goal_flash.modulate.a = 0.85
+	var reduced_motion := _is_reduced_motion_enabled()
+	goal_flash.visible = not reduced_motion
+	goal_flash.modulate.a = GOAL_FLASH_ALPHA
 	Engine.time_scale = goal_slow_motion_scale
 	var callback_generation := state_generation
 	get_tree().create_timer(goal_slow_motion_duration).timeout.connect(
 		_restore_time_scale.bind(callback_generation)
 	)
-	get_tree().create_timer(0.35).timeout.connect(_hide_goal_flash.bind(callback_generation))
+	if not reduced_motion:
+		get_tree().create_timer(GOAL_FLASH_DURATION).timeout.connect(
+			_hide_goal_flash.bind(callback_generation)
+		)
 
 
 func _restore_time_scale(callback_generation: int = -1) -> void:
@@ -587,6 +596,11 @@ func _hide_overlays() -> void:
 	goal_particles.emitting = false
 	_clear_cosmetic_feedback()
 	_clear_level_presentation_feedback()
+
+
+func _is_reduced_motion_enabled() -> bool:
+	var service := get_node_or_null("/root/SaveService")
+	return bool(service and service.call("get_setting_value", "reduced_motion_enabled", false))
 
 
 func _update_level_ui() -> void:

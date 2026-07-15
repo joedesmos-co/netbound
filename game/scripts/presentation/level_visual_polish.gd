@@ -19,6 +19,7 @@ var _quality_config: Dictionary = {
 
 const GOAL_FRAME_COLOR := Color(1.0, 1.0, 1.0, 1.0)
 const GOAL_FRAME_EMISSION := Color(0.08, 0.09, 0.1, 1.0)
+const SUCCESS_EMISSION := Color(0.16, 0.9, 0.4, 1.0)
 
 
 func setup(level: Node) -> void:
@@ -46,10 +47,14 @@ func on_goal_scored() -> void:
 	var tween := create_tween()
 	_active_tweens.append(tween)
 	var base_emission := GOAL_FRAME_EMISSION
-	var pulse_emission: Color = _palette.get("pulse", Color(1.0, 0.92, 0.25, 1.0))
-	tween.tween_property(_goal_material, "emission", pulse_emission, 0.08)
-	tween.tween_interval(0.16)
-	tween.tween_property(_goal_material, "emission", base_emission, 0.32)
+	if _reduced_motion_enabled():
+		_goal_material.emission = SUCCESS_EMISSION
+		tween.tween_interval(0.2)
+		tween.tween_callback(func() -> void: _goal_material.emission = base_emission)
+	else:
+		tween.tween_property(_goal_material, "emission", SUCCESS_EMISSION, 0.06)
+		tween.tween_interval(0.12)
+		tween.tween_property(_goal_material, "emission", base_emission, 0.24)
 	tween.tween_callback(func() -> void: _active_tweens.erase(tween))
 
 
@@ -266,6 +271,11 @@ func _level_index() -> int:
 	if parts.size() >= 2:
 		return clampi(int(parts[-1]), 1, 20)
 	return 1
+
+
+func _reduced_motion_enabled() -> bool:
+	var save_service := get_node_or_null("/root/SaveService")
+	return bool(save_service and save_service.call("get_setting_value", "reduced_motion_enabled", false))
 
 
 func _palette_for_level(level_index: int) -> Dictionary:

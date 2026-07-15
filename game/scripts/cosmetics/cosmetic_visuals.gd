@@ -600,26 +600,10 @@ static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
 	return material
 
 
-static func _configure_goal_flash(goal_flash: ColorRect, effect_id: String) -> void:
+static func _configure_goal_flash(goal_flash: ColorRect, _effect_id: String) -> void:
 	if not goal_flash:
 		return
-	match effect_id:
-		"goal_confetti":
-			goal_flash.color = Color(0.2, 1.0, 0.55, 1.0)
-		"goal_shockwave":
-			goal_flash.color = Color(0.22, 0.82, 1.0, 1.0)
-		"goal_supporter":
-			goal_flash.color = Color(0.08, 0.95, 0.72, 1.0)
-		"goal_ribbons":
-			goal_flash.color = Color(1.0, 0.34, 0.3, 1.0)
-		"goal_splash":
-			goal_flash.color = Color(0.1, 0.84, 0.72, 1.0)
-		"goal_fireworks":
-			goal_flash.color = Color(1.0, 0.62, 0.12, 1.0)
-		"goal_portal":
-			goal_flash.color = Color(0.48, 0.22, 1.0, 1.0)
-		_:
-			goal_flash.color = Color(1.0, 0.9, 0.22, 1.0)
+	goal_flash.color = Color(0.18, 0.86, 0.42, 1.0)
 
 
 static func _configure_goal_particles(goal_particles: CPUParticles3D, effect_id: String) -> void:

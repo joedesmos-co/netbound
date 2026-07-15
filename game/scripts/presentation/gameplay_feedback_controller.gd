@@ -165,7 +165,7 @@ func on_goal_scored() -> void:
 		return
 	var audio_service := get_node_or_null("/root/AudioService")
 	if audio_service:
-		audio_service.call("play_sfx", "goal_scored", 1.0)
+		audio_service.call("play_sfx", "goal_scored", 0.82)
 	var haptics_service := get_node_or_null("/root/HapticsService")
 	if haptics_service:
 		haptics_service.call("emit_event", "goal", 1.0)

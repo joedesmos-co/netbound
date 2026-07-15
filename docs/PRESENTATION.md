@@ -113,7 +113,9 @@ Each production level creates one visual-only polish node at runtime. It owns:
 - one visual-only contact shadow that follows the ball
 - a goal frame pulse that layers with the selected cosmetic goal effect
 
-Goal-frame base materials remain neutral white in every level. Celebration color and shape live in transient visual-only effect roots, so the playable opening stays familiar and readable.
+Goal-frame base materials remain neutral white in every level. The base semantic confirmation is always success green and uses a low-opacity 0.18-second pulse; cosmetic particles and shapes keep their authored colors. Reduced Motion suppresses the full-screen pulse and uses a concise held goal-frame emission response instead. Failure retains coral/red presentation.
+
+The immediate goal chirp, result flourish, and optional cosmetic-unlock cue are sequenced rather than stacked. Presentation starts after authoritative scoring and never delays the goal result.
 
 The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
 

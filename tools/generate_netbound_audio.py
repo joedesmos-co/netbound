@@ -39,10 +39,10 @@ def tone(
     return sine * (1.0 - square) + sq * square
 
 
-def write_wav(name: str, samples: list[float]) -> None:
+def write_wav(name: str, samples: list[float], target_peak: float = 0.82) -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
     peak = max(0.001, max(abs(s) for s in samples))
-    gain = 0.82 / peak
+    gain = target_peak / peak
     path = os.path.join(OUT_DIR, f"{name}.wav")
     with wave.open(path, "w") as f:
         f.setnchannels(1)
@@ -55,14 +55,14 @@ def write_wav(name: str, samples: list[float]) -> None:
         f.writeframes(frames)
 
 
-def synth(name: str, duration: float, fn) -> None:
+def synth(name: str, duration: float, fn, target_peak: float = 0.82) -> None:
     rng = random.Random(name)
     samples = []
     count = int(duration * SAMPLE_RATE)
     for i in range(count):
         t = i / SAMPLE_RATE
         samples.append(fn(t, duration, rng))
-    write_wav(name, samples)
+    write_wav(name, samples, target_peak)
 
 
 def click(freq: float, second: float = 0.0, noise: float = 0.0):
@@ -106,6 +106,36 @@ def sting(base: float, happy: bool = True):
     return fn
 
 
+def goal_chirp(t: float, duration: float, rng: random.Random) -> float:
+    """Short sporty confirmation: soft net tap followed by two bright notes."""
+    value = rng.uniform(-1.0, 1.0) * 0.045 * math.exp(-t * 30.0)
+    notes = ((0.025, 392.0), (0.125, 523.25))
+    for start, frequency in notes:
+        local = t - start
+        if 0.0 <= local <= 0.18:
+            note_env = envelope(local, 0.18, 0.006, 0.1)
+            value += (
+                tone(local, frequency) * 0.62
+                + tone(local, frequency * 2.0) * 0.08
+            ) * note_env
+    return value
+
+
+def result_flourish(t: float, duration: float, rng: random.Random) -> float:
+    """Light three-note result cue, distinct from the immediate goal chirp."""
+    value = 0.0
+    notes = ((0.0, 523.25), (0.14, 659.25), (0.28, 783.99))
+    for start, frequency in notes:
+        local = t - start
+        if 0.0 <= local <= 0.28:
+            note_env = envelope(local, 0.28, 0.012, 0.16)
+            value += (
+                tone(local, frequency) * 0.5
+                + tone(local, frequency * 1.5) * 0.06
+            ) * note_env
+    return value
+
+
 def loop(name: str, duration: float, base: float, mood: float) -> None:
     def fn(t: float, d: float, r: random.Random) -> float:
         beat = (math.sin(2.0 * math.pi * 1.0 * t) > 0.86) * 0.22
@@ -137,10 +167,10 @@ def main() -> None:
     synth("impact_post", 0.26, impact(480.0, 0.08, 13.0))
     synth("hazard_cue", 0.2, click(520.0, 780.0, 0.015))
     synth("near_miss", 0.34, rising(880.0, 520.0, 0.02))
-    synth("goal_scored", 0.72, sting(320.0, True))
+    synth("goal_scored", 0.34, goal_chirp, target_peak=0.44)
 
     # Results
-    synth("result_success", 0.9, sting(360.0, True))
+    synth("result_success", 0.58, result_flourish, target_peak=0.36)
     synth("result_star", 0.18, rising(860.0, 1380.0, 0.005))
     synth("result_failure", 0.7, sting(260.0, False))
     synth("cosmetic_unlock", 0.85, sting(500.0, True))
