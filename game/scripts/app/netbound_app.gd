@@ -23,8 +23,10 @@ const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
 const CONTEXT_REWARDED_TOKENS := "rewarded_tokens"
+const CONTEXT_REWARDED_LEVEL_SKIP := "rewarded_level_skip"
 const CONTEXT_NEXT_LEVEL := "next_level"
 const CONTEXT_LEVEL_SELECT_AFTER_SUCCESS := "level_select_after_success"
+const FAILED_SHOTS_FOR_SKIP := 5
 const COSMETIC_CATEGORIES := [
 	CosmeticRegistryScript.CATEGORY_BALL,
 	CosmeticRegistryScript.CATEGORY_TRAIL,
@@ -86,9 +88,14 @@ var store_wallet_label: Label
 var store_rewarded_token_button: Button
 var store_rewarded_token_status_label: Label
 var gameplay_pause_button: Button
+var level_skip_status_label: Label
+var level_skip_watch_button: Button
 var store_request_in_progress: bool = false
 var store_pending_product_id: String = ""
 var active_ui_tweens: Array[Tween] = []
+var session_failed_shots_by_level: Dictionary = {}
+var pending_level_skip_request: Dictionary = {}
+var level_skip_fulfillment_sequence: int = 0
 
 
 func _ready() -> void:
@@ -247,6 +254,8 @@ func load_level(level_id: String) -> bool:
 		current_level.connect("level_completed", _on_level_completed)
 	if current_level.has_signal("level_failed"):
 		current_level.connect("level_failed", _on_level_failed)
+	if current_level.has_signal("shot_resolved_without_goal"):
+		current_level.connect("shot_resolved_without_goal", _on_shot_resolved_without_goal)
 	level_root.add_child(current_level)
 	_apply_safe_area_to_level()
 	_apply_developer_debug_to_level()
@@ -1566,6 +1575,9 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	current_screen_name = "result"
 	_play_sfx("result_success", 0.76)
 	var definition := LevelRegistryScript.load_definition(level_result.level_id)
+	var assisted_clear := level_result.assisted_clear or bool(
+		progression_update and progression_update.get("assisted_clear")
+	)
 	var overlay := _new_modal_overlay("ResultOverlay")
 	overlay.theme = NetboundUITheme.get_theme()
 	var safe_margin := _new_margin_container()
@@ -1592,18 +1604,21 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	panel_margin.add_child(box)
 
 	var result_eyebrow := Label.new()
-	result_eyebrow.text = "LEVEL %02d  /  CLEAN FINISH" % (LevelRegistryScript.get_level_ids().find(level_result.level_id) + 1)
+	result_eyebrow.text = "LEVEL %02d  /  %s" % [
+		LevelRegistryScript.get_level_ids().find(level_result.level_id) + 1,
+		"ASSISTED CLEAR" if assisted_clear else "CLEAN FINISH",
+	]
 	result_eyebrow.theme_type_variation = "LightSectionLabel"
 	result_eyebrow.add_theme_color_override("font_color", NetboundUITheme.SUCCESS.darkened(0.25))
 	box.add_child(result_eyebrow)
 
 	var goal_display := Label.new()
-	goal_display.text = "GOAL!"
+	goal_display.text = "ROUTE OPEN!" if assisted_clear else "GOAL!"
 	goal_display.theme_type_variation = "LightResultTitle"
 	box.add_child(goal_display)
 
 	result_title_label = Label.new()
-	result_title_label.text = "Goal Complete"
+	result_title_label.text = "Cleared with 1 star" if assisted_clear else "Goal Complete"
 	result_title_label.theme_type_variation = "LightBodyLabel"
 	box.add_child(result_title_label)
 
@@ -1613,7 +1628,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	result_detail_label.theme_type_variation = "LightBodyLabel"
 	box.add_child(result_detail_label)
 
-	var run_stars := _get_update_int(progression_update, "stars_earned", 0)
+	var run_stars := 1 if assisted_clear else _get_update_int(progression_update, "stars_earned", 0)
 	var star_display := StarDisplayScript.new()
 	star_display.set_stars(run_stars, true)
 	box.add_child(star_display)
@@ -1628,12 +1643,18 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	result_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(result_stars_label)
 
-	var stats := HBoxContainer.new()
-	stats.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
-	box.add_child(stats)
-	stats.add_child(_new_result_stat("%02d" % level_result.shots_used, "SHOTS USED"))
-	stats.add_child(_new_result_stat("%02d" % level_result.par_shots, "PAR"))
-	stats.add_child(_new_result_stat("%02d" % level_result.shot_limit, "LIMIT"))
+	if assisted_clear:
+		var assisted_note := Label.new()
+		assisted_note.text = "Replay to set a best and earn level rewards."
+		assisted_note.theme_type_variation = "LightMetaLabel"
+		box.add_child(assisted_note)
+	else:
+		var stats := HBoxContainer.new()
+		stats.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
+		box.add_child(stats)
+		stats.add_child(_new_result_stat("%02d" % level_result.shots_used, "SHOTS USED"))
+		stats.add_child(_new_result_stat("%02d" % level_result.par_shots, "PAR"))
+		stats.add_child(_new_result_stat("%02d" % level_result.shot_limit, "LIMIT"))
 
 	var previous_best := _get_update_int(progression_update, "previous_best_stars", 0)
 	var new_best := _get_update_int(progression_update, "new_best_stars", previous_best)
@@ -1646,11 +1667,15 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 		or new_fewest < previous_fewest
 	)
 	result_best_label = Label.new()
-	result_best_label.text = "%s  //  %d STARS  //  %s SHOTS" % [
-		"NEW BEST" if improved else "BEST",
-		new_best,
-		("--" if new_fewest < 0 else str(new_fewest)),
-	]
+	result_best_label.text = (
+		"ASSISTED  //  NO BEST-SHOT RECORD"
+		if assisted_clear
+		else "%s  //  %d STARS  //  %s SHOTS" % [
+			"NEW BEST" if improved else "BEST",
+			new_best,
+			("--" if new_fewest < 0 else str(new_fewest)),
+		]
+	)
 	result_best_label.theme_type_variation = "LightSuccessLabel" if improved else "LightMetaLabel"
 	box.add_child(result_best_label)
 
@@ -1697,7 +1722,11 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 		var unlocked_definition := LevelRegistryScript.load_definition(unlocked_id)
 		result_unlock_label.text = "ROUTE OPEN  //  %s" % String(unlocked_definition.display_name).to_upper()
 	elif level_result.level_id == LevelRegistryScript.get_level_ids()[-1]:
-		result_unlock_label.text = "ALL PRODUCTION LEVELS COMPLETE"
+		result_unlock_label.text = (
+			"REPLAY FOR A FULL FINALE CLEAR"
+			if assisted_clear
+			else "ALL PRODUCTION LEVELS COMPLETE"
+		)
 	else:
 		result_unlock_label.text = ""
 	box.add_child(result_unlock_label)
@@ -1793,11 +1822,41 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	result_detail_label.theme_type_variation = "LightMetaLabel"
 	box.add_child(result_detail_label)
 
+	if _can_offer_level_skip(level_result.level_id):
+		var skip_panel := PanelContainer.new()
+		skip_panel.theme_type_variation = "InfoBand"
+		box.add_child(skip_panel)
+		var skip_margin := MarginContainer.new()
+		for side in ["left", "top", "right", "bottom"]:
+			skip_margin.add_theme_constant_override("margin_%s" % side, NetboundUITheme.SPACE_2)
+		skip_panel.add_child(skip_margin)
+		var skip_box := VBoxContainer.new()
+		skip_box.add_theme_constant_override("separation", NetboundUITheme.SPACE_1)
+		skip_margin.add_child(skip_box)
+		var skip_title := Label.new()
+		skip_title.text = "STUCK?"
+		skip_title.theme_type_variation = "LightSectionLabel"
+		skip_box.add_child(skip_title)
+		level_skip_status_label = Label.new()
+		level_skip_status_label.text = "Watch an ad to clear this level with 1 star."
+		level_skip_status_label.theme_type_variation = "LightMetaLabel"
+		level_skip_status_label.add_theme_color_override("font_color", Color("f7f1df"))
+		level_skip_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		skip_box.add_child(level_skip_status_label)
+		level_skip_watch_button = _new_small_button("WATCH & SKIP")
+		level_skip_watch_button.theme_type_variation = "SecondaryButton"
+		level_skip_watch_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		level_skip_watch_button.pressed.connect(_request_rewarded_level_skip.bind(level_result.level_id))
+		skip_box.add_child(level_skip_watch_button)
+
 	var action_spacer := Control.new()
 	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(action_spacer)
 
-	var retry_button := _new_menu_button("TRY AGAIN", true)
+	var retry_button := _new_menu_button(
+		"KEEP TRYING" if _can_offer_level_skip(level_result.level_id) else "TRY AGAIN",
+		true
+	)
 	retry_button.custom_minimum_size = Vector2(0.0, 68.0)
 	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
@@ -1842,6 +1901,7 @@ func _play_result_unlock_sfx_if_current(expected_overlay_id: int) -> void:
 
 
 func _on_level_completed(level_result: LevelResult, progression_update: RefCounted) -> void:
+	session_failed_shots_by_level.erase(level_result.level_id)
 	var monetization := _get_monetization_service()
 	if monetization and monetization.has_method("record_level_completion_for_ads"):
 		monetization.call("record_level_completion_for_ads")
@@ -1854,6 +1914,69 @@ func _on_level_completed(level_result: LevelResult, progression_update: RefCount
 
 func _on_level_failed(level_result: LevelResult) -> void:
 	_show_failure_result(level_result)
+
+
+func _on_shot_resolved_without_goal(level_id: String, _shot_id: int) -> void:
+	if (
+		level_id.is_empty()
+		or not current_level
+		or level_id != current_level_id
+		or _get_save_service().is_level_completed(level_id)
+	):
+		return
+	session_failed_shots_by_level[level_id] = get_session_failed_shot_count(level_id) + 1
+
+
+func get_session_failed_shot_count(level_id: String) -> int:
+	return maxi(int(session_failed_shots_by_level.get(level_id, 0)), 0)
+
+
+func is_level_skip_eligible(level_id: String) -> bool:
+	return (
+		LevelRegistryScript.has_level_id(level_id)
+		and not _get_save_service().is_level_completed(level_id)
+		and get_session_failed_shot_count(level_id) >= FAILED_SHOTS_FOR_SKIP
+	)
+
+
+func _can_offer_level_skip(level_id: String) -> bool:
+	var monetization := _get_monetization_service()
+	return bool(
+		is_level_skip_eligible(level_id)
+		and monetization
+		and monetization.has_method("is_rewarded_ad_available")
+		and monetization.call("is_rewarded_ad_available")
+	)
+
+
+func _request_rewarded_level_skip(level_id: String) -> void:
+	if not _can_offer_level_skip(level_id) or not pending_level_skip_request.is_empty():
+		return
+	level_skip_fulfillment_sequence += 1
+	var fulfillment_id := "assisted_clear:%s:%d:%d" % [
+		level_id,
+		get_instance_id(),
+		level_skip_fulfillment_sequence,
+	]
+	pending_level_skip_request = {
+		"level_id": level_id,
+		"fulfillment_id": fulfillment_id,
+		"request_id": -1,
+	}
+	var monetization := _get_monetization_service()
+	var request: Dictionary = monetization.call(
+		"request_rewarded_ad",
+		CONTEXT_REWARDED_LEVEL_SKIP,
+		{"level_id": level_id, "fulfillment_id": fulfillment_id}
+	)
+	if pending_level_skip_request.is_empty():
+		return
+	if not bool(request.get("accepted", false)):
+		pending_level_skip_request.clear()
+		_set_level_skip_status(_friendly_level_skip_reason(String(request.get("reason", "unavailable"))), false)
+		return
+	pending_level_skip_request.request_id = int(request.get("request_id", -1))
+	_set_level_skip_status("Ad playing...", true)
 
 
 func _navigate_to_next_after_success(next_id: String) -> void:
@@ -1882,6 +2005,8 @@ func _on_monetization_reward_granted(
 		store_pending_product_id = ""
 		_set_store_status("+%d Net Tokens added." % int(metadata.get("amount", 0)))
 		_refresh_store_screen()
+	elif context == CONTEXT_REWARDED_LEVEL_SKIP:
+		_fulfill_rewarded_level_skip(metadata)
 
 
 func _on_monetization_reward_failed(context: String, _request_id: int, reason: String) -> void:
@@ -1890,6 +2015,48 @@ func _on_monetization_reward_failed(context: String, _request_id: int, reason: S
 		store_pending_product_id = ""
 		_set_store_status(_friendly_economy_reason(reason))
 		_refresh_store_screen()
+	elif context == CONTEXT_REWARDED_LEVEL_SKIP:
+		pending_level_skip_request.clear()
+		_set_level_skip_status(_friendly_level_skip_reason(reason), false)
+
+
+func _fulfill_rewarded_level_skip(metadata: Dictionary) -> void:
+	var level_id := String(metadata.get("level_id", ""))
+	var fulfillment_id := String(metadata.get("fulfillment_id", ""))
+	pending_level_skip_request.clear()
+	var definition := LevelRegistryScript.load_definition(level_id)
+	var update: RefCounted = _get_save_service().record_assisted_clear(
+		level_id,
+		definition,
+		fulfillment_id
+	)
+	if not bool(update and update.get("save_succeeded")):
+		if current_screen_name == "result" and current_level_id == level_id:
+			_set_level_skip_status("Skip was not saved. Keep trying for free.", false)
+		return
+	session_failed_shots_by_level.erase(level_id)
+	if current_screen_name != "result" or current_level_id != level_id:
+		return
+	var level_result := LevelResult.assisted_result(definition)
+	_show_success_result(level_result, update)
+
+
+func _set_level_skip_status(message: String, request_running: bool) -> void:
+	if is_instance_valid(level_skip_status_label):
+		level_skip_status_label.text = message
+	if is_instance_valid(level_skip_watch_button):
+		level_skip_watch_button.disabled = request_running
+		level_skip_watch_button.text = "WATCHING..." if request_running else "WATCH & SKIP"
+
+
+func _friendly_level_skip_reason(reason: String) -> String:
+	match reason:
+		"cancelled":
+			return "Ad closed. Nothing changed."
+		"failed":
+			return "Ad unavailable right now. Keep trying for free."
+		_:
+			return "Ad unavailable. Keep trying for free."
 
 
 func _on_monetization_purchase_started(product_id: String, _request_id: int) -> void:
@@ -2033,6 +2200,8 @@ func _clear_gameplay_overlay() -> void:
 	pause_overlay = null
 	result_overlay = null
 	gameplay_pause_button = null
+	level_skip_status_label = null
+	level_skip_watch_button = null
 
 
 func _clear_result_overlay() -> void:

@@ -8,6 +8,7 @@ extends Resource
 @export var shot_limit: int = 0
 @export var par_shots: int = 0
 @export var result_state: String = ""
+@export var assisted_clear: bool = false
 # Retained for in-memory compatibility with older test fixtures. New runs never set it.
 @export var rewarded_continue_used: bool = false
 
@@ -30,7 +31,21 @@ static func completed_result(
 	)
 	result.par_shots = level_definition.par_shots if level_definition else 0
 	result.result_state = "completed"
+	result.assisted_clear = false
 	result.rewarded_continue_used = used_rewarded_continue
+	return result
+
+
+static func assisted_result(level_definition: LevelDefinition) -> LevelResult:
+	var result := LevelResult.new()
+	result.level_id = level_definition.level_id if level_definition else ""
+	result.completed = true
+	result.shots_used = 0
+	result.shots_remaining = 0
+	result.shot_limit = level_definition.shot_limit if level_definition else 0
+	result.par_shots = level_definition.par_shots if level_definition else 0
+	result.result_state = "assisted"
+	result.assisted_clear = true
 	return result
 
 
@@ -48,5 +63,6 @@ static func failed_result(
 	result.shot_limit = level_definition.shot_limit if level_definition else 0
 	result.par_shots = level_definition.par_shots if level_definition else 0
 	result.result_state = "failed"
+	result.assisted_clear = false
 	result.rewarded_continue_used = used_rewarded_continue
 	return result

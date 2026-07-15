@@ -48,6 +48,7 @@ const VALID_PRODUCTS := [
 
 const MAX_PROCESSED_TRANSACTIONS := 2048
 const MAX_TRANSACTION_HISTORY := 64
+const MAX_ASSISTED_FULFILLMENTS := 256
 
 var recording_enabled: bool = true
 var developer_diagnostics_enabled: bool = false
@@ -260,6 +261,16 @@ func is_level_completed(level_id: String) -> bool:
 	return _string_array_contains(_progression_array("completed_levels"), level_id)
 
 
+func is_level_normally_completed(level_id: String) -> bool:
+	_ensure_loaded()
+	return _string_array_contains(_progression_array("normal_completed_levels"), level_id)
+
+
+func is_level_assisted(level_id: String) -> bool:
+	_ensure_loaded()
+	return _string_array_contains(_progression_array("assisted_levels"), level_id)
+
+
 func get_best_stars(level_id: String) -> int:
 	_ensure_loaded()
 	var best_stars := _progression_dict("best_stars")
@@ -336,6 +347,7 @@ func record_level_result(
 
 	update.level_id = level_result.level_id
 	update.completed = level_result.completed
+	update.normal_completion = level_result.completed
 	if not recording_enabled:
 		_diagnostic("progression recording skipped because recording is disabled")
 		return update
@@ -343,7 +355,7 @@ func record_level_result(
 	_ensure_loaded()
 	var save_snapshot := _save_data.duplicate(true)
 	update.total_stars_before = get_total_stars()
-	update.first_completion = not is_level_completed(update.level_id)
+	update.first_completion = not is_level_normally_completed(update.level_id)
 	update.previous_best_stars = get_best_stars(update.level_id)
 	update.previous_fewest_shots = get_fewest_shots(update.level_id)
 	update.new_best_stars = update.previous_best_stars
@@ -364,12 +376,20 @@ func record_level_result(
 	update.stars_earned = calculate_stars(level_result, level_definition)
 	var progression := _save_data.progression as Dictionary
 	var completed_levels := progression.completed_levels as Array
+	var normal_completed_levels := progression.normal_completed_levels as Array
+	var assisted_levels := progression.assisted_levels as Array
 	var unlocked_levels := progression.unlocked_levels as Array
 	var best_stars := progression.best_stars as Dictionary
 	var fewest_shots := progression.fewest_shots as Dictionary
 
 	if not _string_array_contains(completed_levels, level_result.level_id):
 		completed_levels.append(level_result.level_id)
+		update.changed = true
+	if not _string_array_contains(normal_completed_levels, level_result.level_id):
+		normal_completed_levels.append(level_result.level_id)
+		update.changed = true
+	if _string_array_contains(assisted_levels, level_result.level_id):
+		assisted_levels.erase(level_result.level_id)
 		update.changed = true
 
 	if update.stars_earned > update.previous_best_stars:
@@ -422,6 +442,84 @@ func record_level_result(
 		update.personal_best_coins = 0
 		update.coins_earned = 0
 		update.coin_balance_after = update.coin_balance_before
+	progression_changed.emit(update)
+	return update
+
+
+func record_assisted_clear(
+	level_id: String,
+	level_definition: LevelDefinition,
+	fulfillment_id: String
+) -> RefCounted:
+	var update := ProgressionUpdateScript.new()
+	update.level_id = level_id
+	update.completed = true
+	update.assisted_clear = true
+	update.fulfillment_id = fulfillment_id
+	if not recording_enabled or not level_definition:
+		return update
+
+	_ensure_loaded()
+	update.total_stars_before = get_total_stars()
+	update.total_stars_after = update.total_stars_before
+	update.previous_best_stars = get_best_stars(level_id)
+	update.new_best_stars = update.previous_best_stars
+	update.previous_fewest_shots = get_fewest_shots(level_id)
+	update.new_fewest_shots = update.previous_fewest_shots
+	if (
+		fulfillment_id.is_empty()
+		or not LevelRegistryScript.has_level_id(level_id)
+		or level_definition.level_id != level_id
+		or not is_level_unlocked(level_id)
+		or is_level_normally_completed(level_id)
+		or is_level_assisted(level_id)
+	):
+		return update
+
+	var progression := _save_data.progression as Dictionary
+	var fulfillment_ids := progression.assisted_fulfillment_ids as Array
+	if _string_array_contains(fulfillment_ids, fulfillment_id):
+		return update
+
+	var save_snapshot := _save_data.duplicate(true)
+	var completed_levels := progression.completed_levels as Array
+	var assisted_levels := progression.assisted_levels as Array
+	var unlocked_levels := progression.unlocked_levels as Array
+	var best_stars := progression.best_stars as Dictionary
+	if not _string_array_contains(completed_levels, level_id):
+		completed_levels.append(level_id)
+	assisted_levels.append(level_id)
+	fulfillment_ids.append(fulfillment_id)
+	while fulfillment_ids.size() > MAX_ASSISTED_FULFILLMENTS:
+		fulfillment_ids.pop_front()
+	if update.previous_best_stars < 1:
+		best_stars[level_id] = 1
+		update.new_best_stars = 1
+	update.stars_earned = 1
+
+	var next_level_id := level_definition.next_level_id
+	if (
+		not next_level_id.is_empty()
+		and LevelRegistryScript.has_level_id(next_level_id)
+		and not _string_array_contains(unlocked_levels, next_level_id)
+	):
+		unlocked_levels.append(next_level_id)
+		update.unlocked_level_id = next_level_id
+		update.did_unlock_new_level = true
+
+	_save_data = _normalize_save(_save_data)
+	update.total_stars_after = get_total_stars()
+	update.unlocked_cosmetic_ids = _evaluate_cosmetic_unlocks_for_current_save()
+	update.changed = true
+	update.save_succeeded = save()
+	if not update.save_succeeded:
+		_save_data = save_snapshot
+		update.new_best_stars = update.previous_best_stars
+		update.unlocked_level_id = ""
+		update.did_unlock_new_level = false
+		update.unlocked_cosmetic_ids = []
+		update.total_stars_after = update.total_stars_before
+		update.changed = false
 	progression_changed.emit(update)
 	return update
 
@@ -691,6 +789,9 @@ func _create_default_save() -> Dictionary:
 		"progression": {
 			"unlocked_levels": [LevelRegistryScript.get_first_level_id()],
 			"completed_levels": [],
+			"normal_completed_levels": [],
+			"assisted_levels": [],
+			"assisted_fulfillment_ids": [],
 			"best_stars": {},
 			"fewest_shots": {},
 			"tutorial_completed": {},
@@ -726,12 +827,28 @@ func _normalize_save(raw: Dictionary) -> Dictionary:
 	normalized.save_version = SAVE_VERSION
 
 	var raw_progression: Dictionary = _dict_or_empty(raw.get("progression", {}))
+	var completed_levels := _normalized_level_array(raw_progression.get("completed_levels", []))
+	var normal_completed_levels := _normalized_level_array(
+		raw_progression.get("normal_completed_levels", completed_levels)
+	)
+	var assisted_levels := _normalized_level_array(raw_progression.get("assisted_levels", []))
+	for normal_level_id in normal_completed_levels:
+		assisted_levels.erase(normal_level_id)
+	for normal_level_id in normal_completed_levels:
+		if not _string_array_contains(completed_levels, normal_level_id):
+			completed_levels.append(normal_level_id)
+	for assisted_level_id in assisted_levels:
+		if not _string_array_contains(completed_levels, assisted_level_id):
+			completed_levels.append(assisted_level_id)
 	var progression := {
 		"unlocked_levels": _normalized_level_array(
 			raw_progression.get("unlocked_levels", [])
 		),
-		"completed_levels": _normalized_level_array(
-			raw_progression.get("completed_levels", [])
+		"completed_levels": completed_levels,
+		"normal_completed_levels": normal_completed_levels,
+		"assisted_levels": assisted_levels,
+		"assisted_fulfillment_ids": _normalized_fulfillment_ids(
+			raw_progression.get("assisted_fulfillment_ids", [])
 		),
 		"best_stars": _normalized_best_stars(raw_progression.get("best_stars", {})),
 		"fewest_shots": _normalized_fewest_shots(raw_progression.get("fewest_shots", {})),
@@ -754,6 +871,8 @@ func _normalize_save(raw: Dictionary) -> Dictionary:
 
 	progression.unlocked_levels = _ordered_level_array(progression.unlocked_levels)
 	progression.completed_levels = _ordered_level_array(progression.completed_levels)
+	progression.normal_completed_levels = _ordered_level_array(progression.normal_completed_levels)
+	progression.assisted_levels = _ordered_level_array(progression.assisted_levels)
 	progression.total_stars = _sum_best_stars(progression.best_stars)
 	normalized.progression = progression
 
@@ -779,6 +898,20 @@ func _normalized_level_array(value: Variant) -> Array:
 		var level_id := String(item)
 		if LevelRegistryScript.has_level_id(level_id) and not _string_array_contains(result, level_id):
 			result.append(level_id)
+	return result
+
+
+func _normalized_fulfillment_ids(value: Variant) -> Array:
+	var result: Array = []
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	for item in value as Array:
+		var fulfillment_id := String(item).strip_edges()
+		if fulfillment_id.is_empty() or _string_array_contains(result, fulfillment_id):
+			continue
+		result.append(fulfillment_id.left(160))
+	while result.size() > MAX_ASSISTED_FULFILLMENTS:
+		result.pop_front()
 	return result
 
 

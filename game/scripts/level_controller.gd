@@ -2,6 +2,7 @@ extends "res://scripts/prototype_controller.gd"
 
 signal level_completed(level_result: LevelResult, progression_update: RefCounted)
 signal level_failed(level_result: LevelResult)
+signal shot_resolved_without_goal(level_id: String, shot_id: int)
 
 enum LevelState { READY, SHOT_ACTIVE, AUTO_RESETTING, GOAL, FAILED }
 
@@ -47,6 +48,7 @@ var level_state: LevelState = LevelState.READY
 var shots_remaining: int = 3
 var shots_used: int = 0
 var active_shot_id: int = 0
+var consumed_shot_id: int = -1
 var shot_time_remaining: float = 0.0
 var shot_active_elapsed: float = 0.0
 var auto_reset_pending: bool = false
@@ -202,6 +204,7 @@ func _fire_shot() -> bool:
 
 	shots_remaining -= 1
 	shots_used += 1
+	consumed_shot_id = active_shot_id
 	_debug_log(
 		"RELEASE_LEVEL state_after=%d freeze=%s vel=%s" % [
 			level_state,
@@ -224,6 +227,7 @@ func _on_reset_button_pressed() -> void:
 	var was_active_shot := level_state == LevelState.SHOT_ACTIVE or level_state == LevelState.AUTO_RESETTING
 	if was_active_shot:
 		active_shot_id += 1
+		consumed_shot_id = -1
 
 	_reset_all_goal_tracking()
 	shot_manually_reset = was_active_shot
@@ -284,6 +288,7 @@ func _restart_level() -> void:
 	last_level_result = null
 	last_progression_update = null
 	active_shot_id = 0
+	consumed_shot_id = -1
 	near_miss_presented_shot_id = -1
 	shots_remaining = max_shots
 	shots_used = 0
@@ -321,6 +326,7 @@ func _on_goal_scored() -> void:
 
 	_cancel_shot_callbacks()
 	level_state = LevelState.GOAL
+	consumed_shot_id = -1
 	last_level_result = LevelResult.completed_result(
 		level_definition,
 		shots_used,
@@ -345,6 +351,10 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 		return
 
 	_maybe_present_near_miss(shot_id)
+	if consumed_shot_id == shot_id:
+		var resolved_level_id := level_definition.level_id if level_definition else ""
+		shot_resolved_without_goal.emit(resolved_level_id, shot_id)
+		consumed_shot_id = -1
 	shot_time_remaining = 0.0
 	shot_active_elapsed = 0.0
 	_clear_active_curve()

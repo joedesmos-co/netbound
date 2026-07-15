@@ -224,6 +224,53 @@ func _show_requested_screen() -> void:
 			app.current_level.set("shots_used", definition.shot_limit)
 			app.current_level.set("level_state", app.current_level.LevelState.FAILED)
 			app._show_failure_result(LevelResult.failed_result(definition, definition.shot_limit, 0))
+		"failure_skip_eligible":
+			await _prepare_skip_offer("level_01")
+			app._show_failure_result(_failure_result("level_01"))
+		"failure_skip_pending":
+			await _prepare_skip_offer("level_01")
+			var monetization := get_root().get_node("MonetizationService")
+			monetization.call("configure_simulated_ads", true, "success", "success", 120, false)
+			app._show_failure_result(_failure_result("level_01"))
+			app.level_skip_watch_button.emit_signal("pressed")
+		"failure_skip_cancelled":
+			await _prepare_skip_offer("level_01")
+			var monetization := get_root().get_node("MonetizationService")
+			monetization.call("configure_simulated_ads", true, "cancel", "success", 1, false)
+			app._show_failure_result(_failure_result("level_01"))
+			app.level_skip_watch_button.emit_signal("pressed")
+			await _wait_frames(3)
+		"failure_skip_unavailable":
+			await _prepare_skip_offer("level_01")
+			var monetization := get_root().get_node("MonetizationService")
+			monetization.call("configure_simulated_ads", false, "unavailable", "success", 1, false)
+			app._show_failure_result(_failure_result("level_01"))
+		"assisted_success":
+			await _prepare_skip_offer("level_01")
+			var monetization := get_root().get_node("MonetizationService")
+			monetization.call("configure_simulated_ads", true, "success", "success", 1, false)
+			app._show_failure_result(_failure_result("level_01"))
+			app.level_skip_watch_button.emit_signal("pressed")
+			await _wait_frames(4)
+		"assisted_level_select":
+			await _prepare_skip_offer("level_01")
+			var definition := LevelRegistryScript.load_definition("level_01")
+			service.record_assisted_clear("level_01", definition, "ui_capture:assisted")
+			app.show_level_select()
+		"normal_replay_improved":
+			await _prepare_skip_offer("level_01")
+			var definition := LevelRegistryScript.load_definition("level_01")
+			service.record_assisted_clear("level_01", definition, "ui_capture:assisted")
+			var result := LevelResult.completed_result(definition, 1)
+			var update := service.record_level_result(result, definition)
+			app._show_success_result(result, update)
+		"assisted_level_20":
+			_complete_through_level("level_19")
+			app.load_level("level_20")
+			await _wait_for_level()
+			var definition := LevelRegistryScript.load_definition("level_20")
+			var update := service.record_assisted_clear("level_20", definition, "ui_capture:level20")
+			app._show_success_result(LevelResult.assisted_result(definition), update)
 		"level_10_result":
 			await _show_success("level_10")
 		"level_20_result":
@@ -296,6 +343,22 @@ func _show_success(level_id: String) -> void:
 	var result := LevelResult.completed_result(definition, definition.par_shots)
 	var update := service.record_level_result(result, definition)
 	app._show_success_result(result, update)
+
+
+func _prepare_skip_offer(level_id: String) -> void:
+	app.load_level(level_id)
+	await _wait_for_level()
+	for shot_id in range(1, 6):
+		app._on_shot_resolved_without_goal(level_id, shot_id)
+	var definition := LevelRegistryScript.load_definition(level_id)
+	app.current_level.set("shots_remaining", 0)
+	app.current_level.set("shots_used", definition.shot_limit)
+	app.current_level.set("level_state", app.current_level.LevelState.FAILED)
+
+
+func _failure_result(level_id: String) -> LevelResult:
+	var definition := LevelRegistryScript.load_definition(level_id)
+	return LevelResult.failed_result(definition, definition.shot_limit, 0)
 
 
 func _apply_fixture() -> void:

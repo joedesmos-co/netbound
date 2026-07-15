@@ -4,6 +4,9 @@ extends RefCounted
 var level_id: String = ""
 var completed: bool = false
 var first_completion: bool = false
+var normal_completion: bool = false
+var assisted_clear: bool = false
+var fulfillment_id: String = ""
 var stars_earned: int = 0
 var previous_best_stars: int = 0
 var new_best_stars: int = 0
@@ -31,6 +34,9 @@ func to_dictionary() -> Dictionary:
 		"level_id": level_id,
 		"completed": completed,
 		"first_completion": first_completion,
+		"normal_completion": normal_completion,
+		"assisted_clear": assisted_clear,
+		"fulfillment_id": fulfillment_id,
 		"stars_earned": stars_earned,
 		"previous_best_stars": previous_best_stars,
 		"new_best_stars": new_best_stars,
