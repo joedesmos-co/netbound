@@ -1,0 +1,18 @@
+Netbound player-feel curve classifier - 2026-07-15
+
+Canonical gesture values from verify_player_feel_external.gd:
+straight: 0.000000
+wobble: 0.000000
+mild left/right: -0.278656 / +0.278656
+strong left/right: -0.709443 / +0.709443
+start/end hooks: +0.504192 / +0.504192
+sparse three-sample curve: +0.354473
+proportional short/long: +0.481210 / +0.485443
+mouse/touch: +0.334910 / +0.334910
+
+Runtime Phase 1 invariants:
+curve duration: 1.35 s
+maximum heading cap: 78 degrees
+vertical velocity modification: none
+horizontal speed preservation: yes
+launch speed/elevation tuning: unchanged

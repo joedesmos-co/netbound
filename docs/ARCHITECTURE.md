@@ -39,6 +39,10 @@ Measured Phase 1 peak heights in Level 01:
 
 Curve is now deterministic and bounded:
 
+- Gesture intent uses the full sampled swipe path. Dominant left/right area and peak
+  deviation choose the sign, while normalized chord deviation chooses strength.
+- A normalized dead zone rejects tiny hand wobble without suppressing deliberate
+  short hooks. The same signed curve value drives the live aim line and launch.
 - Curve rotates horizontal velocity over `curve_duration = 1.35`.
 - Height velocity is not modified by curve.
 - Horizontal speed is preserved during curve rotation.
@@ -571,7 +575,17 @@ Important implementation detail:
 
 Current curve flow:
 
-- `_calculate_curve_amount()` measures signed lateral deviation of swipe samples from the start-to-end line.
+- `_calculate_curve_amount()` delegates to `_analyze_curve_intent()` so the full
+  sampled gesture determines a single signed curve value.
+- Weighted path area and peak chord deviation determine the dominant side; this
+  prevents a clear hook from being cancelled when the gesture returns toward its
+  endpoint.
+- Normalized deviation determines strength through the proven
+  `curve_full_bend_ratio = 0.28` response. A `curve_normalized_deadzone` of `0.012`
+  (with a two-pixel minimum) rejects small wobble. Cumulative turn remains an
+  inspectable diagnostic and does not multiply launch curvature.
+- The curve response remains resolution-independent because all geometric values
+  are normalized by chord length. Mouse and touch use the same sample analyzer.
 - `_begin_bounded_curve()` maps signed curve amount to a total heading target.
 - `_apply_arcade_curve()` rotates horizontal velocity over time.
 - Curve does not modify vertical velocity.

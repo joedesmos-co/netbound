@@ -72,7 +72,7 @@ Responsibilities:
 Component: `GameplayFeedback`
 Script: `res://scripts/presentation/gameplay_feedback_controller.gd`
 
-The gameplay controller owns the stable shot calculation, then passes the current launch velocity and curve values to `GameplayFeedback` for developer diagnostics and release feedback only. Normal gameplay now presents one gesture-owned line from the ball through the active swipe samples. The redundant prediction dots, arrows, and numerical shot readout are hidden unless developer debug is enabled. The component creates:
+The gameplay controller owns the stable shot calculation, then passes the current launch velocity and curve values to `GameplayFeedback` for developer diagnostics and release feedback only. Normal gameplay now presents one gesture-owned line from the ball through the active swipe samples. Its bend uses the exact signed value returned by the canonical path-intent analyzer, so the visual classification cannot drift from launch behavior. The redundant prediction dots, arrows, and numerical shot readout are hidden unless developer debug is enabled. The component creates:
 
 - an optional developer-only bounded 14-dot launch preview derived from canonical values
 - an optional developer-only shot readout for category, power, and curve strength

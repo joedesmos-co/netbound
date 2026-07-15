@@ -35,6 +35,7 @@ const MOUSE_POINTER_ID: int = -2
 @export var curve_heading_response_exponent: float = 1.0
 @export var curve_minimum_horizontal_speed: float = 0.75
 @export var curve_peak_threshold_px: float = 2.0
+@export var curve_normalized_deadzone: float = 0.012
 @export var curve_full_bend_ratio: float = 0.28
 @export var curve_response_exponent: float = 0.7
 @export var swipe_sample_smoothing: float = 0.45
@@ -100,6 +101,7 @@ var current_elevation_degrees: float = 0.0
 var current_shot_category: String = "DRIVEN"
 var current_overall_screen_dir: Vector2 = Vector2.ZERO
 var current_curve_amount: float = 0.0
+var current_curve_diagnostics: Dictionary = {}
 var curve_time_remaining: float = 0.0
 var active_curve_sign: float = 0.0
 var active_curve_amount: float = 0.0
@@ -118,12 +120,15 @@ var last_shot_category: String = "DRIVEN"
 var last_launch_direction: Vector3 = Vector3.ZERO
 var last_launch_velocity: Vector3 = Vector3.ZERO
 var last_curve_heading_degrees: float = 0.0
+var last_curve_diagnostics: Dictionary = {}
 var last_post_shot_y_velocity: float = 0.0
 var gameplay_feedback
 var last_camera_feedback_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
+	current_curve_diagnostics = _empty_curve_diagnostics()
+	last_curve_diagnostics = _empty_curve_diagnostics()
 	_apply_ui_art_direction()
 	_setup_camera()
 	_configure_ball_spawn_height()
@@ -541,6 +546,7 @@ func _fire_shot() -> bool:
 
 	var curve_sign := signf(current_curve_amount)
 	var curve_amount := clampf(absf(current_curve_amount), 0.0, maximum_curve_amount)
+	last_curve_diagnostics = current_curve_diagnostics.duplicate(true)
 	var shot_token := reset_generation
 
 	_debug_log(
@@ -823,6 +829,7 @@ func _clear_swipe() -> void:
 	current_shot_category = "DRIVEN"
 	current_overall_screen_dir = Vector2.ZERO
 	current_curve_amount = 0.0
+	current_curve_diagnostics = _empty_curve_diagnostics()
 	_clear_swipe_visuals()
 	_hide_aim_guide()
 	if gameplay_feedback:
@@ -892,6 +899,7 @@ func _reset_aim_state() -> void:
 	current_shot_category = "DRIVEN"
 	current_overall_screen_dir = Vector2.ZERO
 	current_curve_amount = 0.0
+	current_curve_diagnostics = _empty_curve_diagnostics()
 
 
 func _screen_swipe_to_world_direction(swipe_start: Vector2, swipe_end: Vector2) -> Vector3:
@@ -918,36 +926,123 @@ func _screen_swipe_to_world_direction(swipe_start: Vector2, swipe_end: Vector2) 
 
 
 func _calculate_curve_amount(swipe_start: Vector2, swipe_end: Vector2) -> float:
+	current_curve_diagnostics = _analyze_curve_intent(swipe_start, swipe_end)
+	return float(current_curve_diagnostics.get("curve_amount", 0.0))
+
+
+func _analyze_curve_intent(swipe_start: Vector2, swipe_end: Vector2) -> Dictionary:
+	var result := _empty_curve_diagnostics()
+	result.sample_count = swipe_screen_points.size()
 	if swipe_screen_points.size() < 3:
-		return 0.0
+		return result
 
-	var swipe_vector := swipe_end - swipe_start
-	var swipe_length := swipe_vector.length()
-	if swipe_length <= minimum_swipe_distance:
-		return 0.0
+	var chord := swipe_end - swipe_start
+	var chord_length := chord.length()
+	result.chord_length = chord_length
+	if chord_length <= minimum_swipe_distance:
+		return result
 
-	var swipe_direction := swipe_vector / swipe_length
-	var swipe_perpendicular := Vector2(-swipe_direction.y, swipe_direction.x)
-	var total_lateral := 0.0
-	var peak_lateral := 0.0
+	var chord_direction := chord / chord_length
+	var chord_perpendicular := Vector2(-chord_direction.y, chord_direction.x)
+	var positive_area := 0.0
+	var negative_area := 0.0
+	var positive_peak := 0.0
+	var negative_peak := 0.0
+	var path_length := 0.0
+	var cumulative_turn := 0.0
+	var signed_turn := 0.0
+	var previous_direction := Vector2.ZERO
+	var previous_lateral := 0.0
 
-	for point in swipe_screen_points:
-		var relative := point - swipe_start
-		var lateral := relative.dot(swipe_perpendicular)
-		total_lateral += lateral
-		peak_lateral = maxf(peak_lateral, absf(lateral))
+	for index in range(1, swipe_screen_points.size()):
+		var previous_point := swipe_screen_points[index - 1]
+		var point := swipe_screen_points[index]
+		var segment := point - previous_point
+		var segment_length := segment.length()
+		if segment_length <= 0.001:
+			continue
+		path_length += segment_length
+		var lateral := (point - swipe_start).dot(chord_perpendicular)
+		positive_peak = maxf(positive_peak, lateral)
+		negative_peak = maxf(negative_peak, -lateral)
+		var average_lateral := (previous_lateral + lateral) * 0.5
+		if average_lateral >= 0.0:
+			positive_area += average_lateral * segment_length
+		else:
+			negative_area += -average_lateral * segment_length
 
-	if peak_lateral <= curve_peak_threshold_px:
-		return 0.0
+		var direction := segment / segment_length
+		if previous_direction != Vector2.ZERO:
+			var turn := previous_direction.angle_to(direction)
+			if absf(turn) >= deg_to_rad(1.25):
+				var bounded_turn := clampf(turn, -deg_to_rad(60.0), deg_to_rad(60.0))
+				cumulative_turn += absf(bounded_turn)
+				signed_turn += bounded_turn
+		previous_direction = direction
+		previous_lateral = lateral
 
-	var signed_curve := signf(total_lateral) if absf(total_lateral) > 1.0 else 0.0
-	var strength_ratio := clampf(
-		peak_lateral / maxf(swipe_length * curve_full_bend_ratio, 1.0),
+	var positive_score := positive_area + positive_peak * chord_length * 0.2
+	var negative_score := negative_area + negative_peak * chord_length * 0.2
+	var path_side := 0.0
+	if not is_equal_approx(positive_score, negative_score):
+		path_side = 1.0 if positive_score > negative_score else -1.0
+	elif not is_equal_approx(positive_peak, negative_peak):
+		path_side = 1.0 if positive_peak > negative_peak else -1.0
+
+	var dominant_peak := positive_peak if path_side >= 0.0 else negative_peak
+	var total_area := positive_area + negative_area
+	var dominant_area := maxf(positive_area, negative_area)
+	var coherence := dominant_area / total_area if total_area > 0.001 else 1.0
+	var normalized_deviation := dominant_peak / maxf(chord_length, 1.0)
+	var normalized_deadzone := maxf(
+		curve_normalized_deadzone,
+		curve_peak_threshold_px / maxf(chord_length, 1.0)
+	)
+	var deviation_strength := clampf(
+		normalized_deviation / maxf(curve_full_bend_ratio, 0.001),
 		0.0,
 		1.0
 	)
-	strength_ratio = pow(strength_ratio, curve_response_exponent)
-	return signed_curve * strength_ratio * maximum_curve_amount
+	var coherence_strength := lerpf(
+		0.82,
+		1.0,
+		clampf(inverse_lerp(0.5, 1.0, coherence), 0.0, 1.0)
+	)
+	var combined_strength := deviation_strength * coherence_strength
+	var curve_strength := 0.0
+	if normalized_deviation > normalized_deadzone and path_side != 0.0:
+		curve_strength = pow(clampf(combined_strength, 0.0, 1.0), curve_response_exponent)
+
+	result.path_length = path_length
+	result.path_excess_ratio = maxf(path_length / maxf(chord_length, 1.0) - 1.0, 0.0)
+	result.peak_lateral = dominant_peak
+	result.normalized_deviation = normalized_deviation
+	result.normalized_deadzone = normalized_deadzone
+	result.cumulative_turn_degrees = rad_to_deg(cumulative_turn)
+	result.signed_turn_degrees = rad_to_deg(signed_turn)
+	result.coherence = coherence
+	result.direction = "RIGHT" if path_side > 0.0 else ("LEFT" if path_side < 0.0 else "STRAIGHT")
+	result.strength = curve_strength
+	result.curve_amount = path_side * curve_strength * maximum_curve_amount
+	return result
+
+
+func _empty_curve_diagnostics() -> Dictionary:
+	return {
+		"sample_count": 0,
+		"path_length": 0.0,
+		"chord_length": 0.0,
+		"path_excess_ratio": 0.0,
+		"peak_lateral": 0.0,
+		"normalized_deviation": 0.0,
+		"normalized_deadzone": curve_normalized_deadzone,
+		"cumulative_turn_degrees": 0.0,
+		"signed_turn_degrees": 0.0,
+		"coherence": 1.0,
+		"direction": "STRAIGHT",
+		"strength": 0.0,
+		"curve_amount": 0.0,
+	}
 
 
 func _update_swipe_visuals() -> void:
@@ -1175,9 +1270,15 @@ func _update_debug_ui() -> void:
 		current_shot_direction.y,
 		current_shot_direction.z,
 	]
-	curve_label.text = "Curve: %.2f  cap %.1f deg" % [
-		current_curve_amount,
-		last_curve_heading_degrees,
+	var curve_data := current_curve_diagnostics if is_swiping else last_curve_diagnostics
+	curve_label.text = "Curve %.2f %s  samples %d  path %.1f / chord %.1f  dev %.3f  turn %.1f" % [
+		current_curve_amount if is_swiping else float(curve_data.get("curve_amount", 0.0)),
+		String(curve_data.get("direction", "STRAIGHT")),
+		int(curve_data.get("sample_count", 0)),
+		float(curve_data.get("path_length", 0.0)),
+		float(curve_data.get("chord_length", 0.0)),
+		float(curve_data.get("normalized_deviation", 0.0)),
+		float(curve_data.get("cumulative_turn_degrees", 0.0)),
 	]
 	var category := current_shot_category if is_swiping else last_shot_category
 	var elev_deg := current_elevation_degrees if is_swiping else last_elevation_degrees

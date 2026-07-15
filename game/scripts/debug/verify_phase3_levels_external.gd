@@ -288,7 +288,9 @@ func _complete_with_swipe(
 		" pos=",
 		ball.global_position,
 		" vel=",
-		ball.linear_velocity
+		ball.linear_velocity,
+		" curve=",
+		level.get("last_curve_diagnostics")
 	)
 	return false
 

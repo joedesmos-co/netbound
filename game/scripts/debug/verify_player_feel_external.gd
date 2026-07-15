@@ -27,6 +27,7 @@ func _run() -> void:
 	passed = await _test_shot_and_retry_language() and passed
 	passed = await _test_success_color_language() and passed
 	passed = await _test_success_audio_hierarchy() and passed
+	passed = await _test_curve_gesture_intent() and passed
 	await create_timer(0.8, true, false, true).timeout
 	_cleanup()
 	print("PLAYER_FEEL verify=", "PASS" if passed else "FAIL")
@@ -126,6 +127,158 @@ func _test_success_audio_hierarchy() -> bool:
 	audio_service.cleanup_scene_audio()
 	print("PLAYER_FEEL success_audio ok=", passed)
 	return passed
+
+
+func _test_curve_gesture_intent() -> bool:
+	var scene: PackedScene = load("res://levels/level_01.tscn")
+	var level := scene.instantiate()
+	get_root().add_child(level)
+	await _wait_frames(3)
+	await physics_frame
+	var start := Vector2(420.0, 600.0)
+	var end := Vector2(420.0, 380.0)
+	var straight := _measure_curve(level, _bowed_gesture(start, end, 0.0, 13))
+	var wobble := _measure_curve(level, _wobble_gesture(start, end, 1.4, 17))
+	var mild_right := _measure_curve(level, _bowed_gesture(start, end, 10.0, 13))
+	var mild_left := _measure_curve(level, _bowed_gesture(start, end, -10.0, 13))
+	var strong_right := _measure_curve(level, _bowed_gesture(start, end, 38.0, 13))
+	var strong_left := _measure_curve(level, _bowed_gesture(start, end, -38.0, 13))
+	var start_hook := _measure_curve(
+		level,
+		_cubic_gesture(start, start + Vector2(48.0, -18.0), start + Vector2(8.0, -145.0), end, 13)
+	)
+	var end_hook := _measure_curve(
+		level,
+		_cubic_gesture(start, start + Vector2(8.0, -75.0), end + Vector2(48.0, 18.0), end, 13)
+	)
+	var sparse := _measure_curve(level, PackedVector2Array([start, (start + end) * 0.5 + Vector2(14.0, 0.0), end]))
+	var short_curve := _measure_curve(level, _bowed_gesture(start, start + Vector2(0.0, -80.0), 8.0, 9))
+	var long_curve := _measure_curve(level, _bowed_gesture(start, start + Vector2(0.0, -240.0), 24.0, 21))
+
+	var passed := absf(straight) <= 0.02 \
+		and absf(wobble) <= 0.02 \
+		and mild_right >= 0.12 and mild_right <= 0.6 \
+		and mild_left <= -0.12 and mild_left >= -0.6 \
+		and strong_right > mild_right + 0.22 \
+		and strong_left < mild_left - 0.22 \
+		and absf(strong_right) <= float(level.get("maximum_curve_amount")) \
+		and absf(strong_left) <= float(level.get("maximum_curve_amount")) \
+		and start_hook >= 0.12 \
+		and end_hook >= 0.12 \
+		and sparse >= 0.12 \
+		and absf(short_curve - long_curve) <= 0.14
+
+	level.set("swipe_screen_points", _bowed_gesture(start, end, 10.0, 13))
+	level.set("is_swiping", true)
+	level.call("_recalculate_swipe_state")
+	level.call("_update_swipe_visuals")
+	var overlay := level.get_node("UI/SwipeOverlay") as SwipeOverlay
+	passed = is_equal_approx(
+		overlay.curve_strength,
+		absf(float(level.get("current_curve_amount")))
+	) and passed
+	var diagnostics: Dictionary = level.get("current_curve_diagnostics")
+	passed = int(diagnostics.get("sample_count", 0)) == 14 and passed
+	passed = float(diagnostics.get("path_length", 0.0)) >= float(diagnostics.get("chord_length", 0.0)) and passed
+	passed = String(diagnostics.get("direction", "")) == "RIGHT" and passed
+	var ball := level.get_node("Ball") as RigidBody3D
+	var camera := level.get_node("Camera3D") as Camera3D
+	var input_start := camera.unproject_position(ball.global_position)
+	var input_points := _bowed_gesture(input_start, input_start + Vector2(0.0, -180.0), 12.0, 13)
+	var mouse_curve := _measure_input_curve(level, input_points, false)
+	var touch_curve := _measure_input_curve(level, input_points, true)
+	passed = mouse_curve >= 0.12 and touch_curve >= 0.12 and passed
+	passed = absf(mouse_curve - touch_curve) <= 0.08 and passed
+
+	level.call("cancel_active_gesture_for_lifecycle")
+	level.call("prepare_for_unload")
+	level.queue_free()
+	await _wait_frames(3)
+	print(
+		"PLAYER_FEEL curve_intent ok=", passed,
+		" straight=", straight,
+		" wobble=", wobble,
+		" mild=", [mild_left, mild_right],
+		" strong=", [strong_left, strong_right],
+		" hooks=", [start_hook, end_hook],
+		" sparse=", sparse,
+		" normalized=", [short_curve, long_curve],
+		" mouse_touch=", [mouse_curve, touch_curve]
+	)
+	return passed
+
+
+func _measure_curve(level: Node, points: PackedVector2Array) -> float:
+	level.set("swipe_screen_points", points)
+	return float(level.call("_calculate_curve_amount", points[0], points[-1]))
+
+
+func _measure_input_curve(level: Node, points: PackedVector2Array, touch: bool) -> float:
+	level.call("cancel_active_gesture_for_lifecycle")
+	if touch:
+		var press := InputEventScreenTouch.new()
+		press.index = 0
+		press.pressed = true
+		press.position = points[0]
+		level._unhandled_input(press)
+		for index in range(1, points.size()):
+			var drag := InputEventScreenDrag.new()
+			drag.index = 0
+			drag.position = points[index]
+			level._unhandled_input(drag)
+	else:
+		var press := InputEventMouseButton.new()
+		press.button_index = MOUSE_BUTTON_LEFT
+		press.pressed = true
+		press.position = points[0]
+		level._unhandled_input(press)
+		for index in range(1, points.size()):
+			var motion := InputEventMouseMotion.new()
+			motion.position = points[index]
+			level._unhandled_input(motion)
+	var amount := float(level.get("current_curve_amount"))
+	level.call("cancel_active_gesture_for_lifecycle")
+	return amount
+
+
+func _bowed_gesture(start: Vector2, end: Vector2, bend: float, segments: int) -> PackedVector2Array:
+	var points := PackedVector2Array([start])
+	var direction := (end - start).normalized()
+	var perpendicular := Vector2(-direction.y, direction.x)
+	for index in range(1, segments + 1):
+		var t := float(index) / float(segments)
+		points.append(start.lerp(end, t) + perpendicular * sin(t * PI) * bend)
+	return points
+
+
+func _wobble_gesture(start: Vector2, end: Vector2, amplitude: float, segments: int) -> PackedVector2Array:
+	var points := PackedVector2Array([start])
+	var direction := (end - start).normalized()
+	var perpendicular := Vector2(-direction.y, direction.x)
+	for index in range(1, segments + 1):
+		var t := float(index) / float(segments)
+		points.append(start.lerp(end, t) + perpendicular * sin(t * PI * 4.0) * amplitude)
+	return points
+
+
+func _cubic_gesture(
+	start: Vector2,
+	control_a: Vector2,
+	control_b: Vector2,
+	end: Vector2,
+	segments: int
+) -> PackedVector2Array:
+	var points := PackedVector2Array([start])
+	for index in range(1, segments + 1):
+		var t := float(index) / float(segments)
+		var inverse := 1.0 - t
+		points.append(
+			start * inverse * inverse * inverse
+			+ control_a * 3.0 * inverse * inverse * t
+			+ control_b * 3.0 * inverse * t * t
+			+ end * t * t * t
+		)
+	return points
 
 
 func _collect_control_text(root: Node) -> String:

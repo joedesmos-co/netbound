@@ -722,6 +722,27 @@ The suite should measure and categorize total heading change:
 
 No shot should turn more than about `80` degrees from its original heading.
 
+Player-feel gesture classification also verifies:
+
+- straight gestures and small alternating hand wobble remain negligible
+- mild left/right bends are obvious and symmetric
+- strong left/right bends reach a clearly stronger signed value
+- hooks at either the start or end of a gesture do not cancel out
+- sparse three-sample swipes still classify consistently
+- proportionally identical short and long gestures remain close
+- mouse and touch sample paths produce the same curve value
+- the one normal-player aim line receives the exact canonical curve value
+
+Current deterministic classifier measurements from
+`verify_player_feel_external.gd`:
+
+- straight and wobble: `0.000`
+- mild left/right: approximately `-0.279` / `+0.279`
+- strong left/right: approximately `-0.709` / `+0.709`
+- start/end hooks: approximately `0.504`
+- sparse curve: approximately `0.354`
+- proportional short/long gestures: approximately `0.481` / `0.485`
+
 ## Manual Gameplay Checklist
 
 Until touch automation exists, manually verify:
@@ -731,7 +752,8 @@ Until touch automation exists, manually verify:
 - Short and long swipes have readable power difference.
 - Upward swipes produce distinct but controlled height.
 - Downward/flat swipes stay low.
-- Curve gestures bend clearly without reversing unpredictably.
+- Curve gestures bend clearly without reversing unpredictably; verify straight,
+  mild left/right, strong left/right, start/end hooks, and curve-plus-lob.
 - Manual Reset Ball works during and after a shot.
 - Retry Level restores all attempts.
 - Goal has priority over final-shot failure.

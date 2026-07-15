@@ -97,10 +97,10 @@ func _show_requested_screen() -> void:
 			effect_id
 		)
 		return
-	if screen_name == "gameplay_aim":
+	if screen_name.begins_with("gameplay_aim"):
 		app.load_level("level_01")
 		await _wait_for_level()
-		_show_gameplay_aim()
+		_show_gameplay_aim(screen_name)
 		return
 	if screen_name.begins_with("gameplay_"):
 		var level_id := screen_name.trim_prefix("gameplay_")
@@ -216,21 +216,30 @@ func _show_requested_screen() -> void:
 			push_error("Unknown UI audit screen: %s" % screen_name)
 
 
-func _show_gameplay_aim() -> void:
+func _show_gameplay_aim(variant: String = "gameplay_aim") -> void:
 	if not app.current_level:
 		return
 	var level := app.current_level
 	var ball := level.get_node("Ball") as RigidBody3D
 	var camera := level.get_node("Camera3D") as Camera3D
 	var start := camera.unproject_position(ball.global_position)
-	var offsets := [
-		Vector2(0.0, 0.0),
-		Vector2(15.0, -22.0),
-		Vector2(42.0, -55.0),
-		Vector2(82.0, -86.0),
-		Vector2(132.0, -105.0),
-		Vector2(184.0, -96.0),
-	]
+	var end_offset := Vector2(0.0, -190.0)
+	var bend := 18.0
+	match variant:
+		"gameplay_aim_straight":
+			bend = 0.0
+		"gameplay_aim_left":
+			bend = -12.0
+		"gameplay_aim_right":
+			bend = 12.0
+		"gameplay_aim_strong":
+			bend = 42.0
+	var offsets: Array[Vector2] = [Vector2.ZERO]
+	var direction := end_offset.normalized()
+	var perpendicular := Vector2(-direction.y, direction.x)
+	for index in range(1, 14):
+		var t := float(index) / 13.0
+		offsets.append(end_offset * t + perpendicular * sin(t * PI) * bend)
 	level.call("_begin_swipe", start, -2)
 	for offset in offsets:
 		level.call("_update_swipe", start + offset)
