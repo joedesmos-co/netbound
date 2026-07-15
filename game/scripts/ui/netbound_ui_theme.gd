@@ -110,6 +110,11 @@ static func _register_label_variations(theme: Theme) -> void:
 	_register_label(theme, "LightNumericLabel", FONT_DISPLAY, 28, INK)
 	_register_label(theme, "LightSuccessLabel", FONT_BOLD, 17, Color("188d4a"))
 	_register_label(theme, "LightScreenTitle", FONT_DISPLAY, 48, INK)
+	_register_label(theme, "SkyScreenTitle", FONT_DISPLAY, 46, INK)
+	_register_label(theme, "SkySectionLabel", FONT_BOLD, 15, INK)
+	_register_label(theme, "SkyBodyLabel", FONT_BODY, 18, INK)
+	_register_label(theme, "SkyMetaLabel", FONT_BODY, 15, INK)
+	_register_label(theme, "SkyNumericLabel", FONT_DISPLAY, 28, INK)
 
 
 static func _register_label(
@@ -238,7 +243,7 @@ static func _register_panel_variations(theme: Theme) -> void:
 	theme.set_stylebox(
 		"panel",
 		"RailPanel",
-		edge_style(Color(INK, 0.95), CORAL, 7, 0, Vector2(0.0, 0.0))
+		edge_style(PAPER, CORAL, 7, 0, Vector2(0.0, 0.0))
 	)
 	theme.set_type_variation("ResultPanel", "PanelContainer")
 	theme.set_stylebox("panel", "ResultPanel", style(Color(INK, 0.96), SIGNAL, 0, 0))

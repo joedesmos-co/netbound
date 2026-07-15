@@ -206,7 +206,7 @@ static func get_unlock_requirement_text(cosmetic_id: String) -> String:
 		return "Unavailable"
 	match String(definition.acquisition_method):
 		ACQUISITION_DEFAULT:
-			return "Available by default"
+			return "Starter item"
 		ACQUISITION_COIN_PURCHASE:
 			return "%s Arcade Coins" % _format_number(int(definition.coin_price))
 		ACQUISITION_TOKEN_PURCHASE:
@@ -220,8 +220,8 @@ static func get_unlock_requirement_text(cosmetic_id: String) -> String:
 			if String(requirement.get("type", "")) == REQUIREMENT_LEVEL_COMPLETE:
 				return "Complete Level %02d" % _level_number(String(requirement.get("level_id", "")))
 			if String(requirement.get("type", "")) == REQUIREMENT_TOTAL_STARS:
-				return "Earn %d total stars" % int(requirement.get("stars", 0))
-	return "Unlock requirement unavailable"
+				return "Earn %d stars" % int(requirement.get("stars", 0))
+	return "Unavailable"
 
 
 static func get_price_text(cosmetic_id: String) -> String:

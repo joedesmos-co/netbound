@@ -143,7 +143,23 @@ func _test_shot_presentation_does_not_change_launch() -> bool:
 	for child in feedback.get_children():
 		if child is MeshInstance3D and child.name.begins_with("AimPreviewDot") and child.visible:
 			visible_dots += 1
-	passed = visible_dots > 4 and passed
+	var swipe_overlay := level.get_node("UI/SwipeOverlay") as SwipeOverlay
+	passed = visible_dots == 0 and swipe_overlay.is_active and not level.get_node("AimGuide").visible and passed
+
+	level.call("cancel_active_gesture_for_lifecycle")
+	level.set("developer_debug_enabled", true)
+	level.call("_update_debug_ui")
+	level._unhandled_input(press)
+	for point in _line_offsets(Vector2(0.0, -220.0), 8):
+		var debug_motion := InputEventMouseMotion.new()
+		debug_motion.position = start + point
+		level._unhandled_input(debug_motion)
+	await process_frame
+	visible_dots = 0
+	for child in feedback.get_children():
+		if child is MeshInstance3D and child.name.begins_with("AimPreviewDot") and child.visible:
+			visible_dots += 1
+	passed = visible_dots > 4 and level.get_node("AimGuide").visible and passed
 
 	var release := InputEventMouseButton.new()
 	release.button_index = MOUSE_BUTTON_LEFT

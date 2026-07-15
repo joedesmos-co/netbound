@@ -2,6 +2,8 @@ extends SceneTree
 
 const MovingObstacleScript = preload("res://scripts/components/moving_obstacle.gd")
 const TimedGateScript = preload("res://scripts/components/timed_gate.gd")
+const MenuBackdropScript = preload("res://scripts/ui/menu_backdrop.gd")
+const CosmeticVisualsScript = preload("res://scripts/cosmetics/cosmetic_visuals.gd")
 
 
 func _initialize() -> void:
@@ -12,6 +14,9 @@ func _run() -> void:
 	var passed := true
 	passed = _verify_moving_obstacle_continuity() and passed
 	passed = _verify_timed_gate_continuity() and passed
+	passed = _verify_ui_contrast_tokens() and passed
+	passed = await _verify_classic_ball_identity() and passed
+	passed = await _verify_single_aim_system() and passed
 	passed = await _verify_production_side_goal_flow() and passed
 	print("GAMEPLAY_CLARITY verify=", "PASS" if passed else "FAIL")
 	quit(0 if passed else 1)
@@ -107,6 +112,127 @@ func _sample_timed_gate(fps: int) -> Dictionary:
 	}
 	gate.free()
 	return result
+
+
+func _verify_ui_contrast_tokens() -> bool:
+	var sky_text := _contrast_ratio(NetboundUITheme.INK, NetboundUITheme.SKY)
+	var paper_text := _contrast_ratio(NetboundUITheme.INK, NetboundUITheme.PAPER)
+	var dark_text := _contrast_ratio(NetboundUITheme.CHALK, NetboundUITheme.INK)
+	var action_text := _contrast_ratio(NetboundUITheme.INK, NetboundUITheme.SIGNAL)
+	var ok := minf(minf(sky_text, paper_text), minf(dark_text, action_text)) >= 4.5
+	print(
+		"GAMEPLAY_CLARITY contrast sky=", sky_text,
+		" paper=", paper_text,
+		" dark=", dark_text,
+		" action=", action_text,
+		" ok=", ok
+	)
+	return ok
+
+
+func _contrast_ratio(a: Color, b: Color) -> float:
+	var light := maxf(_relative_luminance(a), _relative_luminance(b))
+	var dark := minf(_relative_luminance(a), _relative_luminance(b))
+	return (light + 0.05) / (dark + 0.05)
+
+
+func _relative_luminance(color: Color) -> float:
+	var linear := Vector3(color.r, color.g, color.b)
+	linear.x = linear.x / 12.92 if linear.x <= 0.04045 else pow((linear.x + 0.055) / 1.055, 2.4)
+	linear.y = linear.y / 12.92 if linear.y <= 0.04045 else pow((linear.y + 0.055) / 1.055, 2.4)
+	linear.z = linear.z / 12.92 if linear.z <= 0.04045 else pow((linear.z + 0.055) / 1.055, 2.4)
+	return linear.dot(Vector3(0.2126, 0.7152, 0.0722))
+
+
+func _verify_classic_ball_identity() -> bool:
+	var packed: PackedScene = load("res://levels/level_01.tscn")
+	var level: Node3D = packed.instantiate() as Node3D
+	get_root().add_child(level)
+	for _frame in 4:
+		await process_frame
+	var ball := level.get_node("Ball") as RigidBody3D
+	CosmeticVisualsScript.apply_ball_skin(ball, "ball_classic")
+	var collision := ball.get_node("CollisionShape3D") as CollisionShape3D
+	var sphere := collision.shape as SphereShape3D
+	var attachments := ball.get_node_or_null("NetboundBallVisualAttachments")
+	var band := ball.get_node("Band") as MeshInstance3D
+	var backdrop := MenuBackdropScript.new()
+	var ok := (
+		attachments != null
+		and attachments.get_child_count() >= 8
+		and not band.visible
+		and is_equal_approx(sphere.radius, 0.49)
+		and is_equal_approx(ball.mass, 0.43)
+		and backdrop.has_method("_draw_soccer_ball")
+	)
+	print(
+		"GAMEPLAY_CLARITY classic_ball panels=",
+		attachments.get_child_count() if attachments else 0,
+		" radius=", sphere.radius,
+		" mass=", ball.mass,
+		" menu_motif=", backdrop.has_method("_draw_soccer_ball"),
+		" ok=", ok
+	)
+	backdrop.free()
+	level.queue_free()
+	await process_frame
+	return ok
+
+
+func _verify_single_aim_system() -> bool:
+	var packed: PackedScene = load("res://levels/level_01.tscn")
+	var level: Node3D = packed.instantiate() as Node3D
+	get_root().add_child(level)
+	for _frame in 4:
+		await process_frame
+	await physics_frame
+
+	var ball: RigidBody3D = level.get_node("Ball") as RigidBody3D
+	var camera: Camera3D = level.get_node("Camera3D") as Camera3D
+	var overlay: SwipeOverlay = level.get_node("UI/SwipeOverlay") as SwipeOverlay
+	var aim_guide: Node3D = level.get_node("AimGuide") as Node3D
+	var power_bar := level.get_node("UI/PowerBarContainer") as Control
+	var shot_readout := level.get_node("UI/PresentationOverlay/ShotReadout") as Label
+	var start := camera.unproject_position(ball.global_position)
+	var finish := start + Vector2(125.0, -185.0)
+	level.call("_begin_swipe", start, -2)
+	for index in 12:
+		level.call("_update_swipe", start.lerp(finish, float(index + 1) / 12.0))
+
+	var visible_dots := 0
+	for child in level.get_node("GameplayFeedback").get_children():
+		if child is MeshInstance3D and child.name.begins_with("AimPreviewDot") and child.visible:
+			visible_dots += 1
+	var normal_ok := (
+		overlay.is_active
+		and overlay.swipe_points.size() >= 2
+		and overlay.ball_screen_position.distance_to(start) <= 1.0
+		and not aim_guide.visible
+		and not power_bar.visible
+		and not shot_readout.visible
+		and visible_dots == 0
+	)
+	level.call("cancel_active_gesture_for_lifecycle")
+	var clears_ok := not overlay.is_active and overlay.swipe_points.is_empty()
+
+	level.set("developer_debug_enabled", true)
+	level.call("_update_debug_ui")
+	level.call("_begin_swipe", start, -2)
+	for index in 12:
+		level.call("_update_swipe", start.lerp(finish, float(index + 1) / 12.0))
+	var developer_preview_ok := aim_guide.visible and power_bar.visible and shot_readout.visible
+	level.call("cancel_active_gesture_for_lifecycle")
+	var ok: bool = normal_ok and clears_ok and developer_preview_ok
+	print(
+		"GAMEPLAY_CLARITY single_aim normal=", normal_ok,
+		" clears=", clears_ok,
+		" developer_preview=", developer_preview_ok,
+		" visible_dots=", visible_dots,
+		" ok=", ok
+	)
+	level.queue_free()
+	await process_frame
+	return ok
 
 
 func _verify_production_side_goal_flow() -> bool:

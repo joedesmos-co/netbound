@@ -64,6 +64,11 @@ func _run() -> void:
 
 
 func _show_requested_screen() -> void:
+	if screen_name == "gameplay_aim":
+		app.load_level("level_01")
+		await _wait_for_level()
+		_show_gameplay_aim()
+		return
 	if screen_name.begins_with("gameplay_"):
 		var level_id := screen_name.trim_prefix("gameplay_")
 		if LevelRegistryScript.has_level_id(level_id):
@@ -175,6 +180,26 @@ func _show_requested_screen() -> void:
 			await _show_success("level_10")
 		_:
 			push_error("Unknown UI audit screen: %s" % screen_name)
+
+
+func _show_gameplay_aim() -> void:
+	if not app.current_level:
+		return
+	var level := app.current_level
+	var ball := level.get_node("Ball") as RigidBody3D
+	var camera := level.get_node("Camera3D") as Camera3D
+	var start := camera.unproject_position(ball.global_position)
+	var offsets := [
+		Vector2(0.0, 0.0),
+		Vector2(15.0, -22.0),
+		Vector2(42.0, -55.0),
+		Vector2(82.0, -86.0),
+		Vector2(132.0, -105.0),
+		Vector2(184.0, -96.0),
+	]
+	level.call("_begin_swipe", start, -2)
+	for offset in offsets:
+		level.call("_update_swipe", start + offset)
 
 
 func _show_cosmetic_preview(category: String, cosmetic_id: String) -> void:

@@ -398,8 +398,8 @@ func _show_main_menu_internal() -> void:
 	composition.add_child(brand_column)
 
 	var brand_eyebrow := Label.new()
-	brand_eyebrow.text = "SWIPE IT. BEND IT. SCORE!"
-	brand_eyebrow.theme_type_variation = "SectionLabel"
+	brand_eyebrow.text = "SWIPE. BEND. SCORE."
+	brand_eyebrow.theme_type_variation = "SkySectionLabel"
 	brand_eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	brand_column.add_child(brand_eyebrow)
 
@@ -408,16 +408,10 @@ func _show_main_menu_internal() -> void:
 	brand_column.add_child(wordmark)
 
 	var subtitle := Label.new()
-	subtitle.text = "TRICK-SHOT FOOTBALL, TURNED UP."
-	subtitle.theme_type_variation = "BodyLabel"
+	subtitle.text = "TRICK SHOTS. BIG GOALS."
+	subtitle.theme_type_variation = "SkyBodyLabel"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	brand_column.add_child(subtitle)
-
-	var identity_note := Label.new()
-	identity_note.text = "10 WILD SHOTS. ZERO WAITING."
-	identity_note.theme_type_variation = "MetaLabel"
-	identity_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	brand_column.add_child(identity_note)
 
 	var action_rail := PanelContainer.new()
 	action_rail.theme_type_variation = "RailPanel"
@@ -436,8 +430,8 @@ func _show_main_menu_internal() -> void:
 	rail_margin.add_child(layout)
 
 	var next_label := Label.new()
-	next_label.text = "NEXT CHALLENGE"
-	next_label.theme_type_variation = "SectionLabel"
+	next_label.text = "UP NEXT"
+	next_label.theme_type_variation = "LightSectionLabel"
 	layout.add_child(next_label)
 
 	play_button = _new_menu_button("PLAY", true)
@@ -447,7 +441,7 @@ func _show_main_menu_internal() -> void:
 	layout.add_child(play_button)
 
 	play_subtitle_label = Label.new()
-	play_subtitle_label.theme_type_variation = "MetaLabel"
+	play_subtitle_label.theme_type_variation = "LightMetaLabel"
 	layout.add_child(play_subtitle_label)
 
 	var divider := HSeparator.new()
@@ -476,26 +470,26 @@ func _show_main_menu_internal() -> void:
 	layout.add_child(utility_links)
 
 	var store_button := _new_small_button("STORE")
-	store_button.theme_type_variation = "QuietButton"
+	store_button.theme_type_variation = "LightQuietButton"
 	store_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	store_button.pressed.connect(func() -> void: show_store("main_menu"))
 	utility_links.add_child(store_button)
 
 	var settings_button := _new_small_button("SETTINGS")
-	settings_button.theme_type_variation = "QuietButton"
+	settings_button.theme_type_variation = "LightQuietButton"
 	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_button.pressed.connect(func() -> void: show_settings("main_menu"))
 	utility_links.add_child(settings_button)
 
 	if not OS.has_feature("mobile"):
 		var quit_button := _new_small_button("QUIT")
-		quit_button.theme_type_variation = "QuietButton"
+		quit_button.theme_type_variation = "LightQuietButton"
 		quit_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		quit_button.pressed.connect(func() -> void: get_tree().quit())
 		utility_links.add_child(quit_button)
 
 	status_label = Label.new()
-	status_label.theme_type_variation = "MetaLabel"
+	status_label.theme_type_variation = "LightMetaLabel"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	layout.add_child(status_label)
 
@@ -503,7 +497,7 @@ func _show_main_menu_internal() -> void:
 	build.text = get_app_version_label()
 	build.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	build.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	build.theme_type_variation = "MetaLabel"
+	build.theme_type_variation = "SkyMetaLabel"
 	build.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_position_bottom_right_label(build)
 	screen.add_child(build)
@@ -633,11 +627,11 @@ func _show_settings_internal() -> void:
 	header.add_child(title_stack)
 	var title := Label.new()
 	title.text = "SETTINGS"
-	title.theme_type_variation = "ScreenTitle"
+	title.theme_type_variation = "SkyScreenTitle"
 	title_stack.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "AUDIO  /  PLAY FEEL  /  DISPLAY"
-	subtitle.theme_type_variation = "LightMetaLabel"
+	subtitle.text = "SOUND  /  FEEL  /  DISPLAY"
+	subtitle.theme_type_variation = "SkyMetaLabel"
 	title_stack.add_child(subtitle)
 
 	var groups := HBoxContainer.new()
@@ -706,7 +700,7 @@ func _show_cosmetics_internal() -> void:
 	outer.add_child(header)
 
 	var back_button := _new_small_button("BACK")
-	back_button.theme_type_variation = "QuietButton"
+	back_button.theme_type_variation = "LightQuietButton"
 	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(_return_from_submenu)
 	header.add_child(back_button)
@@ -717,12 +711,8 @@ func _show_cosmetics_internal() -> void:
 	header.add_child(title_stack)
 	var title := Label.new()
 	title.text = "THE LOCKER"
-	title.theme_type_variation = "ScreenTitle"
+	title.theme_type_variation = "SkyScreenTitle"
 	title_stack.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "BALLS  /  TRAILS  /  GOAL FX"
-	subtitle.theme_type_variation = "MetaLabel"
-	title_stack.add_child(subtitle)
 
 	var balances := VBoxContainer.new()
 	balances.add_theme_constant_override("separation", 0)
@@ -730,11 +720,11 @@ func _show_cosmetics_internal() -> void:
 	var stars := Label.new()
 	stars.text = "STARS  %d / %d" % [_get_save_service().get_total_stars(), MAX_STARS]
 	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	stars.theme_type_variation = "NumericLabel"
+	stars.theme_type_variation = "SkyNumericLabel"
 	balances.add_child(stars)
 	cosmetic_balance_label = Label.new()
 	cosmetic_balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cosmetic_balance_label.theme_type_variation = "LightMetaLabel"
+	cosmetic_balance_label.theme_type_variation = "SkyMetaLabel"
 	balances.add_child(cosmetic_balance_label)
 
 	var tabs := HBoxContainer.new()
@@ -757,7 +747,7 @@ func _show_cosmetics_internal() -> void:
 	outer.add_child(filters)
 	var filter_label := Label.new()
 	filter_label.text = "BROWSE"
-	filter_label.theme_type_variation = "LightSectionLabel"
+	filter_label.theme_type_variation = "SkySectionLabel"
 	filter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	filters.add_child(filter_label)
 	cosmetic_rarity_filter = OptionButton.new()
@@ -772,13 +762,6 @@ func _show_cosmetics_internal() -> void:
 		cosmetic_ownership_filter.add_item(ownership_name)
 	cosmetic_ownership_filter.item_selected.connect(_on_cosmetic_ownership_filter_selected)
 	filters.add_child(cosmetic_ownership_filter)
-	var shop_note := Label.new()
-	shop_note.text = "GAMEPLAY REWARDS + COSMETIC-ONLY SHOP"
-	shop_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	shop_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	shop_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop_note.theme_type_variation = "LightMetaLabel"
-	filters.add_child(shop_note)
 
 	var showcase := HBoxContainer.new()
 	showcase.add_theme_constant_override("separation", NetboundUITheme.SPACE_4)
@@ -1161,16 +1144,16 @@ func _show_store_internal() -> void:
 	header.add_child(title_stack)
 	var title := Label.new()
 	title.text = "STORE"
-	title.theme_type_variation = "ScreenTitle"
+	title.theme_type_variation = "SkyScreenTitle"
 	title_stack.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "OPTIONAL EXTRAS. THE FULL ROUTE STAYS FREE."
-	subtitle.theme_type_variation = "LightMetaLabel"
+	subtitle.text = "OPTIONAL EXTRAS."
+	subtitle.theme_type_variation = "SkyMetaLabel"
 	title_stack.add_child(subtitle)
 	store_wallet_label = Label.new()
 	store_wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	store_wallet_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	store_wallet_label.theme_type_variation = "NumericLabel"
+	store_wallet_label.theme_type_variation = "SkyNumericLabel"
 	store_wallet_label.custom_minimum_size = Vector2(150.0, 0.0)
 	store_wallet_label.size_flags_horizontal = Control.SIZE_SHRINK_END
 	header.add_child(store_wallet_label)
@@ -1199,7 +1182,7 @@ func _show_store_internal() -> void:
 		PRODUCT_REMOVE_ADS,
 		"CLEAN PLAY",
 		"REMOVE ADS",
-		"Turns off interstitial ads permanently. Rewarded continues stay optional.",
+		"No interstitials. Rewarded ads stay optional.",
 		false
 	)
 	store_remove_ads_button = remove_offer.button as Button
@@ -1210,7 +1193,7 @@ func _show_store_internal() -> void:
 		PRODUCT_STARTER_PACK,
 		"SUPPORTER STYLE",
 		"STARTER PACK",
-		"Remove Ads + Supporter cosmetics.\n2,500 Coins + 300 Net Tokens.",
+		"Supporter set + 2,500 Coins + 300 Tokens.",
 		true
 	)
 	store_starter_pack_button = starter_offer.button as Button
@@ -1328,9 +1311,9 @@ func _build_store_offer(
 	facts.theme_type_variation = "LightMetaLabel"
 	facts.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	facts.text = (
-		"INTERSTITIAL ADS: OFF\nREWARDED CONTINUES\nYOUR CHOICE"
+		"PERMANENT  /  REWARDED ADS OPTIONAL"
 		if product_id == PRODUCT_REMOVE_ADS
-		else "SUPPORTER BALL + TRAIL + GOAL FX\n2,500 COINS + 300 TOKENS\nREMOVE ADS"
+		else "SUPPORTER BALL + TRAIL + GOAL FX  /  REMOVE ADS"
 	)
 	box.add_child(facts)
 	var spacer := Control.new()
@@ -1539,13 +1522,13 @@ func _build_pause_overlay() -> Control:
 	var box := rail.box as VBoxContainer
 
 	var eyebrow := Label.new()
-	eyebrow.text = "BALL HELD. CLOCK STOPPED."
-	eyebrow.theme_type_variation = "SectionLabel"
+	eyebrow.text = "TIME OUT"
+	eyebrow.theme_type_variation = "LightSectionLabel"
 	box.add_child(eyebrow)
 
 	var title := Label.new()
 	title.text = "PAUSED"
-	title.theme_type_variation = "ResultTitle"
+	title.theme_type_variation = "LightResultTitle"
 	box.add_child(title)
 
 	var resume_button := _new_menu_button("RESUME", true)
@@ -1564,19 +1547,19 @@ func _build_pause_overlay() -> Control:
 	box.add_child(utility_row)
 
 	var settings_button := _new_small_button("SETTINGS")
-	settings_button.theme_type_variation = "QuietButton"
+	settings_button.theme_type_variation = "LightQuietButton"
 	settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_button.pressed.connect(func() -> void: show_settings("pause"))
 	utility_row.add_child(settings_button)
 
 	var select_button := _new_small_button("LEVELS")
-	select_button.theme_type_variation = "QuietButton"
+	select_button.theme_type_variation = "LightQuietButton"
 	select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	select_button.pressed.connect(show_level_select)
 	utility_row.add_child(select_button)
 
 	var menu_button := _new_small_button("MAIN MENU")
-	menu_button.theme_type_variation = "QuietButton"
+	menu_button.theme_type_variation = "LightQuietButton"
 	menu_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_button.pressed.connect(show_main_menu)
 	utility_row.add_child(menu_button)

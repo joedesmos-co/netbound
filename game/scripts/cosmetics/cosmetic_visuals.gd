@@ -5,9 +5,11 @@ const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_regist
 const BallTrailScript := preload("res://scripts/cosmetics/ball_trail.gd")
 
 const GOAL_EFFECT_GROUP := "netbound_cosmetic_goal_effect"
+const BALL_ATTACHMENT_NAME := "NetboundBallVisualAttachments"
 
 static var _ball_main_material_cache: Dictionary = {}
 static var _ball_accent_material_cache: Dictionary = {}
+static var _classic_patch_mesh: CylinderMesh
 
 
 static func apply_to_ball(ball: RigidBody3D, ball_skin_id: String, trail_id: String) -> void:
@@ -34,10 +36,56 @@ static func apply_ball_skin(ball: RigidBody3D, ball_skin_id: String) -> void:
 	var main_material := _ball_main_material(skin_id)
 	var accent_material := _ball_accent_material(skin_id)
 	main_mesh.material_override = main_material
+	_clear_ball_visual_attachments(ball)
 	for accent in [band, patch_front, patch_back]:
 		if accent:
-			accent.visible = true
+			accent.visible = skin_id != "ball_classic"
 			accent.material_override = accent_material
+	if skin_id == "ball_classic":
+		_add_classic_soccer_panels(ball, accent_material)
+
+
+static func _clear_ball_visual_attachments(ball: RigidBody3D) -> void:
+	var attachments := ball.get_node_or_null(BALL_ATTACHMENT_NAME)
+	if attachments:
+		attachments.free()
+
+
+static func _add_classic_soccer_panels(ball: RigidBody3D, material: StandardMaterial3D) -> void:
+	var attachments := Node3D.new()
+	attachments.name = BALL_ATTACHMENT_NAME
+	ball.add_child(attachments)
+	var normals: Array[Vector3] = [
+		Vector3(0.0, 0.0, 1.0),
+		Vector3(0.0, 0.0, -1.0),
+		Vector3(0.0, 1.0, 0.0),
+		Vector3(0.0, -1.0, 0.0),
+		Vector3(0.82, 0.28, 0.5).normalized(),
+		Vector3(-0.82, 0.28, 0.5).normalized(),
+		Vector3(0.72, -0.42, -0.54).normalized(),
+		Vector3(-0.72, -0.42, -0.54).normalized(),
+	]
+	for index in normals.size():
+		var normal := normals[index]
+		var patch := MeshInstance3D.new()
+		patch.name = "SoccerPanel%02d" % index
+		patch.mesh = _get_classic_patch_mesh()
+		patch.material_override = material
+		patch.position = normal * 0.487
+		patch.basis = Basis(Quaternion(Vector3.UP, normal))
+		attachments.add_child(patch)
+
+
+static func _get_classic_patch_mesh() -> CylinderMesh:
+	if _classic_patch_mesh:
+		return _classic_patch_mesh
+	_classic_patch_mesh = CylinderMesh.new()
+	_classic_patch_mesh.top_radius = 0.12
+	_classic_patch_mesh.bottom_radius = 0.12
+	_classic_patch_mesh.height = 0.018
+	_classic_patch_mesh.radial_segments = 5
+	_classic_patch_mesh.rings = 1
+	return _classic_patch_mesh
 
 
 static func apply_ball_trail(ball: RigidBody3D, trail_id: String) -> void:

@@ -976,7 +976,7 @@ func _clear_swipe_visuals() -> void:
 
 
 func _update_aim_guide() -> void:
-	if not is_swiping or not is_swipe_valid:
+	if not developer_debug_enabled or not is_swiping or not is_swipe_valid:
 		_hide_aim_guide()
 		return
 
@@ -1029,6 +1029,10 @@ func _apply_presentation_settings() -> void:
 
 
 func _update_presentation_aim_preview() -> void:
+	if not developer_debug_enabled:
+		if gameplay_feedback:
+			gameplay_feedback.clear_aim_preview()
+		return
 	if not gameplay_feedback or not is_swiping or not is_swipe_valid:
 		return
 	var launch_velocity := _current_preview_launch_velocity()
@@ -1163,7 +1167,7 @@ func _update_debug_ui() -> void:
 	loft_category_label.visible = developer_debug_enabled
 	shot_debug_label.visible = developer_debug_enabled
 	if power_bar_container:
-		power_bar_container.visible = is_swiping
+		power_bar_container.visible = developer_debug_enabled and is_swiping
 
 	power_label.text = "Launch Speed: %.2f (ratio %.2f)" % [current_launch_speed, current_power_ratio]
 	direction_label.text = "Direction: (%.2f, %.2f, %.2f)" % [

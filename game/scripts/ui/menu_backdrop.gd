@@ -70,8 +70,7 @@ func _draw_menu_field(size: Vector2) -> void:
 	var ball_index := clampi(roundi(ball_ratio * float(path.size() - 1)), 0, path.size() - 1)
 	var ball_position := path[ball_index]
 	draw_circle(ball_position + Vector2(4.0, 6.0), 18.0, Color(NetboundUITheme.INK, 0.24))
-	draw_circle(ball_position, 18.0, NetboundUITheme.CHALK)
-	draw_circle(ball_position + Vector2(-4.0, -3.0), 5.0, NetboundUITheme.INK)
+	_draw_soccer_ball(ball_position, 18.0)
 	var target := path[-1]
 	draw_arc(target, 34.0, 0.0, TAU, 28, NetboundUITheme.CORAL, 7.0, true)
 	draw_arc(target, 15.0, 0.0, TAU, 20, NetboundUITheme.CHALK, 4.0, true)
@@ -117,9 +116,6 @@ func _draw_secondary_field(size: Vector2) -> void:
 			3.0,
 			true
 		)
-	var target := Vector2(size.x * 0.86, size.y * 0.22)
-	draw_arc(target, 72.0, 0.0, TAU, 36, Color(NetboundUITheme.CORAL, 0.52), 9.0, true)
-	draw_arc(target, 30.0, 0.0, TAU, 28, Color(NetboundUITheme.CHALK, 0.84), 5.0, true)
 	_draw_cloud(Vector2(size.x * 0.13, size.y * 0.16), size.y * 0.045)
 
 
@@ -133,6 +129,32 @@ func _draw_cloud(center: Vector2, radius: float) -> void:
 		cloud,
 		true
 	)
+
+
+func _draw_soccer_ball(center: Vector2, radius: float) -> void:
+	draw_circle(center, radius, NetboundUITheme.CHALK)
+	draw_arc(center, radius, 0.0, TAU, 30, NetboundUITheme.INK, 2.0, true)
+	var center_patch := _regular_polygon(center, radius * 0.29, 5, -PI * 0.5)
+	draw_colored_polygon(center_patch, NetboundUITheme.INK)
+	for index in 5:
+		var angle := -PI * 0.5 + TAU * float(index) / 5.0
+		var patch_center := center + Vector2(cos(angle), sin(angle)) * radius * 0.72
+		var patch := _regular_polygon(patch_center, radius * 0.18, 5, angle)
+		draw_colored_polygon(patch, NetboundUITheme.INK)
+		draw_line(center_patch[index], patch_center, Color(NetboundUITheme.INK, 0.62), 1.4, true)
+
+
+func _regular_polygon(
+	center: Vector2,
+	radius: float,
+	sides: int,
+	rotation: float
+) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for index in sides:
+		var angle := rotation + TAU * float(index) / float(sides)
+		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	return points
 
 
 func _quadratic_path(start: Vector2, control: Vector2, end: Vector2, count: int) -> PackedVector2Array:

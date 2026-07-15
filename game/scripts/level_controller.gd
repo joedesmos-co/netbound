@@ -478,7 +478,7 @@ func _apply_level_definition_ui_values() -> void:
 	var instruction_kicker := top_left_ui.get_node_or_null("InstructionKicker") as Label
 	if instruction_kicker:
 		var level_name := level_definition.display_name if level_definition else "OPEN RANGE"
-		instruction_kicker.text = "TRY THIS!  /  %s" % String(level_name).to_upper()
+		instruction_kicker.text = String(level_name).to_upper()
 
 
 func _setup_goal_targets() -> void:
