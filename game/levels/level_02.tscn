@@ -31,7 +31,7 @@ size = Vector3(12.4, 0.12, 0.64)
 level_definition = ExtResource("2_level_def")
 
 [node name="Obstacle" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.8, 0.38, -2.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.38, -2.6)
 
 [node name="Gate" type="Node3D" parent="."]
 script = ExtResource("3_timed_gate")

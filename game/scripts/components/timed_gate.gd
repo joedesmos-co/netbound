@@ -8,6 +8,7 @@ const RESET_GROUP := "netbound_level_resettable"
 @export var open_position: Vector3 = Vector3(0.0, 4.0, 0.0)
 @export var closed_duration: float = 1.0
 @export var open_duration: float = 1.0
+@export_range(0.05, 1.0, 0.01) var transition_duration: float = 0.42
 @export var starts_open: bool = false
 @export var start_phase_seconds: float = 0.0
 @export var active: bool = true
@@ -45,14 +46,47 @@ func get_reset_signature() -> String:
 
 
 func _apply_gate_state() -> void:
-	is_open = _is_open_at_time(elapsed)
+	var openness := _openness_at_time(elapsed)
+	is_open = openness >= 0.999
 	if target:
-		target.position = open_position if is_open else closed_position
+		target.position = closed_position.lerp(open_position, openness)
 
 
 func _is_open_at_time(time_seconds: float) -> bool:
-	var cycle_length := maxf(open_duration + closed_duration, 0.001)
+	return _openness_at_time(time_seconds) >= 0.999
+
+
+func _openness_at_time(time_seconds: float) -> float:
+	var open_hold := maxf(open_duration, 0.0)
+	var closed_hold := maxf(closed_duration, 0.0)
+	var travel := maxf(transition_duration, 0.001)
+	var cycle_length := maxf(open_hold + closed_hold + travel * 2.0, 0.001)
 	var cycle_time := fposmod(time_seconds, cycle_length)
+
 	if starts_open:
-		return cycle_time < open_duration
-	return cycle_time >= closed_duration
+		if cycle_time < open_hold:
+			return 1.0
+		cycle_time -= open_hold
+		if cycle_time < travel:
+			return 1.0 - _smooth_motion(cycle_time / travel)
+		cycle_time -= travel
+		if cycle_time < closed_hold:
+			return 0.0
+		cycle_time -= closed_hold
+		return _smooth_motion(cycle_time / travel)
+
+	if cycle_time < closed_hold:
+		return 0.0
+	cycle_time -= closed_hold
+	if cycle_time < travel:
+		return _smooth_motion(cycle_time / travel)
+	cycle_time -= travel
+	if cycle_time < open_hold:
+		return 1.0
+	cycle_time -= open_hold
+	return 1.0 - _smooth_motion(cycle_time / travel)
+
+
+func _smooth_motion(value: float) -> float:
+	var t := clampf(value, 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)

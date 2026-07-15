@@ -3,6 +3,12 @@ extends Node3D
 
 signal goal_scored
 
+const ENTRY_NONE: StringName = &"none"
+const ENTRY_FRONT: StringName = &"front"
+const ENTRY_LEFT: StringName = &"left"
+const ENTRY_RIGHT: StringName = &"right"
+const ENTRY_REAR: StringName = &"rear"
+
 @export var goal_line_z: float = -10.0
 @export var goal_center_x: float = 0.0
 @export var post_half_width: float = 11.0
@@ -12,10 +18,11 @@ signal goal_scored
 @export var debug_goal_detection: bool = false
 @export var show_debug_volumes: bool = false
 
-var crossed_goal_line: bool = false
+var crossed_entry_boundary: bool = false
 var entered_goal_interior: bool = false
 var goal_emitted: bool = false
 var crossing_point: Vector3 = Vector3.ZERO
+var entry_boundary: StringName = ENTRY_NONE
 
 var _previous_ball_position: Vector3 = Vector3.ZERO
 var _tracking_active: bool = false
@@ -68,10 +75,11 @@ func set_level_state_name(state_name: String) -> void:
 
 
 func reset_shot_tracking() -> void:
-	crossed_goal_line = false
+	crossed_entry_boundary = false
 	entered_goal_interior = false
 	goal_emitted = false
 	crossing_point = Vector3.ZERO
+	entry_boundary = ENTRY_NONE
 	_previous_ball_position = Vector3.ZERO
 	_tracking_active = false
 	_tracked_shot_id = -1
@@ -95,27 +103,27 @@ func process_ball(ball_position: Vector3, radius: float, shot_id: int) -> bool:
 		return false
 
 	var previous := _previous_ball_position
-	if not crossed_goal_line:
-		var sweep := _detect_swept_crossing(previous, ball_position, radius)
+	if not crossed_entry_boundary:
+		var sweep := _detect_swept_entry(previous, ball_position, radius)
 		if sweep.valid:
-			var opening := _evaluate_opening_at_point(sweep.point, radius)
 			_log_crossing_detail(
 				previous,
 				ball_position,
 				sweep.point,
 				radius,
-				opening.reason if not opening.valid else "ok",
+				String(sweep.boundary),
 				shot_id
 			)
-			if opening.valid:
-				crossed_goal_line = true
-				crossing_point = sweep.point
-				# Score immediately on valid mouth crossing.
-				# Do not re-check width/height as the ball enters the side net.
-				entered_goal_interior = _is_in_interior(ball_position, radius)
-				_previous_ball_position = ball_position
-				return _emit_goal()
-		elif sweep.reason != "not_fully_crossed":
+			crossed_entry_boundary = true
+			crossing_point = sweep.point
+			entry_boundary = sweep.boundary
+			entered_goal_interior = entry_boundary != ENTRY_REAR
+			_previous_ball_position = ball_position
+			if entry_boundary == ENTRY_REAR:
+				_debug_print("rear_entry_rejected shot_id=%d" % shot_id)
+				return false
+			return _emit_goal()
+		elif sweep.reason != "no_entry_boundary_crossed":
 			_debug_print(sweep.reason)
 
 	_previous_ball_position = ball_position
@@ -157,37 +165,91 @@ func _emit_goal() -> bool:
 	return true
 
 
-func _detect_swept_crossing(previous: Vector3, current: Vector3, radius: float) -> Dictionary:
-	var prev_rear_z := previous.z + radius
-	var curr_rear_z := current.z + radius
+func _detect_swept_entry(previous: Vector3, current: Vector3, radius: float) -> Dictionary:
+	var candidates: Array[Dictionary] = []
+	var front_center_z := goal_line_z - radius
+	var rear_center_z := goal_line_z - interior_depth + radius
+	var left_center_x := goal_center_x - post_half_width + radius
+	var right_center_x := goal_center_x + post_half_width - radius
 
-	if prev_rear_z <= goal_line_z and curr_rear_z > goal_line_z:
-		return {"valid": false, "reason": "wrong_direction"}
+	_add_axis_crossing_candidate(
+		candidates, previous, current, 2, front_center_z, false, ENTRY_FRONT, radius
+	)
+	_add_axis_crossing_candidate(
+		candidates, previous, current, 0, left_center_x, true, ENTRY_LEFT, radius
+	)
+	_add_axis_crossing_candidate(
+		candidates, previous, current, 0, right_center_x, false, ENTRY_RIGHT, radius
+	)
+	_add_axis_crossing_candidate(
+		candidates, previous, current, 2, rear_center_z, true, ENTRY_REAR, radius
+	)
 
-	if prev_rear_z <= goal_line_z and curr_rear_z <= goal_line_z:
-		return {"valid": false, "reason": "not_fully_crossed"}
+	if candidates.is_empty():
+		return {"valid": false, "reason": "no_entry_boundary_crossed"}
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a.t) < float(b.t))
+	return candidates[0]
 
-	if prev_rear_z > goal_line_z and curr_rear_z <= goal_line_z:
-		var delta_z := current.z - previous.z
-		if absf(delta_z) <= 0.0001:
-			return {"valid": false, "reason": "not_fully_crossed"}
-		var target_center_z := goal_line_z - radius
-		var t := clampf((target_center_z - previous.z) / delta_z, 0.0, 1.0)
-		return {"valid": true, "point": previous.lerp(current, t), "reason": "ok"}
 
-	return {"valid": false, "reason": "not_fully_crossed"}
+func _add_axis_crossing_candidate(
+	candidates: Array[Dictionary],
+	previous: Vector3,
+	current: Vector3,
+	axis: int,
+	boundary: float,
+	increasing: bool,
+	boundary_name: StringName,
+	radius: float
+) -> void:
+	var previous_value := previous[axis]
+	var current_value := current[axis]
+	var crossed := (
+		(previous_value < boundary and current_value >= boundary)
+		if increasing
+		else (previous_value > boundary and current_value <= boundary)
+	)
+	if not crossed:
+		return
+	var delta := current_value - previous_value
+	if absf(delta) <= 0.0001:
+		return
+	var t := clampf((boundary - previous_value) / delta, 0.0, 1.0)
+	var point := previous.lerp(current, t)
+	if not _entry_point_fits_boundary(point, boundary_name, radius):
+		return
+	candidates.append({
+		"valid": true,
+		"point": point,
+		"boundary": boundary_name,
+		"t": t,
+		"reason": "ok",
+	})
+
+
+func _entry_point_fits_boundary(point: Vector3, boundary: StringName, radius: float) -> bool:
+	if not _evaluate_height_at_point(point, radius):
+		return false
+	if boundary == ENTRY_FRONT or boundary == ENTRY_REAR:
+		return absf(point.x - goal_center_x) + radius <= post_half_width
+	var front_center_z := goal_line_z - radius
+	var rear_center_z := goal_line_z - interior_depth + radius
+	return point.z <= front_center_z and point.z >= rear_center_z
 
 
 func _evaluate_opening_at_point(center: Vector3, radius: float) -> Dictionary:
 	# Whole-ball inside posts/crossbar at the crossing moment only.
 	if absf(center.x - goal_center_x) + radius > post_half_width:
 		return {"valid": false, "reason": "outside_left_right_opening_at_crossing"}
-	if center.y + radius > crossbar_height:
-		return {"valid": false, "reason": "above_crossbar_at_crossing"}
-	# Soft ground clamp: penetration from resting contact should not reject goals.
-	if center.y + radius * 0.25 < 0.0:
-		return {"valid": false, "reason": "below_ground_at_crossing"}
+	if not _evaluate_height_at_point(center, radius):
+		return {"valid": false, "reason": "outside_vertical_opening_at_crossing"}
 	return {"valid": true, "reason": "ok"}
+
+
+func _evaluate_height_at_point(center: Vector3, radius: float) -> bool:
+	if center.y + radius > crossbar_height:
+		return false
+	# Resting-contact penetration should not reject a ground-hugging arcade goal.
+	return center.y + radius * 0.25 >= 0.0
 
 
 func _is_in_interior(ball_position: Vector3, radius: float) -> bool:
@@ -204,7 +266,7 @@ func _log_crossing_detail(
 	shot_id: int
 ) -> void:
 	_debug_print(
-		"crossing prev=%s curr=%s point=%s radius=%s half_width=%s crossbar=%s reason=%s shot_id=%d state=%s" % [
+		"entry prev=%s curr=%s point=%s radius=%s half_width=%s crossbar=%s boundary=%s shot_id=%d state=%s" % [
 			previous,
 			current,
 			point,

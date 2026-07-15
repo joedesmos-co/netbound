@@ -232,7 +232,7 @@ mesh = SubResource("BoxMesh_ground")
 shape = SubResource("BoxShape3D_ground")
 
 [node name="Obstacle" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 0.38, -3.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.38, -3.8)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Obstacle"]
 mesh = SubResource("BoxMesh_obstacle")

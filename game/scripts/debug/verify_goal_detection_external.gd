@@ -40,9 +40,30 @@ func _run() -> void:
 	passed = _check_case(detector, "inside_right", Vector3(9.5, 3, -8.5), Vector3(10.0, 3, -12.5), true) and passed
 	passed = _check_case(
 		detector,
-		"diagonal_side_net",
+		"diagonal_front_entry",
 		Vector3(-8.0, 3, -8.5),
 		Vector3(-10.8, 2.2, -13.0),
+		true
+	) and passed
+	passed = _check_case(
+		detector,
+		"left_side_entry",
+		Vector3(-12.4, 2.8, -12.5),
+		Vector3(-9.8, 2.8, -12.5),
+		true
+	) and passed
+	passed = _check_case(
+		detector,
+		"right_side_entry",
+		Vector3(12.4, 2.8, -12.5),
+		Vector3(9.8, 2.8, -12.5),
+		true
+	) and passed
+	passed = _check_case(
+		detector,
+		"fast_left_side_entry",
+		Vector3(-18.0, 4.0, -13.6),
+		Vector3(-7.0, 4.0, -13.6),
 		true
 	) and passed
 	passed = _check_case(
@@ -73,6 +94,27 @@ func _run() -> void:
 		Vector3(0, 3, -8.5),
 		false
 	) and passed
+	passed = _check_case(
+		detector,
+		"rear_side_entry",
+		Vector3(-12.4, 2.8, -15.8),
+		Vector3(-9.8, 2.8, -15.8),
+		false
+	) and passed
+	passed = _check_case(
+		detector,
+		"outside_enclosure_pass",
+		Vector3(-13.2, 2.8, -8.5),
+		Vector3(-12.4, 2.8, -14.2),
+		false
+	) and passed
+	passed = _check_case(
+		detector,
+		"post_bounce_out",
+		Vector3(-10.3, 2.8, -8.5),
+		Vector3(-11.8, 2.8, -9.4),
+		false
+	) and passed
 
 	detector.sync_geometry(GOAL_Z, -4.0, HALF_W, BAR_H, 5.0, RADIUS)
 	passed = _check_case(
@@ -96,6 +138,12 @@ func _run() -> void:
 	var live_score := detector.process_ball(Vector3(-10.5, 2.0, -12.8), RADIUS, 7)
 	print("SCALE_LIVE side_entry_score=", live_score)
 	passed = passed and live_score
+
+	detector.begin_shot_tracking(8, Vector3(12.4, 2.5, -12.5))
+	var side_score := detector.process_ball(Vector3(9.8, 2.5, -12.5), RADIUS, 8)
+	var duplicate_score := detector.process_ball(Vector3(9.0, 2.5, -12.5), RADIUS, 8)
+	print("SCALE_LIVE true_side_entry=", side_score, " duplicate=", duplicate_score)
+	passed = passed and side_score and not duplicate_score
 
 	print("SCALE_LIVE verify=", "PASS" if passed else "FAIL")
 	quit(0 if passed else 1)
