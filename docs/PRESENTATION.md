@@ -145,8 +145,9 @@ Initial presentation budgets:
 - UI players: 4
 - Music players: 1
 - trail points per ball: 16
-- cosmetic confetti pieces: 24
-- cosmetic shockwave rings: 1 transient node
+- cosmetic celebration pieces: base maximum `38` on High, quality-scaled on lower tiers
+- cosmetic goal-effect roots: maximum `3` for Goal Portal; all other effects use `1-2`
+- cosmetic goal-effect lifetime: `0.52-1.36` seconds plus bounded cleanup
 - aim preview dots per active level: 14
 - gameplay camera feedback: one reusable component per level
 - launch rings/near-miss labels: transient and cleared on Reset/Retry
@@ -154,7 +155,7 @@ Initial presentation budgets:
 - contact shadows: one mesh per level
 - active UI tweens: transient and killed on screen/gameplay overlay clear
 - impact cooldown: 0.08-0.14 seconds depending on type
-- cached ball skin materials and reused same-trail materials on repeated cosmetic refresh
+- cached ball skin/detail materials and procedural detail meshes; attachments rebuild only when a skin is applied
 - no unbounded presentation arrays
 - no production debug spam
 

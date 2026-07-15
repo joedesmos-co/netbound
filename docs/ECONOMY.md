@@ -37,6 +37,21 @@ Net Tokens come from optional simulated products or completed rewarded ads:
 
 The daily rule is intentionally local-only. It is suitable for an offline prototype but is not a secure anti-tamper system.
 
+## Cosmetic Acquisition Mix
+
+The 38-item catalog intentionally mixes free progression and optional premium acquisition:
+
+| Acquisition | Count | Share |
+| --- | ---: | ---: |
+| Direct level/star gameplay unlock | 10 | 26.3% |
+| Arcade Coin purchase | 12 | 31.6% |
+| Net Token purchase | 8 | 21.1% |
+| Supporter entitlement | 3 | 7.9% |
+| Major star achievement | 2 | 5.3% |
+| Default | 3 | 7.9% |
+
+Arcade Coins are gameplay-earned, so more than half the catalog is obtainable without a real-money purchase. Creative high-tier rewards remain available through gameplay: Galaxy, Champion, Gold, Rainbow, Confetti, and Shockwave are not Token purchases. `trail_comet` moved from a 60-Token price to `6,500` Arcade Coins to strengthen the mid-game free route; existing ownership remains monotonic.
+
 ## Wallet API
 
 Primary autoload: `/root/WalletService`, class `NetboundWalletService`.

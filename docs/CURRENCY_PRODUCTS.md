@@ -34,7 +34,7 @@ Restore applies permanent ownership only. Starter Pack currency is never restore
 | `ball_fire` | Fire | Rare | 6 stars |
 | `ball_ice` | Ice | Rare | Complete Level 6 |
 | `ball_galaxy` | Galaxy | Epic | Complete Level 10 |
-| `ball_champion` | Champion | Epic | 27 stars |
+| `ball_champion` | Champion | Epic | 27 stars (gameplay unlock) |
 | `ball_gold` | Gold | Legendary | 30 stars |
 | `ball_supporter` | Supporter | Epic | Starter Pack |
 | `ball_candy` | Candy Stripe | Common | 1,000 Coins |
@@ -61,7 +61,7 @@ Restore applies permanent ownership only. Starter Pack currency is never restore
 | `trail_chalk` | Chalk Line | Common | 1,200 Coins |
 | `trail_bubble` | Bubbles | Common | 2,000 Coins |
 | `trail_streamers` | Paper Streamers | Rare | 4,500 Coins |
-| `trail_comet` | Comet Tail | Rare | 60 Tokens |
+| `trail_comet` | Comet Tail | Rare | 6,500 Coins |
 | `trail_pixel` | Pixel Dash | Epic | 140 Tokens |
 | `trail_starfall` | Starfall | Legendary | 300 Tokens |
 

@@ -2,6 +2,19 @@
 
 Phase 0 documents the current baseline. Later phases should turn this into an automated regression suite that validates the real production scene and input path.
 
+## Content Expansion Cosmetic Quality Contract
+
+`res://scripts/debug/verify_cosmetic_quality_external.gd` asserts:
+
+- all `38` cosmetics retain unique, valid registry definitions
+- acquisition counts remain `10` gameplay, `12` Coin, `8` Token, `3` supporter, `2` achievement, and `3` default
+- all `18` balls expose a named concept layer and bounded `0.66` visual footprint
+- every non-starter Rare/Epic/Legendary ball uses a concept beyond the intentional early soccer variants
+- every skin preserves ball mass `0.43`, collision radius `0.49`, collision scale, base mesh resource, and global launch speed
+- every goal effect creates `1-3` bounded roots, respects Low-quality node caps, and cleans itself completely
+
+This contract supplements the Phase 6 and economy RC suites; it does not replace their ownership, persistence, shop, or lifecycle checks.
+
 ## Baseline Environment
 
 - Godot: `/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot`

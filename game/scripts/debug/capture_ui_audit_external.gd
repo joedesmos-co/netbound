@@ -2,6 +2,7 @@ extends SceneTree
 
 const AppScene := preload("res://app/netbound_app.tscn")
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
+const CosmeticVisualsScript := preload("res://scripts/cosmetics/cosmetic_visuals.gd")
 
 const TEST_SAVE := "user://ui_audit_capture.json"
 const TEST_TMP := "user://ui_audit_capture.tmp"
@@ -44,7 +45,8 @@ func _run() -> void:
 	service.recording_enabled = true
 	_configure_capture_save()
 	await _show_requested_screen()
-	await create_timer(0.55, true, false, true).timeout
+	var capture_delay := 0.2 if screen_name.begins_with("gameplay_goal_") else 0.55
+	await create_timer(capture_delay, true, false, true).timeout
 	await _wait_frames(10)
 	_stabilize_animated_previews()
 	await _wait_frames(3)
@@ -64,6 +66,27 @@ func _run() -> void:
 
 
 func _show_requested_screen() -> void:
+	if screen_name.begins_with("cosmetics_ball_"):
+		_show_cosmetic_preview("ball", screen_name.trim_prefix("cosmetics_"))
+		return
+	if screen_name.begins_with("cosmetics_trail_"):
+		_show_cosmetic_preview("trail", screen_name.trim_prefix("cosmetics_"))
+		return
+	if screen_name.begins_with("cosmetics_goal_") and screen_name != "cosmetics_goal_effects":
+		_show_cosmetic_preview("goal_effect", screen_name.trim_prefix("cosmetics_"))
+		return
+	if screen_name.begins_with("gameplay_goal_"):
+		app.load_level("level_01")
+		await _wait_for_level()
+		var effect_id := screen_name.trim_prefix("gameplay_")
+		CosmeticVisualsScript.trigger_goal_effect(
+			app.current_level,
+			app.current_level.get("goal_root") as Node3D,
+			app.current_level.get("goal_flash") as ColorRect,
+			app.current_level.get("goal_particles") as CPUParticles3D,
+			effect_id
+		)
+		return
 	if screen_name == "gameplay_aim":
 		app.load_level("level_01")
 		await _wait_for_level()

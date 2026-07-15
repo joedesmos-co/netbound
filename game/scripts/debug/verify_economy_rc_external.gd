@@ -27,7 +27,7 @@ const EXPECTED_COSMETIC_PRICES := {
 	"trail_chalk": [1200, 0],
 	"trail_bubble": [2000, 0],
 	"trail_streamers": [4500, 0],
-	"trail_comet": [0, 60],
+	"trail_comet": [6500, 0],
 	"trail_pixel": [0, 140],
 	"trail_starfall": [0, 300],
 	"goal_ribbons": [1800, 0],
@@ -672,8 +672,8 @@ func _test_low_quality_catalog_and_lifecycle() -> bool:
 		particles.set_meta("phase9_base_amount", particles.amount)
 		level.call("_apply_quality_to_goal_particles")
 		effects_ok = particles.amount <= 44 and effects_ok
-		effects_ok = get_nodes_in_group(CosmeticVisualsScript.GOAL_EFFECT_GROUP).size() <= 2 and effects_ok
-		effects_ok = _count_descendants(level) - nodes_before <= 26 and effects_ok
+		effects_ok = get_nodes_in_group(CosmeticVisualsScript.GOAL_EFFECT_GROUP).size() <= 3 and effects_ok
+		effects_ok = _count_descendants(level) - nodes_before <= 20 and effects_ok
 		CosmeticVisualsScript.clear_goal_effects(level)
 		await _wait_frames(2)
 		effects_ok = get_nodes_in_group(CosmeticVisualsScript.GOAL_EFFECT_GROUP).is_empty() and effects_ok

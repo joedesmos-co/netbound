@@ -49,6 +49,7 @@ func set_preview(category: String, cosmetic_id: String) -> void:
 	CosmeticVisualsScript.clear_goal_effects(_world)
 	_hide_goal_preview_effect()
 	_reset_preview_ball()
+	_configure_preview_framing()
 	if category == CosmeticRegistryScript.CATEGORY_GOAL_EFFECT:
 		_trigger_goal_preview()
 
@@ -138,6 +139,25 @@ func _build_preview_world() -> void:
 	_add_goal_preview_effects(_goal_root)
 
 
+func _configure_preview_framing() -> void:
+	if not _camera or not _goal_root:
+		return
+	_goal_root.visible = current_category == CosmeticRegistryScript.CATEGORY_GOAL_EFFECT
+	match current_category:
+		CosmeticRegistryScript.CATEGORY_BALL:
+			_camera.position = Vector3(0.0, 1.18, 2.55)
+			_camera.fov = 42.0
+			_camera.look_at(Vector3(0.0, 0.62, 0.0), Vector3.UP)
+		CosmeticRegistryScript.CATEGORY_TRAIL:
+			_camera.position = Vector3(0.0, 1.45, 4.0)
+			_camera.fov = 46.0
+			_camera.look_at(Vector3(0.0, 0.65, 0.0), Vector3.UP)
+		_:
+			_camera.position = Vector3(0.0, 2.3, 5.0)
+			_camera.fov = 48.0
+			_camera.look_at(Vector3(0.0, 0.75, 0.0), Vector3.UP)
+
+
 func _add_ball_visual_children(parent_ball: RigidBody3D) -> void:
 	var main := MeshInstance3D.new()
 	main.name = "MeshInstance3D"
@@ -209,7 +229,7 @@ func _add_goal_preview_effects(parent_goal: Node3D) -> void:
 	_goal_preview_ring.material_override = _goal_preview_ring_material
 	parent_goal.add_child(_goal_preview_ring)
 
-	for index in 12:
+	for index in 24:
 		var piece := MeshInstance3D.new()
 		piece.name = "PreviewCelebrationPiece%02d" % index
 		var mesh := BoxMesh.new()
@@ -230,36 +250,56 @@ func _reset_preview_ball() -> void:
 
 
 func _trigger_goal_preview() -> void:
-	_goal_effect_timer = 1.45
+	_goal_effect_timer = 1.9
 	_goal_effect_age = 0.0
 	var colors := _goal_preview_colors()
 	for index in _goal_preview_pieces.size():
 		var piece := _goal_preview_pieces[index]
-		piece.visible = current_cosmetic_id not in ["goal_shockwave", "goal_portal"] or index < 6
+		piece.visible = current_cosmetic_id not in ["goal_shockwave", "goal_portal"] or index < 8
+		var box := piece.mesh as BoxMesh
+		if box:
+			match current_cosmetic_id:
+				"goal_ribbons":
+					box.size = Vector3(0.42, 0.035, 0.055)
+				"goal_fireworks", "goal_supporter":
+					box.size = Vector3(0.24, 0.04, 0.04)
+				"goal_splash":
+					box.size = Vector3(0.2, 0.16, 0.035)
+				_:
+					box.size = Vector3(0.16, 0.055, 0.075)
 		var material := piece.material_override as StandardMaterial3D
 		material.albedo_color = colors[index % colors.size()]
-	_goal_preview_ring.visible = current_cosmetic_id in ["goal_shockwave", "goal_supporter", "goal_fireworks", "goal_portal"]
+	_goal_preview_ring.visible = current_cosmetic_id in ["goal_classic", "goal_shockwave", "goal_supporter", "goal_fireworks", "goal_portal"]
 
 
 func _update_goal_preview(delta: float) -> void:
 	_goal_effect_age += delta
-	var progress := clampf(_goal_effect_age / 0.78, 0.0, 1.0)
+	var progress := clampf(_goal_effect_age / 1.15, 0.0, 1.0)
 	var eased := 1.0 - pow(1.0 - progress, 3.0)
 	for index in _goal_preview_pieces.size():
 		var piece := _goal_preview_pieces[index]
 		if not piece.visible:
 			continue
 		var angle := TAU * float(index) / float(_goal_preview_pieces.size())
-		var radius := lerpf(0.18, 1.75, eased)
-		piece.position = Vector3(
-			cos(angle) * radius,
-			0.95 + sin(angle * 2.0) * radius * 0.42 + eased * 0.42,
-			0.12 + sin(angle) * 0.12
-		)
+		var radius := lerpf(0.18, 2.55, eased)
+		if current_cosmetic_id == "goal_fireworks":
+			radius = lerpf(0.12, 1.05, eased)
+			var burst_center: float = [-1.15, 0.0, 1.15][index % 3]
+			piece.position = Vector3(
+				burst_center + cos(angle * 3.0) * radius,
+				1.1 + sin(angle * 3.0) * radius,
+				0.12
+			)
+		else:
+			piece.position = Vector3(
+				cos(angle) * radius,
+				0.95 + sin(angle * 2.0) * radius * 0.42 + eased * 0.42,
+				0.12 + sin(angle) * 0.12
+			)
 		piece.rotation_degrees = Vector3(index * 19.0, eased * 220.0, index * 31.0)
 		piece.scale = Vector3.ONE * (1.0 - progress * 0.55)
 	if _goal_preview_ring.visible:
-		_goal_preview_ring.scale = Vector3.ONE * lerpf(0.42, 2.15, eased)
+		_goal_preview_ring.scale = Vector3.ONE * lerpf(0.42, 3.0, eased)
 		var ring_color := _goal_preview_colors()[0]
 		ring_color.a = 0.72 * (1.0 - progress)
 		_goal_preview_ring_material.albedo_color = ring_color

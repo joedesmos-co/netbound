@@ -125,7 +125,8 @@ func _test_white_goal_preview() -> bool:
 	await process_frame
 	var passed := preview._goal_material != null \
 		and preview._goal_material.albedo_color.is_equal_approx(Color.WHITE) \
-		and preview._goal_preview_pieces.size() == 12 \
+		and preview._goal_root.visible \
+		and preview._goal_preview_pieces.size() == 24 \
 		and preview._goal_preview_ring != null
 	preview.queue_free()
 	await process_frame

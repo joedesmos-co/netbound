@@ -25,7 +25,7 @@ Each definition includes:
 - `is_default`
 - `default_unlocked`
 
-The registry validates unique IDs, valid categories and rarities, one default per category, acquisition/price combinations, unlock requirements, and referenced procedural resources. The launch catalog contains 38 items; the complete table is in `docs/CURRENCY_PRODUCTS.md`.
+The registry validates unique IDs, valid categories and rarities, one default per category, acquisition/price combinations, unlock requirements, and referenced procedural resources. The catalog contains 38 items; the complete table is in `docs/CURRENCY_PRODUCTS.md` and its visual classification is in `docs/COSMETIC_VISUAL_AUDIT.md`.
 
 ## IDs
 
@@ -82,6 +82,7 @@ Gameplay milestones:
 | Earn 12 total stars | Flame Trail |
 | Earn 18 total stars | Confetti Goal Effect |
 | Earn 24 total stars | Rainbow Trail |
+| Earn 27 total stars | Champion Ball |
 | Earn 30 total stars | Gold Ball, Shockwave Goal Effect |
 | Own Starter Pack | Supporter Ball, Supporter Trail, Supporter Burst |
 
@@ -123,22 +124,23 @@ The Cosmetics screen may preview them while locked and shows “Own the Starter 
 
 `level_controller.gd` refreshes selected cosmetics from `/root/SaveService` on ready, reset, retry, and goal feedback.
 
-- Ball skins use material overrides on existing visual mesh children.
+- Ball skins keep the original sphere mesh and add a bounded visual-only concept layer. Every attachment root records a stable concept name and a maximum visual radius of `0.66`; collision remains `0.49`.
 - Trails use `NetboundBallTrail`, a bounded visual-only child node with no physics interaction.
 - Goal effects trigger from `_show_goal_feedback()` after valid scoring and are cleared on retry, unload, and navigation.
 - Phase 7 level presentation may add lighting/material context around the ball, but cosmetics remain the only system that changes ball visual skin/trail selection.
 
 ## Preview Flow
 
-The Cosmetics screen uses `NetboundCosmeticPreview`, a lightweight `SubViewport` with a dummy ball and goal. It does not load a production level. Previewing can show locked items, but only the Equip button can save an unlocked selection.
+The Cosmetics screen uses `NetboundCosmeticPreview`, a lightweight `SubViewport` with a dummy ball and goal. It does not load a production level. Ball previews use a close, goal-free inspection frame; trail previews retain movement space; goal previews use the full white frame. Previewing can show locked items, but only the Equip button can save an unlocked selection.
 
 ## Performance Constraints
 
 - No per-frame material allocation.
-- Ball skin materials are cached by stable cosmetic ID.
+- Ball skin materials and procedural detail meshes are cached and shared by stable cosmetic ID/style.
+- Ball concept attachments are rebuilt only on selection/scene setup and remain bounded to 14 nodes or fewer.
 - Reapplying the same selected trail resets the trail without rebuilding its materials.
 - Trail point count is fixed.
-- Goal effect nodes are transient and self-cleaning.
+- Goal effects use at most three transient roots, 38 high-quality pieces, and 20 low-quality descendants; all self-clean within 1.6 seconds.
 - No external copyrighted assets or textures.
 - Transparency and particles are kept modest for the mobile renderer.
 
