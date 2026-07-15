@@ -4,6 +4,12 @@ Date: July 14, 2026
 Baseline: `0aefe15` (`feat: add Netbound cosmetic economy and shop`)
 Godot: `4.7.stable.official.5b4e0cb0f`
 
+## July 15 Content-Expansion Addendum
+
+The 20-level expansion does not change wallet amounts, product IDs, prices, acquisition methods, transaction bounds, entitlement semantics, or save version. It adds additional legitimate play-earned completion/star/personal-best opportunities through the existing idempotent ledgers.
+
+An isolated pre-expansion version-2 fixture verifies that completed Level 10 progress unlocks Level 11 while preserving its 30 stars, `4,321` Coins, `87` Tokens, selected/unlocked cosmetics, and reward-history fields. No retroactive Coin grant is created. The catalog remains exactly 38 items with the documented `10/12/8/3/2/3` acquisition distribution.
+
 ## Recommendation
 
 The local, simulated economy is ready for physical-device beta testing. No wallet, progression-reward, cosmetic-purchase, save-recovery, Store lifecycle, or Low-quality catalog blocker remains in the local provider architecture.

@@ -15,6 +15,37 @@ Phase 0 documents the current baseline. Later phases should turn this into an au
 
 This contract supplements the Phase 6 and economy RC suites; it does not replace their ownership, persistence, shop, or lifecycle checks.
 
+## Gameplay Clarity And 20-Level Expansion Contract
+
+Current production scope is exactly `20` levels and a maximum of `60` best stars. Historical Phase 3-9 sections below retain the ten-level outcomes that were true when those phases shipped; the current acceptance suite supersedes those counts.
+
+Focused scripts:
+
+- `verify_goal_detection_external.gd`: swept front/left/right scoring, fast side entry, rear/outside rejection, post bounce rejection, duplicate prevention, and final-shot side-goal priority.
+- `verify_gameplay_clarity_external.gd`: one normal-player aim line, lifecycle clearing, recognizable starter/menu soccer ball, white goals, continuous deterministic moving hazards, and UI contrast/copy constraints.
+- `verify_cosmetic_quality_external.gd`: 38-item visual/acquisition/physics contract and bounded goal effects.
+- `verify_content_expansion_external.gd`: exactly 20 sequential definitions, Level 17 moving goal detector sync, mechanic visual language, legacy version-2 normalization, Level 11 unlock, and wallet/cosmetic ledger preservation.
+- `verify_phase3_levels_external.gd`: production mouse-swipe completion for all 20 levels, including explicit right-side enclosure entry for Levels 11 and 20.
+
+Focused command:
+
+```sh
+for script in \
+  verify_goal_detection_external.gd \
+  verify_gameplay_clarity_external.gd \
+  verify_cosmetic_quality_external.gd \
+  verify_content_expansion_external.gd \
+  verify_phase3_levels_external.gd; do
+  /Users/ryland/Documents/Godot.app/Contents/MacOS/Godot \
+    --headless --path /Users/ryland/Documents/NetBound/game \
+    --script "res://scripts/debug/${script}"
+done
+```
+
+The complete audit also runs every retained `verify_*.gd` script, direct startup of Levels 01-20, configured app startup, parser sweep, responsive captures, and Android APK/AAB exports. Visual evidence is indexed in `docs/CONTENT_EXPANSION.md`.
+
+Final 2026-07-15 outcome: `68/68` parsers, `20/20` production scene startups, and `27/27` retained external regressions passed. The parser, scene, and regression logs contained zero matched Godot errors, warnings, or leak diagnostics. Android debug APK/AAB exports passed; exact hashes and the isolated-template caveat are recorded in `docs/CONTENT_EXPANSION.md`.
+
 ## Baseline Environment
 
 - Godot: `/Users/ryland/Documents/Godot.app/Contents/MacOS/Godot`

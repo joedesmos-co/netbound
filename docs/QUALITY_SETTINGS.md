@@ -13,7 +13,7 @@ Valid values:
 - `medium`
 - `high`
 
-Missing or invalid values normalize to `auto`. No save-version bump was required because this is an optional settings key in save version `1`.
+Missing or invalid values normalize to `auto`. No save-version bump was required because this remains an optional settings key; the current save version is `2`.
 
 ## Effective Tier
 
@@ -48,6 +48,13 @@ High:
 - dynamic shadows on
 - trail point limit `16`
 - particle multiplier `1.0`
+
+Content-expansion cosmetic caps:
+
+- ball visual attachments: at most 14 bounded visual-only nodes, maximum visual radius `0.66`
+- goal celebrations: at most 3 transient roots and 38 high-quality pieces
+- Low-quality goal celebrations: at most 20 descendants
+- goal effect lifetime: at most 1.6 seconds before complete cleanup
 
 ## Non-Negotiables
 

@@ -5,6 +5,20 @@ Candidate: `0.9.0-rc`
 Baseline: `3d39f96`
 Godot: `4.7.stable.official.5b4e0cb0f`
 
+## July 15 Content-Expansion Addendum
+
+The July 14 audit below is retained as historical evidence for the original ten-level candidate. The current candidate expands the same architecture to 20 levels/60 stars and adds arcade side-enclosure scoring, continuous moving hazards, one-line aiming, a soccer-ball identity pass, improved cosmetic concepts/effects, and UI contrast/copy refinements.
+
+Current behavior and evidence are documented in:
+
+- `docs/CONTENT_EXPANSION.md`
+- `docs/COSMETIC_VISUAL_AUDIT.md`
+- the current matrix at the top of `docs/TEST_PLAN.md`
+
+Save format remains version `2`; completed Level 10 progress unlocks Level 11 during normalization without changing wallet, cosmetic, entitlement, or reward-ledger state. Level 20 is the new finale. The original 30-star cosmetic milestones intentionally remain early/mid-route rewards.
+
+Current expansion verification passed `68/68` parsers, `20/20` scene startups, and `27/27` retained regressions with no matched Godot warning/error/leak output. Android debug APK and isolated-template AAB exports also passed. Exact artifact hashes and commands are recorded in `docs/CONTENT_EXPANSION.md`.
+
 ## Recommendation
 
 Ready for physical-device beta testing.
@@ -174,7 +188,7 @@ No Team ID was invented and no global signing state was changed. With no identit
 Still required on at least one representative Android phone and one iPhone:
 
 - Install and cold launch the exported build.
-- Complete all ten levels using physical touch input.
+- Complete all twenty current production levels using physical touch input, including side-entry goals and the moving target.
 - Confirm shot aiming under finger occlusion and all four height categories.
 - Confirm mild, strong, and extreme curve feel.
 - Verify notch, cutout, rounded-corner, and home-indicator safe areas.

@@ -107,6 +107,7 @@ The save service validates every loaded save:
 - Stars are clamped to `0..3`.
 - Fewest shots are clamped to `shot_limit + 1` so a valid Phase 8 ad-continued completion can preserve its true one-extra-shot count.
 - `total_stars` is recalculated from `best_stars`.
+- Registry expansion is monotonic: a valid existing Level 10 completion unlocks Level 11, while later levels remain sequentially locked.
 - Missing progression, cosmetic, or settings fields are filled with defaults.
 - Volumes are clamped to `0..1`.
 - `quality_tier` normalizes to `auto`, `low`, `medium`, or `high`.
@@ -161,6 +162,8 @@ Phase 9 adds a dirty flag without changing the atomic write format:
 - Existing gameplay/progression/cosmetic/settings setters still save immediately, so no per-frame or debounced save writer was introduced.
 
 Phase 9 did not require a version bump. The economy phase increases the version from `1` to `2` because it adds authoritative balances, reward ledgers, transaction IDs, and purchased cosmetic ownership. Version `1` migration seeds reward ledgers from existing progression so old completions/stars/bests are not paid again.
+
+The 20-level content expansion also does not require a version bump. It changes registry content, not save shape. Version-2 normalization validates old level IDs against the expanded registry, preserves all prior results, unlocks Level 11 for a completed Level 10, and recalculates a maximum of `60` stars. Existing 6-30 star cosmetic milestones stay valid and monotonic; no retroactive economy rewards are created.
 
 ## Public API
 
@@ -218,12 +221,12 @@ Each entry contains:
 
 The registry validates:
 
-- exactly 10 levels
+- exactly 20 levels
 - unique IDs
 - existing scenes and definitions
 - matching `LevelDefinition.level_id`
 - sequential `next_level_id`
-- empty next ID for Level 10
+- empty next ID for Level 20
 
 ## Result Recording
 

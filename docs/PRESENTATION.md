@@ -72,10 +72,10 @@ Responsibilities:
 Component: `GameplayFeedback`
 Script: `res://scripts/presentation/gameplay_feedback_controller.gd`
 
-The gameplay controller owns the stable shot calculation, then passes the current launch velocity and curve values to `GameplayFeedback` for display only. The component creates:
+The gameplay controller owns the stable shot calculation, then passes the current launch velocity and curve values to `GameplayFeedback` for developer diagnostics and release feedback only. Normal gameplay now presents one gesture-owned line from the ball through the active swipe samples. The redundant prediction dots, arrows, and numerical shot readout are hidden unless developer debug is enabled. The component creates:
 
-- a bounded 14-dot aim preview derived from the current canonical launch values
-- a bottom shot readout for category, power, and curve strength
+- an optional developer-only bounded 14-dot launch preview derived from canonical values
+- an optional developer-only shot readout for category, power, and curve strength
 - visual-only ball anticipation and release squash/stretch on mesh children
 - launch ring, impact, goal, and near-miss presentation hooks
 - audio and haptic semantic event calls
@@ -112,6 +112,8 @@ Each production level creates one visual-only polish node at runtime. It owns:
 - non-colliding arena trim, route rails, field stripes, and backdrop meshes
 - one visual-only contact shadow that follows the ball
 - a goal frame pulse that layers with the selected cosmetic goal effect
+
+Goal-frame base materials remain neutral white in every level. Celebration color and shape live in transient visual-only effect roots, so the playable opening stays familiar and readable.
 
 The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
 

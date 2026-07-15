@@ -65,3 +65,11 @@ Export feature tags:
 - Release: `netbound_release`
 
 Release mode disables simulated ad/purchase providers and hides developer debug controls. Real SDK integration remains a later phase.
+
+## Content Expansion Notes
+
+- The 20-marker Level Select stays in one bounded vertical `ScrollContainer`; touch dragging never invokes a marker until a deliberate press completes.
+- Gameplay keeps one active swipe line and clears it on cancellation, Pause, focus loss, Reset, and Retry.
+- Moving hazards remain physics-phase driven, so 30/60 FPS and Pause/Resume do not create Tween stacks or endpoint teleports.
+- Unique ball attachments and enlarged goal effects are visual-only, quality-bounded, and cleaned on navigation.
+- Physical Android/iOS checks are still required for scroll feel, finger occlusion, side-goal readability, 30/60 FPS motion, and Low-quality celebration budgets.

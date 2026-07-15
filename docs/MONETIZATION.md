@@ -4,7 +4,7 @@ Phase 8 adds a simulated, player-friendly monetization layer. It does not integr
 
 ## Principles
 
-- All 10 levels remain completeable without paying or watching ads.
+- All 20 levels remain completable without paying or watching ads.
 - Offline progression, stars, settings, cosmetics, and core play remain available.
 - Monetization never changes shot power, elevation, curve, ball physics, collision, goal detection, level difficulty, level access, or obstacle timing.
 - Providers never mutate gameplay directly; `MonetizationService` validates callbacks and `SaveService` persists entitlements.

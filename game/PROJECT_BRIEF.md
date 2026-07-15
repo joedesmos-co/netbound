@@ -8,7 +8,7 @@
 - Core gameplay must work offline.
 - Build toward a polished offline vertical slice with menus, level select, progression, star ratings, settings, an earn-and-purchase cosmetic economy, and a player-friendly simulated monetization layer.
 - Do not add accounts, servers, multiplayer, analytics, online services, procedural generation, copyrighted assets, real ad SDKs, real purchase SDKs, or app-store SDKs yet.
-- The local economy may include Arcade Coins, Net Tokens, simulated ads, simulated purchases, and local entitlements only. The offline game must remain independent from monetization, and all 10 levels must remain completeable without paying or watching ads.
+- The local economy may include Arcade Coins, Net Tokens, simulated ads, simulated purchases, and local entitlements only. The offline game must remain independent from monetization, and all 20 levels must remain completable without paying or watching ads.
 - Currency and cosmetics are visual progression only; they must never affect shooting, scoring, collision, level access, star rules, or difficulty.
 - Use typed GDScript where practical.
 - Expose gameplay tuning values in the Godot Inspector.

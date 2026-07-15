@@ -113,7 +113,7 @@ Required:
 - No accounts.
 - No analytics.
 - No real ads or purchase SDKs.
-- Simulated ads/purchases are local and optional; all 10 levels remain playable offline without payment or ads.
+- Simulated ads/purchases are local and optional; all 20 levels remain playable offline without payment or ads.
 - Versioned local save.
 - Corrupted-save fallback.
 - Settings persistence.
@@ -178,7 +178,7 @@ Flows:
 - Fresh launch.
 - Continue game.
 - Level select.
-- All 10 levels.
+- All 20 levels.
 - Retry.
 - Reset Ball.
 - Pause.
@@ -189,7 +189,12 @@ Flows:
 - Final-shot goal.
 - Final-shot miss.
 - Side-net legal goal.
+- Left-side and right-side enclosure goals; rear and fully outside crossings rejected.
 - Moving obstacle reset.
+- Moving-obstacle continuity at 30/60 FPS, Retry, Pause/Resume, and scene reload.
+- One active normal-player aim line with lifecycle cleanup.
+- Level Select access from Level 01 through Level 20 at every target landscape size.
+- Large goal effects and bounded cosmetic attachments on Low quality.
 - Ground, driven, air, and lob shots.
 - Strong and extreme curve.
 - Focus loss and restore.

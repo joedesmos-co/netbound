@@ -26,13 +26,13 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Resolves Play/Continue from `SaveService`:
   - first unlocked incomplete level
   - highest unlocked level if unlocked levels are complete but later levels remain locked
-  - Level Select when all 10 levels are complete
+  - Level Select when all 20 levels are complete
 - Cosmetics opens the Phase 6 cosmetic selection screen.
 - Store opens the Phase 8 simulated monetization screen.
 
 ### Level Select
 
-- Builds exactly 10 connected route markers from `LevelRegistry`.
+- Builds exactly 20 connected route markers from `LevelRegistry` in a vertically scrollable, responsive progression grid.
 - Reads unlocks, completion, stars, fewest shots, and total stars from `SaveService`.
 - Locked markers are disabled and use a geometric lock state.
 - The current marker uses signal yellow; complete markers use warm paper/success accents.
@@ -69,7 +69,7 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Arcade Coin rewards appear only after the saved completion and show completion, first-clear, new-star, and personal-best components.
 - Result labels/buttons reveal with a short stagger unless Reduced Motion is enabled.
 - Next Level is enabled only if a valid registered next level is unlocked.
-- Level 10 disables Next Level and displays an all-levels-complete message.
+- Level 20 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
 - Failure may offer “Watch Ad for 1 Extra Shot” when the simulated ad provider is available, the player has no shots remaining, and no rewarded continue has been used for the current attempt.
 - Rewarded continue is optional, grants exactly one shot after a completed provider callback, returns to READY, and never blocks Retry/Level Select/Main Menu.
@@ -127,7 +127,7 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Main Menu, Level Select, Settings, Cosmetics, Store, Pause, Results, and Gameplay HUD now read safe-area margins from `MobileRuntimeService`.
 - The fallback safe margin is `28px`; device safe-area values are used when available.
 - Buttons and level cards use touch-sized minimums.
-- Level Select uses a connected route that reflows from two rows to additional rows on narrower safe areas.
+- Level Select uses a vertically scrollable connected route grid. Level 01 is visible on entry and Level 20 remains reachable at every supported landscape size.
 - Cosmetics uses touch-sized tabs, a horizontal scroll strip, and a separate Equip button to avoid accidental selection while scrolling.
 - Automated Phase 9 checks cover representative landscape phone/tablet aspect ratios with simulated safe-area margins.
 - Native-canvas visual stress captures cover `1280x720`, `1600x720`, `1920x864`, `2340x1080`, `1024x768`, and `1366x1024`; production scaling and safe areas are verified separately.

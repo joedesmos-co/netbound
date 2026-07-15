@@ -88,6 +88,8 @@ Gameplay milestones:
 
 Unlocks are monotonic. Worse replays cannot remove cosmetics, and repeated evaluation does not duplicate IDs.
 
+The content expansion raises the available best-star total from 30 to 60 but deliberately leaves these launch milestones unchanged. They now provide strong early/mid-route rewards rather than moving desirable gameplay cosmetics farther away from new players. Existing unlocks never relock.
+
 ## Save Flow
 
 `SaveService` stores:
@@ -127,6 +129,7 @@ The Cosmetics screen may preview them while locked and shows “Own the Starter 
 - Ball skins keep the original sphere mesh and add a bounded visual-only concept layer. Every attachment root records a stable concept name and a maximum visual radius of `0.66`; collision remains `0.49`.
 - Trails use `NetboundBallTrail`, a bounded visual-only child node with no physics interaction.
 - Goal effects trigger from `_show_goal_feedback()` after valid scoring and are cleared on retry, unload, and navigation.
+- Goal frames remain neutral white; goal cosmetics add bounded celebration geometry around the scored target and never recolor scoring geometry.
 - Phase 7 level presentation may add lighting/material context around the ball, but cosmetics remain the only system that changes ball visual skin/trail selection.
 
 ## Preview Flow

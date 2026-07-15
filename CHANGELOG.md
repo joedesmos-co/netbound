@@ -1,5 +1,26 @@
 # Changelog
 
+## Content Expansion - 2026-07-15
+
+### Fixed
+
+- Count swept entries through the front, left side, or right side of the shared arcade goal enclosure while rejecting rear and fully outside passes.
+- Keep timed gates and moving obstacles continuous, deterministic, and exactly resettable.
+- Remove redundant normal-player trajectory guides so aiming shows one live swipe line.
+- Restore a friendly white-and-black soccer identity to the default gameplay and menu ball.
+
+### Added
+
+- Add ten authored levels, expanding the production route to Levels 01-20 and the maximum total to 60 stars.
+- Add explicit side-entry challenges, moving-goal synchronization, deterministic rhythm hazards, and a new Level 20 finale.
+- Add production-input completion routes and version-2 save migration coverage for the expanded registry.
+
+### Polished
+
+- Give all 18 ball cosmetics distinct panel or concept treatment while preserving the reference collision sphere.
+- Enlarge and differentiate all eight bounded goal celebrations.
+- Improve UI contrast, shorten player-facing copy, keep goal frames white, and brighten late-level environments.
+
 ## 0.9.0 RC - 2026-07-14
 
 ### Fixed

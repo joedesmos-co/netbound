@@ -332,13 +332,19 @@ func _has_black_readback_tiles(image: Image) -> bool:
 		return true
 	var sampled := 0
 	var black := 0
+	var near_black := 0
 	for y in range(8, image.get_height(), 24):
 		for x in range(8, image.get_width(), 24):
 			var color := image.get_pixel(x, y)
 			sampled += 1
 			if color.a < 0.98 or (color.r < 0.004 and color.g < 0.004 and color.b < 0.004):
 				black += 1
-	return sampled > 0 and float(black) / float(sampled) > 0.025
+			if color.r < 0.03 and color.g < 0.03 and color.b < 0.03:
+				near_black += 1
+	return sampled > 0 and (
+		float(black) / float(sampled) > 0.025
+		or float(near_black) / float(sampled) > 0.1
+	)
 
 
 func _parse_arguments() -> void:

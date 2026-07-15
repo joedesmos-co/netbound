@@ -391,7 +391,7 @@ Exact native-canvas stress captures are stored under `docs/ui_art_direction/resp
 
 Visible outcomes:
 
-- All ten route markers remain readable at `1024x768` without clipping.
+- The original ten-marker route remained readable at `1024x768`; the expanded 20-marker route now uses a touch-safe vertical progression grid with Level 01 visible initially and Level 20 reachable by scrolling.
 - Main Menu actions remain distinct at narrow, wide, and 4:3 ratios.
 - The Locker keeps its preview/detail hierarchy at `1024x768`; the catalog remains horizontally scrollable.
 - Settings keeps both groups on screen at `1024x768`.
@@ -452,3 +452,19 @@ Remaining visual limitations:
 - Liberation Sans is a legally safe, competent bundled family but a future custom wordmark/font pass could add more proprietary character.
 - Procedural clouds, field lines, and goal previews intentionally favor clarity and low asset cost over richly illustrated scenery.
 - Native iOS/Android font rasterization, OLED/LCD color response, cutout safe areas, and touch-scroll feel still require physical-device review.
+
+## Content Expansion Refinement
+
+The July 15 pass preserves Trajectory Playground but makes it friendlier and more immediately game-like:
+
+- normal goal frames are neutral white instead of inheriting rarity, finale, or hazard colors
+- late-level environments use bright blue, sunset, and cobalt arena palettes rather than a dark fallback
+- moving/timed hazards use cyan, special lift/tower hazards use purple, and static blockers use warm coral so mechanic state is readable without extra copy
+- normal aiming shows one player-drawn line; prediction dots/arrows are developer-only
+- the default/menu ball uses a white sphere with clear dark soccer panels instead of an abstract black center
+- route and result copy is shorter; important light text receives an intentional dark backing or outline where scene contrast varies
+- Level Select carries 20 numbered connected-route markers in a responsive vertical scroll without adopting store-style inventory cards
+
+Expansion screenshots are indexed in `docs/CONTENT_EXPANSION.md`. The visual review compared draft and refined captures for the default ball, aim line, side goals, cosmetic concepts/effects, Levels 11/12/14/17/20, Level Select, and the new final result.
+
+The current responsive review rendered Level Select at `1280x720`, `1600x720`, `1920x864`, `2340x1080`, `1024x768`, and `1366x1024`. Wide layouts show all 20 markers; shorter/tablet layouts preserve touch-sized markers and expose vertical scrolling. The UI regression verifies Level 01 is initially visible and Level 20 is reachable. Goal-effect evidence was recaptured with near-black GPU-tile rejection and independently sampled at a `0.0000` near-black ratio.

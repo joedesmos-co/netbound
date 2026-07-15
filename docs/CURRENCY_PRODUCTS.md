@@ -80,6 +80,8 @@ Restore applies permanent ownership only. Starter Pack currency is never restore
 
 The launch catalog is `38` cosmetics: `18` balls, `12` trails, and `8` goal effects. Every entry has a stable ID, rarity, acquisition type, price/requirement, sort order, preview configuration, and gameplay visual mapping.
 
+Catalog distribution is `10` direct gameplay, `12` Arcade Coin, `8` Net Token, `3` supporter, `2` major achievement, and `3` default items. The 20-level expansion does not change prices, ownership IDs, or the original 6-30 star reward thresholds; it adds more play-earned Coin opportunities while keeping migrated ownership monotonic.
+
 ## Real Store Integration Points
 
 Future platform adapters must preserve the current service boundary:

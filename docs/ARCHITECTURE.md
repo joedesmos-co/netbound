@@ -119,6 +119,20 @@ New Phase 3 content coverage:
 
 Phase 5 replaces direct Level 01 startup with the app shell. Production levels remain loadable scenes, but the configured main scene is now `res://app/netbound_app.tscn`.
 
+## Content Expansion Architecture Update
+
+The 2026-07-15 content pass extends the production registry to exactly 20 levels while preserving the Phase 1 shooting model and save version `2`.
+
+- Production content now spans `res://levels/level_01.tscn` through `res://levels/level_20.tscn` with matching definitions.
+- `LevelRegistry.EXPECTED_LEVEL_COUNT` is `20`; `NetboundApp` derives the maximum star total from that registry instead of hard-coding `30`.
+- Level 10 now points to Level 11; Level 20 is the only production definition with an empty `next_level_id`.
+- `MovingObstacle.target_path` can move a composed `Node3D` while one elapsed phase remains authoritative. Level 17 uses it to move the whole goal target.
+- `GoalTarget` synchronizes detector geometry from its current global transform before each swept query, so moving visual/scoring geometry cannot drift.
+- Arcade goal scoring accepts swept inward front, left-side, or right-side enclosure entry. Rear and fully outside crossings remain invalid, and shot IDs enforce one goal per attempt.
+- Level presentation keeps every goal frame neutral white; mechanic colors belong to hazards and visual-only celebrations.
+
+Existing version-2 saves normalize against the expanded registry. Completed Level 10 progress unlocks Level 11 while preserving stars, economy ledgers, cosmetics, and entitlements. The schema itself did not change.
+
 ## Phase 4 Offline Progression Update
 
 Phase 4 adds versioned local progression without adding menus, online systems, monetization, or final result UI.
@@ -161,7 +175,7 @@ Navigation flow:
 
 1. Startup loads `NetboundApp`.
 2. Main Menu resolves Play/Continue from `LevelRegistry` and `SaveService`.
-3. Level Select displays exactly the registered 10 levels in registry order.
+3. Level Select displays exactly the registered 20 levels in registry order.
 4. Loading a level instances the registered scene under the app shell.
 5. The level keeps stable shooting/reset/goal behavior and emits `level_completed` or `level_failed`.
 6. The app shell presents production result overlays and navigation actions.
@@ -335,7 +349,7 @@ How to create a new configured level without changing core shooting:
 - `game/main.tscn` exists but is an empty `Node3D` and is not the configured main scene.
 - `game/scenes/prototype.tscn` is an older standalone shooting prototype.
 - `game/levels/level_01.tscn` is the first production gameplay level and remains loadable through the app shell.
-- `game/levels/level_02.tscn` through `game/levels/level_10.tscn` are authored production levels for the vertical slice.
+- `game/levels/level_02.tscn` through `game/levels/level_20.tscn` are authored production levels for the current slice.
 - `game/levels/debug/level_architecture_test.tscn` is an architecture proof scene, not a production level and not the configured main scene.
 
 ## Project Settings
@@ -370,9 +384,9 @@ Main children:
 
 The scene still contains temporary UI and prototype-era nodes, but level metadata now comes from `LevelDefinition` and goal geometry/scoring is synchronized by `GoalTarget`.
 
-### `levels/level_02.tscn` through `levels/level_10.tscn`
+### `levels/level_02.tscn` through `levels/level_20.tscn`
 
-Production levels 02-10 inherit Level 01 and override scene content plus `level_definition`. They do not duplicate `level_controller.gd` or `prototype_controller.gd`.
+Production levels 02-20 inherit Level 01 and override scene content plus `level_definition`. They do not duplicate `level_controller.gd` or `prototype_controller.gd`.
 
 High-level content:
 
@@ -385,6 +399,12 @@ High-level content:
 - Level 08: bounce wall and direct blocker.
 - Level 09: two offset timed gates.
 - Level 10: timed gate, low height hurdle, curve blocker, and off-center goal.
+- Level 11: front shield and a taught side-enclosure route.
+- Levels 12-13: continuously moving deterministic blockers.
+- Levels 14-16: precision, elevation/curve, and low-curve combinations.
+- Level 17: a smoothly moving composed goal target.
+- Levels 18-19: alternate ricochet routes and three-beat timed gates.
+- Level 20: final timing/height/curve challenge with a side-enclosure finish.
 
 ### `levels/debug/level_architecture_test.tscn`
 
@@ -463,7 +483,7 @@ Reusable goal component. It owns goal dimensions, keeps child visuals/debug help
 
 ### `components/moving_obstacle.gd`
 
-Reusable deterministic point-to-point mover with loop/ping-pong settings and reset signature support for tests.
+Reusable deterministic point-to-point mover with loop/ping-pong settings, optional composed target path, and reset signature support for tests.
 
 ### `components/rotating_obstacle.gd`
 

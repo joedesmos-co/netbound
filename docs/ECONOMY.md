@@ -52,6 +52,8 @@ The 38-item catalog intentionally mixes free progression and optional premium ac
 
 Arcade Coins are gameplay-earned, so more than half the catalog is obtainable without a real-money purchase. Creative high-tier rewards remain available through gameplay: Galaxy, Champion, Gold, Rainbow, Confetti, and Shockwave are not Token purchases. `trail_comet` moved from a 60-Token price to `6,500` Arcade Coins to strengthen the mid-game free route; existing ownership remains monotonic.
 
+The 20-level expansion preserves this catalog and every price. New levels create additional completion, first-clear, star, and genuine personal-best Coin opportunities through the same idempotent reward ledgers. The maximum route total is now 60 stars, while existing 6-30 star cosmetic thresholds intentionally remain approachable early/mid-route goals.
+
 ## Wallet API
 
 Primary autoload: `/root/WalletService`, class `NetboundWalletService`.

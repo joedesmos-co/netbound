@@ -1,5 +1,16 @@
 # Netbound Local Build Status
 
+## July 15 Content Expansion
+
+The 20-level build preserves the existing export configuration. Current local artifacts:
+
+| Artifact | Result | Size | SHA-256 |
+| --- | --- | ---: | --- |
+| `netbound-debug.apk` | exported, APK v2/v3 signed | 28 MB | `618d986543abb0493d8000ffde8a887bfd7ea5cf199f22c72d88b351ae00b806` |
+| `netbound-debug.aab` | isolated-template export, structurally valid, unsigned development bundle | 28 MB | `05223e3916083abe88a2ddd3e4d774147709c9bd6cf2043716e4d2b618726d69` |
+
+Paths: `/tmp/netbound-content-expansion-exports-20260715/`. The temporary template project was `/tmp/netbound-content-android-project.PLfINu/game`; no `game/android` template was added to the repository.
+
 Final release-candidate validation was run on July 14, 2026.
 
 ## Host
