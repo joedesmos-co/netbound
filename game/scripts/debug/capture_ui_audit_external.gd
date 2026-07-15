@@ -74,6 +74,7 @@ func _show_requested_screen() -> void:
 		service.set_setting_value("reduced_motion_enabled", screen_name.ends_with("reduced"))
 		app.load_level("level_01")
 		await _wait_for_level()
+		_position_goal_feedback_ball(screen_name)
 		app.current_level.call("_show_goal_feedback")
 		return
 	if screen_name.begins_with("cosmetics_ball_"):
@@ -258,6 +259,18 @@ func _show_gameplay_aim(variant: String = "gameplay_aim") -> void:
 	level.call("_begin_swipe", start, -2)
 	for offset in offsets:
 		level.call("_update_swipe", start + offset)
+
+
+func _position_goal_feedback_ball(variant: String) -> void:
+	if not app.current_level or not (variant.ends_with("left") or variant.ends_with("right")):
+		return
+	var ball := app.current_level.get_node_or_null("Ball") as RigidBody3D
+	var goal := app.current_level.get_node_or_null("Goal") as GoalTarget
+	if not ball or not goal:
+		return
+	var side := -1.0 if variant.ends_with("left") else 1.0
+	ball.freeze = true
+	ball.global_position = goal.to_global(Vector3(side * (goal.opening_half_width - 0.7), 1.2, -1.5))
 
 
 func _show_cosmetic_preview(category: String, cosmetic_id: String) -> void:

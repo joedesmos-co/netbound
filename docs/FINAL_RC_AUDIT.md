@@ -238,3 +238,18 @@ Outcome:
 - Android debug APK and AAB exports passed.
 
 Three production issues were fixed: atomic rollback of failed completion writes, persistent insufficient-funds feedback, and completed-level cleanup on non-Pause Store entry. Full evidence and remaining physical-device/platform limitations are in `docs/ECONOMY_SHOP_RC_AUDIT.md`.
+
+## Post-RC Player-Feel Audit
+
+The later player-feel phase removed the redundant rewarded extra-shot continue,
+clarified Reset/Restart/Try Again and shot/par presentation, replaced the harsh
+overlapping success chain, changed base goal confirmation from red to green,
+improved dominant-path curve detection without changing the 78-degree cap, and
+replaced raw obstacle boxes with collision-aligned training-course equipment.
+
+Closeout result: `71/71` GDScripts parsed, `29/29` retained external suites passed,
+all 20 production mouse-swipe routes completed, Android APK/AAB exports passed, and
+the repository is clean except for the explicitly preserved unstaged
+`game/project.godot` user edit. See `docs/PLAYER_FEEL_AUDIT.md` and
+`docs/ENVIRONMENT_ART.md` for measurements, screenshots, commands, and remaining
+physical-device checks.

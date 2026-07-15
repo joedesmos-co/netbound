@@ -45,9 +45,27 @@ for script in \
 done
 ```
 
+## Player-Feel Closeout - 2026-07-15
+
+The targeted player-feel phase completed a `71/71` strict GDScript parser sweep,
+`29/29` retained external verification scripts, configured startup, all 20
+production swipe routes, and clean Android APK/AAB exports. New focused coverage:
+
+- `verify_player_feel_external.gd`: retry terminology/behavior, reward removal,
+  success audio order and peaks, semantic colors, curve gestures, and invariants
+- `verify_environment_art_external.gd`: all-level collision signatures, exact
+  visual alignment, archetype coverage, quality bounds, and cleanup
+
+Visible evidence and command outcomes are indexed in
+`docs/PLAYER_FEEL_AUDIT.md`.
+
 The complete audit also runs every retained `verify_*.gd` script, direct startup of Levels 01-20, configured app startup, parser sweep, responsive captures, and Android APK/AAB exports. Visual evidence is indexed in `docs/CONTENT_EXPANSION.md`.
 
-Final 2026-07-15 outcome: `68/68` parsers, `20/20` production scene startups, and `27/27` retained external regressions passed. The parser, scene, and regression logs contained zero matched Godot errors, warnings, or leak diagnostics. Android debug APK/AAB exports passed; exact hashes and the isolated-template caveat are recorded in `docs/CONTENT_EXPANSION.md`.
+Content-expansion checkpoint outcome: `68/68` parsers, `20/20` production scene
+startups, and `27/27` retained external regressions passed. The later player-feel
+closeout above supersedes those totals with `71/71` and `29/29`. Android debug
+APK/AAB exports passed at both checkpoints; current hashes are recorded in
+`docs/PLAYER_FEEL_AUDIT.md`.
 
 ## Baseline Environment
 

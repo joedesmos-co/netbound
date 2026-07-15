@@ -25,6 +25,8 @@ The script uses isolated save paths and covers fresh launch, failure, free Try A
 ## Documentation
 
 - Final audit: `docs/FINAL_RC_AUDIT.md`
+- Player-feel audit: `docs/PLAYER_FEEL_AUDIT.md`
+- Environment art: `docs/ENVIRONMENT_ART.md`
 - Content expansion: `docs/CONTENT_EXPANSION.md`
 - Cosmetic visual audit: `docs/COSMETIC_VISUAL_AUDIT.md`
 - Test matrix: `docs/TEST_PLAN.md`

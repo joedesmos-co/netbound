@@ -128,3 +128,12 @@ Corrupt saves still follow the existing backup/corrupt-copy recovery path. Unkno
 ## Deferred Integration
 
 Real Apple/Google billing, receipt validation, server authority, cloud reconciliation, trusted time, real ad SDKs, consent SDKs, analytics, and account systems remain intentionally deferred. See `docs/CURRENCY_PRODUCTS.md` for product mappings and `docs/MONETIZATION.md` for provider policy.
+
+## Player-Feel Invariance
+
+The rewarded extra-shot continue was retired because a free level restart already
+provides the honest recovery path. This changes no wallet rule: failure, Reset Ball,
+Restart Level, and Try Again grant no Coins or Tokens. Voluntary rewarded Token ads
+remain available in Store and retain their daily/idempotency limits. Version-2 save
+normalization keeps the legacy result field for compatibility, but it no longer
+changes stars, completion rewards, or result presentation.

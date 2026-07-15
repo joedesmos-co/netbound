@@ -275,3 +275,16 @@ Still required on physical devices and again after real SDK selection:
 - replace local-date reward limits with an approved trusted-time strategy if abuse resistance becomes a requirement;
 - validate receipts, pending/deferred purchases, refunds, family/account restore behavior, and store-owned consumable rules;
 - provide real Android upload signing and Apple Team/provisioning before distribution.
+
+## Player-Feel Device Addendum
+
+- [ ] Repeatedly audition goal/result cues on phone speakers and headphones; local
+  peaks are -7.13 dBFS and -8.87 dBFS, but subjective comfort is device-dependent.
+- [ ] Compare mild and strong left/right curve recognition using real touch at 30
+  and 60 FPS; local mouse/simulated-touch values match.
+- [ ] Inspect the six training-equipment archetypes at arm's length on narrow phone,
+  wide phone, and tablet screens.
+- [ ] Verify moving scoreboard/barrier visuals remain locked to collision on low-end
+  hardware and after background/resume.
+- [ ] Confirm green success feedback and its Reduced Motion alternative are clear
+  without discomfort on OLED and LCD displays.
