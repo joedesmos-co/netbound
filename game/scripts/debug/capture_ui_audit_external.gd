@@ -102,6 +102,21 @@ func _show_requested_screen() -> void:
 		await _wait_for_level()
 		_show_gameplay_aim(screen_name)
 		return
+	if screen_name.begins_with("gameplay_low_"):
+		var low_level_id := screen_name.trim_prefix("gameplay_low_")
+		if LevelRegistryScript.has_level_id(low_level_id):
+			app.load_level(low_level_id)
+			await _wait_for_level()
+			if app.current_screen_name == "pause":
+				app.resume_game()
+			app.current_level.call("apply_quality_settings", {
+				"decorative_geometry_enabled": false,
+				"contact_shadow_enabled": true,
+				"dynamic_shadows_enabled": false,
+			})
+			return
+		push_error("Unknown low-quality level for UI audit: %s" % low_level_id)
+		return
 	if screen_name.begins_with("gameplay_"):
 		var level_id := screen_name.trim_prefix("gameplay_")
 		if LevelRegistryScript.has_level_id(level_id):

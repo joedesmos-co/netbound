@@ -26,6 +26,9 @@ Focused scripts:
 - `verify_cosmetic_quality_external.gd`: 38-item visual/acquisition/physics contract and bounded goal effects.
 - `verify_content_expansion_external.gd`: exactly 20 sequential definitions, Level 17 moving goal detector sync, mechanic visual language, legacy version-2 normalization, Level 11 unlock, and wallet/cosmetic ledger preservation.
 - `verify_phase3_levels_external.gd`: production mouse-swipe completion for all 20 levels, including explicit right-side enclosure entry for Levels 11 and 20.
+- `verify_environment_art_external.gd`: all 20 collision signatures, exact visual/base
+  alignment, six reusable equipment archetypes, moving-parent synchronization,
+  Low-quality identity, bounded resources, and cleanup.
 
 Focused command:
 

@@ -96,6 +96,9 @@ Reusable components:
 - `RotatingObstacle`: deterministic rotation with exported axis, speed, start angle, and exact Retry reset.
 - `TimedGate`: deterministic open/closed cycle with exported durations, start phase, target node movement, visible state, and exact Retry reset.
 - `BounceSurface`: per-surface physics material override for arcade bounce/friction without mutating global ball physics.
+- `NetboundArcadeCourseArt`: visual-only runtime wrapper for collision-backed course
+  obstacles. It hides the original raw box mesh, adds an exact-size framed equipment
+  visual under the same body, and never owns collision or movement.
 
 Reset contract:
 

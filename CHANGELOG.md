@@ -11,6 +11,9 @@
 - Make the base goal confirmation success green, keep goal-frame materials white, and suppress the full-screen pulse under Reduced Motion.
 - Classify curve from dominant path-side intent plus normalized deviation, making mild
   bends and short hooks responsive without changing the 78-degree runtime cap.
+- Replace raw obstacle boxes with one restrained training-equipment kit: padded
+  targets, scoreboard gates, striped barriers, rebound boards, crash mats, and
+  framed barricades, with exact collision alignment and bounded Low-quality detail.
 
 ## Content Expansion - 2026-07-15
 

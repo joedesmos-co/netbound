@@ -2,6 +2,7 @@ class_name NetboundLevelVisualPolish
 extends Node3D
 
 const VISUAL_GROUP := "netbound_visual_polish"
+const CourseArtScript := preload("res://scripts/presentation/arcade_course_art.gd")
 
 var _level: Node
 var _definition: LevelDefinition
@@ -9,6 +10,7 @@ var _ball: RigidBody3D
 var _goal_material: StandardMaterial3D
 var _trim_material: StandardMaterial3D
 var _shadow: MeshInstance3D
+var _course_art
 var _active_tweens: Array[Tween] = []
 var _palette: Dictionary = {}
 var _quality_config: Dictionary = {
@@ -31,6 +33,8 @@ func setup(level: Node) -> void:
 	_palette = _palette_for_level(_level_index())
 	_apply_environment()
 	_apply_material_language()
+	_hide_prototype_markers()
+	_build_course_art()
 	_build_decorative_geometry()
 	_build_contact_shadow()
 	_apply_quality_settings_to_nodes()
@@ -75,17 +79,30 @@ func get_budget_snapshot() -> Dictionary:
 			visual_nodes += 1
 			if child is CollisionObject3D:
 				collision_nodes += 1
-	return {
+	var snapshot := {
 		"visual_nodes": visual_nodes,
 		"collision_nodes": collision_nodes,
 		"active_tweens": _active_tweens.size(),
 		"quality": _quality_config.duplicate(true),
 	}
+	if _course_art:
+		snapshot["course_art"] = _course_art.get_budget_snapshot()
+	return snapshot
 
 
 func apply_quality_settings(config: Dictionary) -> void:
 	_quality_config = config.duplicate(true)
 	_apply_quality_settings_to_nodes()
+	if _course_art:
+		_course_art.apply_quality_settings(_quality_config)
+
+
+func _build_course_art() -> void:
+	if _course_art:
+		return
+	_course_art = CourseArtScript.new()
+	add_child(_course_art)
+	_course_art.setup(_level, _quality_config)
 
 
 func _apply_environment() -> void:
@@ -143,6 +160,17 @@ func _apply_material_language() -> void:
 			mesh.material_override = static_accent_material
 		elif mesh.get_parent() is StaticBody3D:
 			mesh.material_override = static_material
+
+
+func _hide_prototype_markers() -> void:
+	# The inherited Level 01 obstacle is an off-course compatibility sentinel,
+	# not production course art. Keep its collider intact while hiding its mesh.
+	var prototype_obstacle := _level.get_node_or_null("Obstacle") as StaticBody3D
+	if not prototype_obstacle:
+		return
+	for child in prototype_obstacle.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).visible = false
 
 
 func _build_decorative_geometry() -> void:

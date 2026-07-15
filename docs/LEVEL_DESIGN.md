@@ -153,6 +153,14 @@ The Phase 3 regression suite uses production mouse-swipe input, not teleports or
 - Retry must reset moving object phases consistently.
 - Do not use copyrighted external assets.
 
+## Course Art Contract
+
+Production obstacle visuals use the shared Trajectory Playground equipment kit
+documented in `docs/ENVIRONMENT_ART.md`. Scene collision shapes, body transforms,
+motion scripts, phase values, bounce materials, and verified swipe routes remain
+authored gameplay data. Visual wrappers follow those bodies and never determine
+motion. Goals remain white and are excluded from course-art replacement.
+
 ## Star Rating Notes
 
 - Phase 4 uses each `LevelDefinition.par_shots` and `shot_limit` for saved star ratings.

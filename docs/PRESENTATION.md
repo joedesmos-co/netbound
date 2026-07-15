@@ -112,12 +112,14 @@ Each production level creates one visual-only polish node at runtime. It owns:
 - non-colliding arena trim, route rails, field stripes, and backdrop meshes
 - one visual-only contact shadow that follows the ball
 - a goal frame pulse that layers with the selected cosmetic goal effect
+- a reusable `NetboundArcadeCourseArt` child that replaces raw collision-box meshes
+  with framed training equipment attached to the same authoritative bodies
 
 Goal-frame base materials remain neutral white in every level. The base semantic confirmation is always success green and uses a low-opacity 0.18-second pulse; cosmetic particles and shapes keep their authored colors. Reduced Motion suppresses the full-screen pulse and uses a concise held goal-frame emission response instead. Failure retains coral/red presentation.
 
 The immediate goal chirp, result flourish, and optional cosmetic-unlock cue are sequenced rather than stacked. Presentation starts after authoritative scoring and never delays the goal result.
 
-The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
+The component only assigns material overrides or creates `MeshInstance3D` children in the `netbound_visual_polish` group. Course art uses six shared archetypes: padded target blocker, moving scoreboard panel, rotating training barrier, rebound board, crash-pad stack, and training barricade. Every wrapper has an exact-size base matching its paired `BoxShape3D`; inset details add no collision. Regression tests assert those nodes include no `CollisionObject3D` instances and that `GoalTarget` geometry remains synced.
 
 Phase 9 quality tiers can disable decorative geometry, contact shadows, and dynamic shadows through `apply_quality_settings(config)`. These changes are visual-only and do not alter level geometry, collision, moving obstacle timing, or scoring geometry.
 
@@ -155,7 +157,8 @@ Initial presentation budgets:
 - aim preview dots per active level: 14
 - gameplay camera feedback: one reusable component per level
 - launch rings/near-miss labels: transient and cleared on Reset/Retry
-- level visual polish nodes per level: at most 24, zero collision objects
+- course-art visual nodes per level: at most 24, zero collision objects
+- course-art material resources per level: 7; meshes are size-key cached at setup
 - contact shadows: one mesh per level
 - active UI tweens: transient and killed on screen/gameplay overlay clear
 - impact cooldown: 0.08-0.14 seconds depending on type
