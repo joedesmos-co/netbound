@@ -60,7 +60,6 @@ var selected_trail_id: String = "trail_none"
 var selected_goal_effect_id: String = "goal_classic"
 var near_miss_presented_shot_id: int = -1
 var level_visual_polish
-var rewarded_continue_used: bool = false
 var current_quality_config: Dictionary = {}
 
 
@@ -77,6 +76,9 @@ func _ready() -> void:
 	win_continue_button.pressed.connect(_on_continue_pressed)
 	fail_retry_button.pressed.connect(_on_retry_level_pressed)
 	reset_button.text = "RESET BALL"
+	retry_button.text = "RESTART LEVEL"
+	win_retry_button.text = "PLAY AGAIN"
+	fail_retry_button.text = "TRY AGAIN"
 	await _restart_level()
 	if external_navigation_ui_enabled:
 		set_external_navigation_ui_enabled(true)
@@ -124,15 +126,6 @@ func apply_quality_settings(config: Dictionary) -> void:
 
 func is_gameplay_input_allowed() -> bool:
 	return level_state == LevelState.READY
-
-
-func can_use_rewarded_continue() -> bool:
-	return (
-		level_state == LevelState.FAILED
-		and shots_remaining <= 0
-		and not rewarded_continue_used
-		and not reset_in_progress
-	)
 
 
 func _physics_process(delta: float) -> void:
@@ -255,8 +248,7 @@ func _on_reset_button_pressed() -> void:
 		last_level_result = LevelResult.failed_result(
 			level_definition,
 			shots_used,
-			shots_remaining,
-			rewarded_continue_used
+			shots_remaining
 		)
 		if not external_navigation_ui_enabled:
 			fail_panel.visible = true
@@ -285,7 +277,6 @@ func _restart_level() -> void:
 	_cancel_shot_callbacks()
 	Engine.time_scale = 1.0
 	shot_manually_reset = false
-	rewarded_continue_used = false
 	level_state = LevelState.AUTO_RESETTING
 	last_level_result = null
 	last_progression_update = null
@@ -330,8 +321,7 @@ func _on_goal_scored() -> void:
 	last_level_result = LevelResult.completed_result(
 		level_definition,
 		shots_used,
-		shots_remaining,
-		rewarded_continue_used
+		shots_remaining
 	)
 	last_progression_update = _record_progression_result(last_level_result)
 	_clear_active_curve()
@@ -364,8 +354,7 @@ func _resolve_miss(shot_id: int, _reason: String) -> void:
 		last_level_result = LevelResult.failed_result(
 			level_definition,
 			shots_used,
-			shots_remaining,
-			rewarded_continue_used
+			shots_remaining
 		)
 		if not external_navigation_ui_enabled:
 			fail_panel.visible = true
@@ -383,43 +372,6 @@ func _schedule_auto_reset(shot_id: int) -> void:
 	get_tree().create_timer(miss_reset_delay).timeout.connect(
 		_auto_reset_after_miss.bind(shot_id, callback_generation)
 	)
-
-
-func grant_rewarded_continue() -> bool:
-	if not can_use_rewarded_continue():
-		return false
-
-	var reset_generation_token := _cancel_shot_callbacks()
-	active_shot_id += 1
-	rewarded_continue_used = true
-	shots_remaining = 1
-	shot_time_remaining = 0.0
-	shot_active_elapsed = 0.0
-	shot_manually_reset = false
-	near_miss_presented_shot_id = -1
-	last_level_result = null
-	last_progression_update = null
-	level_state = LevelState.AUTO_RESETTING
-	_reset_all_goal_tracking()
-	_hide_overlays()
-	_clear_swipe()
-	_clear_active_curve()
-	_clear_level_presentation_feedback()
-	reset_in_progress = true
-	_update_level_ui()
-
-	await _apply_physics_safe_reset()
-	if reset_generation_token != state_generation:
-		return false
-
-	_reset_level_elements()
-	_ensure_ball_ready_for_play()
-	_refresh_selected_cosmetics()
-	level_state = LevelState.READY
-	_update_level_ui()
-	_update_instruction_visibility()
-	_update_debug_ui()
-	return true
 
 
 func _auto_reset_after_miss(shot_id: int, callback_generation: int) -> void:
@@ -638,7 +590,8 @@ func _hide_overlays() -> void:
 
 
 func _update_level_ui() -> void:
-	shots_label.text = "SHOTS  /  %02d" % shots_remaining
+	var par_shots := level_definition.par_shots if level_definition else max_shots
+	shots_label.text = "SHOTS  %02d   /   PAR  %02d" % [shots_used, par_shots]
 	retry_button.visible = not external_navigation_ui_enabled
 	retry_button.disabled = reset_in_progress
 	reset_button.disabled = (

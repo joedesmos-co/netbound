@@ -586,7 +586,7 @@ Outcomes:
 
 ## Phase 8 Verification Results
 
-Phase 8 adds simulated monetization architecture, local entitlements, rewarded continue, interstitial policy, Store UI, offline-provider behavior, and supporter cosmetics.
+Phase 8 added simulated monetization architecture, local entitlements, interstitial policy, Store UI, offline-provider behavior, and supporter cosmetics. The later player-feel pass retired rewarded extra shots while preserving rewarded Tokens.
 
 New regression script:
 
@@ -603,9 +603,10 @@ Coverage:
 - restore is idempotent
 - invalid entitlement data normalizes
 - Phase 7 saves without a `monetization` block load safely
-- rewarded continue grants exactly one shot after failure
-- rewarded continue is one use per attempt
-- ad-continued completion is capped at one star
+- failure exposes free `Try Again` and no rewarded extra-shot action
+- `Reset Ball` preserves shots used while `Restart Level` resets to zero
+- legacy rewarded-continue result flags no longer cap stars
+- rewarded Token ads remain functional and duplicate-safe
 - interstitial policy requires completed-level thresholds and is disabled by Remove Ads
 - Store UI shows owned, unavailable, pending, and restore states
 - supporter cosmetics link from Cosmetics to Store
@@ -757,9 +758,9 @@ The final candidate adds `res://scripts/debug/verify_final_rc_flow_external.gd`.
 - fresh-save main-menu state
 - Level 01 production launch
 - three real swipe/miss cycles and failure
-- one simulated rewarded continue
+- one free failure restart through `Try Again`
 - a production swipe and swept goal
-- one-star assisted completion and Level 02 unlock
+- three-star efficient completion and Level 02 unlock
 - cosmetic preview/equip persistence
 - settings persistence
 - Level 02 pause/resume

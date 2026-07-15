@@ -19,6 +19,10 @@ Save format remains version `2`; completed Level 10 progress unlocks Level 11 du
 
 Current expansion verification passed `68/68` parsers, `20/20` scene startups, and `27/27` retained regressions with no matched Godot warning/error/leak output. Android debug APK and isolated-template AAB exports also passed. Exact artifact hashes and commands are recorded in `docs/CONTENT_EXPANSION.md`.
 
+## July 15 Player-Feel Addendum
+
+The rewarded extra-shot continuation and its one-star cap were retired after direct play feedback showed that they competed with an immediate free restart without adding meaningful value. Failure now offers only `Try Again`; rewarded ads remain available for Net Tokens in the Store. The HUD reports shots used beside par, and historical version-2 data remains compatible.
+
 ## Recommendation
 
 Ready for physical-device beta testing.
@@ -47,7 +51,7 @@ Normal developer save data was not mutated by the final integration test. All sa
 
 - Shot power, height-category thresholds, curve strength/caps, goal geometry, star thresholds, and level tuning were not retuned because all existing acceptance tests passed.
 - Final-shot goal processing retains priority over failure.
-- Rewarded continue remains development-simulated and grants exactly one shot once per attempt; an assisted completion remains capped at one star.
+- Rewarded extra shots are retired; Store rewarded-Token ads and provider boundaries remain intact.
 - Store products remain simulated in development and unavailable in release mode. No real store, ad, consent, analytics, account, or cloud-save SDK was added.
 - Quality tiers remain presentation-only and do not alter physics or scoring.
 - Android stays ARM64-only and offline except for the `VIBRATE` permission.
@@ -67,7 +71,7 @@ Final clean matrix logs: `/tmp/netbound-final-doc-regression.FPBE0A`
 - Unexpected `SCRIPT ERROR`, `ERROR`, `WARNING`, parse-error, or ObjectDB-leak matches in the final matrix: zero.
 - `git diff --check`: passed throughout the verified commits.
 
-The integrated flow executes fresh save, Level 01 launch, three real swipe/miss cycles, failure result, simulated rewarded continue, a production swipe and swept goal, one-star assisted progression, Level 02 unlock, cosmetic preview/equip, settings changes, Level 02 pause/resume, app teardown, disk reload, and persisted-state verification.
+The integrated flow executes fresh save, Level 01 launch, three real swipe/miss cycles, failure result, free Try Again, a production swipe and swept goal, efficient progression, Level 02 unlock, cosmetic preview/equip, settings changes, Level 02 pause/resume, app teardown, disk reload, and persisted-state verification.
 
 A three-run integration soak also passed. Each run completed in approximately 4.4 seconds with peak resident memory between 163 MB and 164 MB and no upward trend.
 
@@ -130,7 +134,7 @@ Inspected states:
 - Store with available, unavailable, owned, pending, and failed simulated-provider states.
 - Settings and Pause.
 - Levels 01, 04, 05, 07, 08, and 10.
-- Success, failure, cosmetic-unlock, ad-continued, and Level 10 completion results.
+- Success, failure, cosmetic-unlock, free-restart, and Level 10 completion results.
 
 All inspected actions remained readable and inside the viewport. Scrollable content behaved as intended. Gameplay obstacles, goal openings, tutorials, shot counter, power bar, and pause action remained readable in the representative levels.
 

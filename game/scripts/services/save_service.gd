@@ -301,8 +301,7 @@ func calculate_stars(level_result: LevelResult, level_definition: LevelDefinitio
 		level_result.completed,
 		level_result.shots_used,
 		shot_limit,
-		par_shots,
-		bool(level_result.get("rewarded_continue_used"))
+		par_shots
 	)
 
 
@@ -311,7 +310,7 @@ static func calculate_stars_for_values(
 	shots_used: int,
 	shot_limit: int,
 	par_shots: int,
-	rewarded_continue_used: bool = false
+	_legacy_rewarded_continue_used: bool = false
 ) -> int:
 	if not completed:
 		return 0
@@ -320,9 +319,9 @@ static func calculate_stars_for_values(
 	var safe_par := mini(par_shots, shot_limit)
 	var safe_shots := clampi(shots_used, 1, shot_limit)
 	if safe_shots <= safe_par:
-		return 1 if rewarded_continue_used else 3
+		return 3
 	if safe_shots == safe_par + 1 and safe_shots <= shot_limit:
-		return 1 if rewarded_continue_used else 2
+		return 2
 	return 1
 
 

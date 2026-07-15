@@ -10,7 +10,7 @@ Startup
 -> Play/Continue, Level Select, Store, Settings, or Cosmetics
 -> Gameplay Level
 -> Success/Failure Result
--> Next Level, Rewarded Continue, Retry, Level Select, Store, or Main Menu
+-> Next Level, Play Again, Try Again, Level Select, Store, or Main Menu
 ```
 
 `NetboundApp` owns navigation. It loads production levels by `LevelRegistry` ID and never guesses paths from strings.
@@ -64,15 +64,14 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 
 - Level completion is recorded by `SaveService` before the result overlay appears.
 - Success shows level name, run stars, shots used, par, total stars, best result comparison, and unlock messages.
-- If a rewarded continue was used, success states that the run is capped at one star.
 - Newly unlocked cosmetics from the actual progression update appear in a compact unlock section.
 - Arcade Coin rewards appear only after the saved completion and show completion, first-clear, new-star, and personal-best components.
 - Result labels/buttons reveal with a short stagger unless Reduced Motion is enabled.
 - Next Level is enabled only if a valid registered next level is unlocked.
 - Level 20 disables Next Level and displays an all-levels-complete message.
 - Failure shows Out of Shots and does not mutate progression.
-- Failure may offer “Watch Ad for 1 Extra Shot” when the simulated ad provider is available, the player has no shots remaining, and no rewarded continue has been used for the current attempt.
-- Rewarded continue is optional, grants exactly one shot after a completed provider callback, returns to READY, and never blocks Retry/Level Select/Main Menu.
+- Failure offers a dominant free `Try Again`; there is no rewarded extra-shot action.
+- `Reset Ball` stays within the current run and preserves shots used. `Restart Level`/`Try Again` abandons the run and starts at zero.
 - Success and failure use right-edge score rails so gameplay context remains visible.
 
 ### Store
@@ -82,7 +81,7 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Store shows Arcade Coin/Net Token balances, five simulated Token packs, and the optional daily rewarded-Token action.
 - Store uses simulated providers only in development builds and labels the build accordingly.
 - Release-mode builds disable simulated providers and show offline/unavailable messaging until real SDKs are integrated in a later phase.
-- Remove Ads disables interstitials but keeps voluntary rewarded continues available.
+- Remove Ads disables interstitials but keeps voluntary rewarded-Token ads available.
 - Starter Pack includes Remove Ads, Supporter Ball/Trail/Goal Effect, 2,500 Coins, and 300 Tokens; currency grants once.
 - Purchase/restore failures return control immediately and do not corrupt save data.
 

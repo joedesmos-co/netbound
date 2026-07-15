@@ -105,7 +105,7 @@ The save service validates every loaded save:
 - Completed levels remain completed and are forced unlocked.
 - Completing a level unlocks its `next_level_id` when one exists.
 - Stars are clamped to `0..3`.
-- Fewest shots are clamped to `shot_limit + 1` so a valid Phase 8 ad-continued completion can preserve its true one-extra-shot count.
+- Fewest shots retain the historical `shot_limit + 1` normalization ceiling so version-2 saves produced before the extra-shot feature was retired remain lossless.
 - `total_stars` is recalculated from `best_stars`.
 - Registry expansion is monotonic: a valid existing Level 10 completion unlocks Level 11, while later levels remain sequentially locked.
 - Missing progression, cosmetic, or settings fields are filled with defaults.
@@ -132,11 +132,11 @@ Stars are calculated by `NetboundSaveService.calculate_stars_for_values()`:
 - `1` star: completed within the valid allowance but worse than `par + 1`
 - `0` stars: not completed or malformed result data
 
-Phase 8 rule:
+Compatibility rule:
 
-- If `LevelResult.rewarded_continue_used` is true, a completed run earns at most `1` star.
-- The run still records completion and can unlock the next level.
-- Best stars remain monotonic; a worse ad-continued replay cannot reduce a previous best.
+- `LevelResult.rewarded_continue_used` remains a legacy runtime field so old fixtures load safely.
+- New runs never set it, and star calculation ignores it.
+- Save schema remains version `2`; no persisted wallet, progression, or cosmetic field changed when the extra-shot feature was retired.
 
 If `par_shots` exceeds `shot_limit`, the service clamps the effective par to the shot limit and records a diagnostic.
 

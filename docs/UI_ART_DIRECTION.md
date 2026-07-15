@@ -310,7 +310,7 @@ Weakest first-pass decisions:
 - rewarded continue, Retry, and navigation competed equally;
 - empty modal space had no relationship to Netbound.
 
-Resolution: the cream result rail leads with `SO CLOSE!`, makes Retry dominant, outlines the optional rewarded continue, and uses one low-contrast trajectory/target motif.
+Initial resolution: the cream result rail led with `SO CLOSE!` and emphasized Retry. The player-feel pass removed the low-value ad continuation entirely, renamed the sole recovery action `TRY AGAIN`, and retained the trajectory/target motif as quiet context.
 
 ### The Locker
 

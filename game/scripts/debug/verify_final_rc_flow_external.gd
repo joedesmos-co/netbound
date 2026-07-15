@@ -31,7 +31,7 @@ func _run() -> void:
 	await _wait_frames(3)
 
 	var passed := _verify_fresh_state()
-	passed = await _play_fail_continue_and_score() and passed
+	passed = await _play_fail_restart_and_score() and passed
 	passed = await _equip_cosmetic_change_settings_and_pause() and passed
 	passed = await _relaunch_and_verify() and passed
 
@@ -57,7 +57,7 @@ func _verify_fresh_state() -> bool:
 	return passed
 
 
-func _play_fail_continue_and_score() -> bool:
+func _play_fail_restart_and_score() -> bool:
 	var launched := app.request_continue()
 	await _wait_frames(3)
 	var level := app.current_level
@@ -73,18 +73,19 @@ func _play_fail_continue_and_score() -> bool:
 			passed = await _wait_for_ready(level, 180) and passed
 	var failure_state_ok: bool = int(level.get("level_state")) == level.LevelState.FAILED
 	var failure_screen_ok := app.current_screen_name == "result"
-	var reward_button_ok := app.rewarded_continue_button != null \
-		and not app.rewarded_continue_button.disabled
-	passed = failure_state_ok and failure_screen_ok and reward_button_ok and passed
-
-	if app.rewarded_continue_button:
-		app.rewarded_continue_button.emit_signal("pressed")
-	await _wait_frames(10)
-	var reward_state_ok: bool = app.current_screen_name == "gameplay" \
+	var try_again := _find_button_with_text(app.result_overlay, "TRY AGAIN")
+	var free_try_again_ok := try_again != null
+	passed = failure_state_ok and failure_screen_ok and free_try_again_ok and passed
+	if try_again:
+		try_again.emit_signal("pressed")
+	await _wait_frames(6)
+	level = app.current_level
+	var restart_state_ok: bool = app.current_screen_name == "gameplay" \
+		and level != null \
 		and int(level.get("level_state")) == level.LevelState.READY \
-		and int(level.get("shots_remaining")) == 1 \
-		and bool(level.get("rewarded_continue_used"))
-	passed = reward_state_ok and passed
+		and int(level.get("shots_used")) == 0 \
+		and int(level.get("shots_remaining")) == int(level.get("max_shots"))
+	passed = restart_state_ok and passed
 
 	var shot_started := await _send_production_swipe(level)
 	var active_shot_id: int = level.get("active_shot_id")
@@ -97,16 +98,16 @@ func _play_fail_continue_and_score() -> bool:
 	passed = int(level.get("level_state")) == level.LevelState.GOAL and passed
 	passed = service.is_level_completed("level_01") and passed
 	passed = service.is_level_unlocked("level_02") and passed
-	passed = service.get_best_stars("level_01") == 1 and passed
-	passed = service.get_fewest_shots("level_01") == 4 and passed
+	passed = service.get_best_stars("level_01") == 3 and passed
+	passed = service.get_fewest_shots("level_01") == 1 and passed
 	passed = app.current_screen_name == "result" and passed
 	passed = app.result_next_button != null and not app.result_next_button.disabled and passed
 	print(
 		"FINAL_RC_FLOW gameplay ok=", passed,
 		" failure_state=", failure_state_ok,
 		" failure_screen=", failure_screen_ok,
-		" reward_button=", reward_button_ok,
-		" reward_state=", reward_state_ok,
+		" free_try_again=", free_try_again_ok,
+		" restart_state=", restart_state_ok,
 		" shot=", shot_started,
 		" scored=", scored,
 		" final_state=", int(level.get("level_state")),
@@ -167,8 +168,8 @@ func _relaunch_and_verify() -> bool:
 	var passed := loaded \
 		and service.is_level_completed("level_01") \
 		and service.is_level_unlocked("level_02") \
-		and service.get_best_stars("level_01") == 1 \
-		and service.get_fewest_shots("level_01") == 4 \
+		and service.get_best_stars("level_01") == 3 \
+		and service.get_fewest_shots("level_01") == 1 \
 		and service.get_selected_ball() == "ball_neon" \
 		and is_equal_approx(float(service.get_setting_value("master_volume", 0.0)), 0.42) \
 		and String(service.get_setting_value("quality_tier", "")) == "low" \
@@ -228,6 +229,16 @@ func _wait_for_ready(level: Node, max_frames: int = 120) -> bool:
 func _wait_frames(frame_count: int) -> void:
 	for _index in range(frame_count):
 		await process_frame
+
+
+func _find_button_with_text(root: Node, text: String) -> Button:
+	if not root:
+		return null
+	for node in root.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button and button.text == text:
+			return button
+	return null
 
 
 func _configure_isolated_save() -> void:

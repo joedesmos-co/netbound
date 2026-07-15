@@ -63,26 +63,18 @@ Starter Pack grants:
 
 Purchases and restores are idempotent. Duplicate provider callbacks cannot grant twice because request IDs and provider transaction IDs are consumed once. Token packs are consumable and never restored. Starter Pack currency is a one-time fulfillment; Restore reapplies only permanent ownership.
 
-## Rewarded Continue
+## Rewarded Net Tokens
 
-Failure result may show “Watch Ad for 1 Extra Shot”.
+The failure screen has no ad recovery. `Try Again` is free and immediately starts a fresh run.
 
-Rules:
+Voluntary rewarded ads remain available in the Store for Net Tokens:
 
-- voluntary only
-- one use per failed attempt
-- only when the level is in `FAILED` with no shots remaining
-- provider must report completion
+- a completed provider callback grants exactly two Tokens
 - cancel/failure grants nothing
-- stale callbacks after navigation are ignored by level instance ID
-- reward grants exactly one shot and returns the level to `READY`
-- no shot refund, no physics change, no direct save mutation before completion
-
-Ad-continued completion rule:
-
-- completion can unlock the next level
-- stars for that run are capped at `1`
-- previous better stars remain unchanged
+- request IDs and wallet reward keys prevent duplicate grants
+- local daily caps remain authoritative
+- Remove Ads does not disable this voluntary reward
+- offline/unavailable providers leave gameplay and free restart usable
 
 ## Interstitial Policy
 
@@ -166,12 +158,12 @@ Primary Phase 8 verifier:
 
 - `res://scripts/debug/verify_phase8_monetization_external.gd`
 
-It covers provider guards, entitlements, migration, rewarded continue, duplicate callbacks, interstitial policy, Store UI, offline behavior, supporter cosmetics, and all production level startups.
+It covers provider guards, entitlements, migration, free failure restart, rewarded Tokens, duplicate callbacks, interstitial policy, Store UI, offline behavior, supporter cosmetics, and all production level startups.
 
 Physical mobile checks still required:
 
 - real offline app relaunch persistence
-- touch comfort for Store and failure-result ad button
+- touch comfort for Store rewarded-Token controls and failure `Try Again`
 - purchase/ad UI platform compliance after real SDK selection
 - receipt validation strategy
 - consent/privacy requirements

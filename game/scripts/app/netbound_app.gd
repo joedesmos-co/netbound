@@ -22,7 +22,6 @@ const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
 const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
-const CONTEXT_REWARDED_CONTINUE := "rewarded_continue"
 const CONTEXT_REWARDED_TOKENS := "rewarded_tokens"
 const CONTEXT_NEXT_LEVEL := "next_level"
 const CONTEXT_LEVEL_SELECT_AFTER_SUCCESS := "level_select_after_success"
@@ -89,10 +88,6 @@ var store_rewarded_token_status_label: Label
 var gameplay_pause_button: Button
 var store_request_in_progress: bool = false
 var store_pending_product_id: String = ""
-var rewarded_continue_button: Button
-var rewarded_continue_status_label: Label
-var rewarded_continue_request_in_progress: bool = false
-var rewarded_continue_level_instance_id: int = -1
 var active_ui_tweens: Array[Tween] = []
 
 
@@ -1628,8 +1623,6 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 		_get_save_service().get_total_stars(),
 		MAX_STARS,
 	]
-	if level_result.rewarded_continue_used:
-		result_stars_label.text += "  //  CONTINUE CAP: 1 STAR"
 	result_stars_label.theme_type_variation = "LightMetaLabel"
 	result_stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(result_stars_label)
@@ -1735,7 +1728,7 @@ func _show_success_result(level_result: LevelResult, progression_update: RefCoun
 	actions.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
 	box.add_child(actions)
 
-	var retry_button := _new_small_button("RETRY")
+	var retry_button := _new_small_button("PLAY AGAIN")
 	retry_button.theme_type_variation = "LightQuietButton"
 	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
@@ -1802,18 +1795,7 @@ func _show_failure_result(level_result: LevelResult) -> void:
 	action_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(action_spacer)
 
-	rewarded_continue_button = _new_menu_button("WATCH AD  +1 SHOT", false)
-	rewarded_continue_button.name = "RewardedContinueButton"
-	rewarded_continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rewarded_continue_button.pressed.connect(_request_rewarded_continue)
-	box.add_child(rewarded_continue_button)
-
-	rewarded_continue_status_label = Label.new()
-	rewarded_continue_status_label.theme_type_variation = "LightMetaLabel"
-	rewarded_continue_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(rewarded_continue_status_label)
-
-	var retry_button := _new_menu_button("RETRY", true)
+	var retry_button := _new_menu_button("TRY AGAIN", true)
 	retry_button.custom_minimum_size = Vector2(0.0, 68.0)
 	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(func() -> void: load_level(level_result.level_id))
@@ -1837,7 +1819,6 @@ func _show_failure_result(level_result: LevelResult) -> void:
 
 	result_overlay = overlay
 	gameplay_overlay_root.add_child(result_overlay)
-	_refresh_rewarded_continue_button()
 	_animate_modal_entrance(result_overlay)
 	_animate_result_reveal(box)
 
@@ -1855,74 +1836,6 @@ func _on_level_completed(level_result: LevelResult, progression_update: RefCount
 
 func _on_level_failed(level_result: LevelResult) -> void:
 	_show_failure_result(level_result)
-
-
-func _request_rewarded_continue() -> void:
-	if rewarded_continue_request_in_progress:
-		return
-	var availability := _rewarded_continue_availability()
-	if not bool(availability.get("available", false)):
-		_set_rewarded_continue_status(String(availability.get("reason", "Extra shot unavailable.")))
-		_refresh_rewarded_continue_button()
-		return
-	var monetization := _get_monetization_service()
-	rewarded_continue_request_in_progress = true
-	rewarded_continue_level_instance_id = current_level.get_instance_id() if current_level else -1
-	var request_result: Dictionary = monetization.call(
-		"request_rewarded_ad",
-		CONTEXT_REWARDED_CONTINUE,
-		{
-			"level_id": current_level_id,
-			"level_instance_id": rewarded_continue_level_instance_id,
-		}
-	)
-	if not bool(request_result.get("accepted", false)):
-		rewarded_continue_request_in_progress = false
-		_set_rewarded_continue_status(_friendly_monetization_reason(String(request_result.get("reason", ""))))
-	else:
-		_set_rewarded_continue_status("Watching simulated ad...")
-	_refresh_rewarded_continue_button()
-
-
-func _rewarded_continue_availability() -> Dictionary:
-	if not current_level or not current_level.has_method("can_use_rewarded_continue"):
-		return {"available": false, "reason": "No failed level to continue."}
-	if rewarded_continue_request_in_progress:
-		return {"available": false, "reason": "Ad already running."}
-	if not bool(current_level.call("can_use_rewarded_continue")):
-		return {"available": false, "reason": "Extra shot already used for this attempt."}
-	var monetization := _get_monetization_service()
-	if not monetization or not monetization.has_method("is_rewarded_ad_available"):
-		return {"available": false, "reason": "Ads unavailable."}
-	if not bool(monetization.call("is_rewarded_ad_available")):
-		return {"available": false, "reason": "Ads unavailable offline."}
-	return {"available": true, "reason": ""}
-
-
-func _refresh_rewarded_continue_button() -> void:
-	if not rewarded_continue_button:
-		return
-	var availability := _rewarded_continue_availability()
-	var available := bool(availability.get("available", false))
-	rewarded_continue_button.disabled = not available
-	if rewarded_continue_request_in_progress:
-		rewarded_continue_button.text = "AD RUNNING..."
-	elif available:
-		rewarded_continue_button.text = "WATCH AD  +1 SHOT"
-	else:
-		rewarded_continue_button.text = "EXTRA SHOT UNAVAILABLE"
-	if rewarded_continue_status_label and not rewarded_continue_request_in_progress:
-		rewarded_continue_status_label.text = (
-			"Complete after an ad continue for up to 1 star."
-			if available
-			else String(availability.get("reason", "Extra shot unavailable."))
-		)
-
-
-func _set_rewarded_continue_status(message: String) -> void:
-	last_status_message = message
-	if rewarded_continue_status_label:
-		rewarded_continue_status_label.text = message
 
 
 func _navigate_to_next_after_success(next_id: String) -> void:
@@ -1951,26 +1864,6 @@ func _on_monetization_reward_granted(
 		store_pending_product_id = ""
 		_set_store_status("+%d Net Tokens added." % int(metadata.get("amount", 0)))
 		_refresh_store_screen()
-		return
-	if context != CONTEXT_REWARDED_CONTINUE:
-		return
-	rewarded_continue_request_in_progress = false
-	var expected_instance_id := int(metadata.get("level_instance_id", -1))
-	if (
-		not current_level
-		or current_level.get_instance_id() != expected_instance_id
-		or not current_level.has_method("grant_rewarded_continue")
-	):
-		return
-	var granted: bool = await current_level.call("grant_rewarded_continue")
-	if granted:
-		_clear_result_overlay()
-		rewarded_continue_button = null
-		rewarded_continue_status_label = null
-		current_screen_name = "gameplay"
-	else:
-		_set_rewarded_continue_status("Extra shot unavailable now.")
-		_refresh_rewarded_continue_button()
 
 
 func _on_monetization_reward_failed(context: String, _request_id: int, reason: String) -> void:
@@ -1979,12 +1872,6 @@ func _on_monetization_reward_failed(context: String, _request_id: int, reason: S
 		store_pending_product_id = ""
 		_set_store_status(_friendly_economy_reason(reason))
 		_refresh_store_screen()
-		return
-	if context != CONTEXT_REWARDED_CONTINUE:
-		return
-	rewarded_continue_request_in_progress = false
-	_set_rewarded_continue_status(_friendly_monetization_reason(reason))
-	_refresh_rewarded_continue_button()
 
 
 func _on_monetization_purchase_started(product_id: String, _request_id: int) -> void:
@@ -2070,8 +1957,6 @@ func _handle_back_navigation() -> void:
 func _leave_current_level() -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
-	rewarded_continue_request_in_progress = false
-	rewarded_continue_level_instance_id = -1
 	var audio_service := get_node_or_null("/root/AudioService")
 	if audio_service and audio_service.has_method("cleanup_scene_audio"):
 		audio_service.call("cleanup_scene_audio")
@@ -2130,16 +2015,12 @@ func _clear_gameplay_overlay() -> void:
 	pause_overlay = null
 	result_overlay = null
 	gameplay_pause_button = null
-	rewarded_continue_button = null
-	rewarded_continue_status_label = null
 
 
 func _clear_result_overlay() -> void:
 	if result_overlay:
 		result_overlay.queue_free()
 		result_overlay = null
-	rewarded_continue_button = null
-	rewarded_continue_status_label = null
 
 
 func _begin_navigation() -> bool:

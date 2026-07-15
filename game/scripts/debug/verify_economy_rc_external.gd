@@ -146,7 +146,7 @@ func _test_production_reward_and_result_flow() -> bool:
 	await _wait_frames(2)
 	passed = int(level.get("level_state")) == level.LevelState.FAILED and passed
 	passed = app.current_screen_name == "result" and wallet.get_coin_balance() == 0 and passed
-	var failure_retry := _find_button_with_text(app.result_overlay, "RETRY")
+	var failure_retry := _find_button_with_text(app.result_overlay, "TRY AGAIN")
 	passed = failure_retry != null and passed
 	if failure_retry:
 		failure_retry.emit_signal("pressed")
@@ -170,7 +170,7 @@ func _test_production_reward_and_result_flow() -> bool:
 	app.call("_show_success_result", level.get("last_level_result"), level.get("last_progression_update"))
 	await process_frame
 	passed = wallet.get_coin_balance() == balance_before_reopen and passed
-	var success_retry := _find_button_with_text(app.result_overlay, "RETRY")
+	var success_retry := _find_button_with_text(app.result_overlay, "PLAY AGAIN")
 	passed = success_retry != null and passed
 	if success_retry:
 		success_retry.emit_signal("pressed")
@@ -179,12 +179,12 @@ func _test_production_reward_and_result_flow() -> bool:
 
 	passed = app.load_level("level_02") and passed
 	await _wait_frames(3)
-	passed = await _force_production_goal(app, 2, false) and passed
+	passed = await _force_production_goal(app, 2) and passed
 	passed = wallet.get_coin_balance() == 875 and passed
 	passed = _collect_control_text(app.result_overlay).contains("ARCADE COINS  +400") and passed
 	passed = app.load_level("level_02") and passed
 	await _wait_frames(3)
-	passed = await _force_production_goal(app, 1, false) and passed
+	passed = await _force_production_goal(app, 1) and passed
 	var improvement_text := _collect_control_text(app.result_overlay)
 	passed = wallet.get_coin_balance() == 1100 and passed
 	passed = improvement_text.contains("NEW STARS +75") and passed
@@ -192,9 +192,9 @@ func _test_production_reward_and_result_flow() -> bool:
 
 	passed = app.load_level("level_03") and passed
 	await _wait_frames(3)
-	passed = await _force_production_goal(app, 1, true) and passed
-	passed = service.get_best_stars("level_03") == 1 and passed
-	passed = _collect_control_text(app.result_overlay).contains("CONTINUE CAP: 1 STAR") and passed
+	passed = await _force_production_goal(app, 1) and passed
+	passed = service.get_best_stars("level_03") == 3 and passed
+	passed = not _collect_control_text(app.result_overlay).contains("CONTINUE CAP") and passed
 
 	if app.current_level:
 		app.current_level.call("prepare_for_unload")
@@ -700,7 +700,7 @@ func _test_low_quality_catalog_and_lifecycle() -> bool:
 		var load_ok := lifecycle_app.load_level("level_01")
 		flow_ok = store_before_ok and load_ok and flow_ok
 		await _wait_frames(3)
-		var goal_ok := await _force_production_goal(lifecycle_app, 1, false)
+		var goal_ok := await _force_production_goal(lifecycle_app, 1)
 		flow_ok = goal_ok and flow_ok
 		var store_after_ok := lifecycle_app.show_store("main_menu")
 		flow_ok = store_after_ok and flow_ok
@@ -743,13 +743,12 @@ func _test_low_quality_catalog_and_lifecycle() -> bool:
 	return passed
 
 
-func _force_production_goal(app: NetboundApp, shots_used: int, rewarded_continue: bool) -> bool:
+func _force_production_goal(app: NetboundApp, shots_used: int) -> bool:
 	var level := app.current_level
 	if not level or not await _wait_for_ready(level):
 		return false
 	level.set("shots_used", shots_used)
 	level.set("shots_remaining", maxi(int(level.get("max_shots")) - shots_used, 0))
-	level.set("rewarded_continue_used", rewarded_continue)
 	level.set("active_shot_id", int(level.get("active_shot_id")) + 1)
 	level.set("level_state", level.LevelState.SHOT_ACTIVE)
 	level.call("_on_goal_scored")

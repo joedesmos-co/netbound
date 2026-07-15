@@ -8,6 +8,7 @@ extends Resource
 @export var shot_limit: int = 0
 @export var par_shots: int = 0
 @export var result_state: String = ""
+# Retained for in-memory compatibility with older test fixtures. New runs never set it.
 @export var rewarded_continue_used: bool = false
 
 

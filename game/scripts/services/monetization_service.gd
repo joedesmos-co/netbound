@@ -24,7 +24,6 @@ const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
 
-const CONTEXT_REWARDED_CONTINUE := "rewarded_continue"
 const CONTEXT_REWARDED_TOKENS := "rewarded_tokens"
 const CONTEXT_NEXT_LEVEL := "next_level"
 const CONTEXT_LEVEL_SELECT_AFTER_SUCCESS := "level_select_after_success"
@@ -244,7 +243,7 @@ func should_show_interstitial(context: String) -> bool:
 		return false
 	if has_entitlement(ENTITLEMENT_REMOVE_ADS) or has_entitlement(ENTITLEMENT_STARTER_PACK):
 		return false
-	if context.is_empty() or context == CONTEXT_REWARDED_CONTINUE:
+	if context.is_empty():
 		return false
 	if _active_interstitial_request.size() > 0 or interstitials_shown_this_session >= MAX_INTERSTITIALS_PER_SESSION:
 		return false

@@ -296,14 +296,13 @@ Ownership boundaries:
 3. `MonetizationService` validates request IDs and duplicate callbacks before emitting rewards or recording purchases.
 4. `SaveService` is the authority for entitlements, owned products, supporter cosmetic unlocks, selections, and persisted monetization config.
 
-Rewarded continue flow:
+Shot and rewarded-ad flow:
 
-- Failure result can offer “Watch Ad for 1 Extra Shot”.
-- The offer is voluntary, unavailable offline/provider-unavailable, and guarded by a request token plus the current level instance ID.
-- The level grants exactly one extra shot through `grant_rewarded_continue()` only while in `FAILED`, with no normal shots remaining and no prior rewarded continue for that attempt.
-- The level returns to deterministic `READY` through the same physics-safe ball reset and resettable-element reset path; it does not refund shots or alter physics.
-- Completing after a rewarded continue records `LevelResult.rewarded_continue_used = true`.
-- `SaveService.calculate_stars()` caps ad-continued completions at a maximum of `1` star while still allowing level completion/unlock progression.
+- Failure offers one free `Try Again` action, which starts a new run at zero shots used.
+- `Reset Ball` remains inside the current run and never refunds a consumed shot.
+- The HUD presents shots used beside par; shot efficiency remains the authority for stars and mastery.
+- The old rewarded extra-shot grant path is retired. Its `LevelResult` flag remains readable for historical runtime fixtures but no longer affects star calculation.
+- Rewarded ads remain voluntary in the Store and grant Net Tokens through the existing request-ID and duplicate-callback guards.
 
 Interstitial policy:
 

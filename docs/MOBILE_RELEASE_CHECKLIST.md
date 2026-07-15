@@ -16,7 +16,7 @@ This checklist tracks what must be true before the vertical slice is mobile-read
 - Reduced Motion and Camera Effects settings exist and persist.
 - Gameplay aim preview, launch/impact/goal feedback, near-miss presentation, level visual polish, contact shadows, and UI motion now exist.
 - Phase 7 presentation nodes are bounded, visual-only, and covered by headless regression checks.
-- Phase 8 simulated monetization architecture now exists with rewarded continue, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling.
+- Simulated monetization architecture now includes rewarded Net Tokens, restrained interstitial policy, Remove Ads, Starter Pack, Store UI, local entitlements, and offline/unavailable-provider handling. Failure restart is free and has no ad path.
 - Phase 9 mobile runtime now handles lifecycle, safe-area margins, dirty save flush, quality tiers, release/development feature tags, and audio pause/resume.
 - Android and iOS export presets exist with placeholder package/bundle ID `com.netbound.game`.
 - Phase 9.5 installed matching Godot 4.7 export templates locally.
@@ -133,8 +133,8 @@ Phase 8 is architecture-only for monetization providers.
 Ready:
 
 - Provider interfaces and simulated providers.
-- Rewarded extra-shot continue guarded by request IDs and level instance IDs.
-- One-star cap for ad-continued completions.
+- Rewarded Token ads guarded by request IDs, wallet reward keys, and daily caps.
+- Free `Try Again` is the only failure recovery; `Reset Ball` preserves current-run shot usage.
 - Central interstitial policy, disabled by Remove Ads/Starter Pack.
 - Local entitlements and restore simulation.
 - Store UI with unavailable/offline handling.

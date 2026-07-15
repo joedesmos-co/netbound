@@ -196,7 +196,6 @@ func _show_requested_screen() -> void:
 			var definition := LevelRegistryScript.load_definition("level_01")
 			app.current_level.set("shots_remaining", 0)
 			app.current_level.set("shots_used", definition.shot_limit)
-			app.current_level.set("rewarded_continue_used", false)
 			app.current_level.set("level_state", app.current_level.LevelState.FAILED)
 			app._show_failure_result(LevelResult.failed_result(definition, definition.shot_limit, 0))
 		"level_10_result":

@@ -20,7 +20,7 @@ The production entry point is `res://app/netbound_app.tscn`.
   --script res://scripts/debug/verify_final_rc_flow_external.gd
 ```
 
-The script uses isolated save paths and covers fresh launch, failure, rewarded continue, scoring, progression, cosmetic selection, settings, pause/resume, and relaunch persistence.
+The script uses isolated save paths and covers fresh launch, failure, free Try Again, scoring, progression, cosmetic selection, settings, pause/resume, and relaunch persistence.
 
 ## Documentation
 

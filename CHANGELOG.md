@@ -1,5 +1,13 @@
 # Changelog
 
+## Player Feel - 2026-07-15
+
+### Changed
+
+- Retire the rewarded extra-shot continuation and its one-star cap while preserving rewarded Net Token ads and version-2 save compatibility.
+- Present shots used beside par in the gameplay HUD.
+- Use distinct `Reset Ball`, `Restart Level`, `Try Again`, and `Play Again` language throughout the run loop.
+
 ## Content Expansion - 2026-07-15
 
 ### Fixed

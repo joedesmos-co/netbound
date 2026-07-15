@@ -13,7 +13,6 @@ const ENTITLEMENT_REMOVE_ADS := "entitlement_remove_ads"
 const ENTITLEMENT_STARTER_PACK := "entitlement_starter_pack"
 const PRODUCT_REMOVE_ADS := "netbound_remove_ads"
 const PRODUCT_STARTER_PACK := "netbound_starter_pack"
-const CONTEXT_REWARDED_CONTINUE := "rewarded_continue"
 const CONTEXT_NEXT_LEVEL := "next_level"
 
 var service: Node
@@ -40,7 +39,7 @@ func _run() -> void:
 	var passed := true
 	passed = await _test_architecture_and_provider_guards() and passed
 	passed = await _test_entitlements_and_save_model() and passed
-	passed = await _test_rewarded_continue() and passed
+	passed = await _test_free_retry_and_rewarded_tokens() and passed
 	passed = await _test_interstitial_policy() and passed
 	passed = await _test_store_ui_and_supporter_link() and passed
 	passed = await _test_offline_unavailable_behavior() and passed
@@ -160,7 +159,7 @@ func _test_invalid_and_phase7_save_migration() -> bool:
 	return passed
 
 
-func _test_rewarded_continue() -> bool:
+func _test_free_retry_and_rewarded_tokens() -> bool:
 	service.reset_to_defaults()
 	service.recording_enabled = true
 	monetization.call("reset_session_frequency_for_tests")
@@ -170,37 +169,29 @@ func _test_rewarded_continue() -> bool:
 	get_root().add_child(level)
 	await _warmup_level(level)
 	await level.call("_restart_level")
-	level.set("shots_remaining", 0)
-	level.set("shots_used", int(level.get("max_shots")))
-	level.set("level_state", level.LevelState.FAILED)
-	var granted: bool = await level.call("grant_rewarded_continue")
-	var passed: bool = granted \
-		and bool(level.get("rewarded_continue_used")) \
-		and int(level.get("shots_remaining")) == 1 \
-		and int(level.get("level_state")) == level.LevelState.READY \
-		and not bool(level.call("can_use_rewarded_continue"))
+	level.set("shots_remaining", definition.shot_limit - 1)
+	level.set("shots_used", 1)
+	await level.call("_on_reset_button_pressed")
+	var passed := int(level.get("shots_used")) == 1 \
+		and int(level.get("shots_remaining")) == definition.shot_limit - 1 \
+		and not level.has_method("grant_rewarded_continue") \
+		and not level.has_method("can_use_rewarded_continue")
+	await level.call("_restart_level")
+	passed = int(level.get("shots_used")) == 0 and passed
+	passed = int(level.get("shots_remaining")) == definition.shot_limit and passed
+
+	# Legacy runtime fixtures may still carry the old flag; it no longer caps stars.
 	var result := LevelResult.completed_result(
 		definition,
-		definition.shot_limit + 1,
-		0,
+		definition.par_shots,
+		definition.shot_limit - definition.par_shots,
 		true
 	)
 	var update = service.record_level_result(result, definition)
-	passed = int(update.stars_earned) == 1 and passed
-	passed = service.get_best_stars("level_01") == 1 and passed
-	passed = service.get_fewest_shots("level_01") == definition.shot_limit + 1 and passed
+	passed = int(update.stars_earned) == 3 and passed
+	passed = service.get_best_stars("level_01") == 3 and passed
+	passed = service.get_fewest_shots("level_01") == definition.par_shots and passed
 	passed = service.is_level_unlocked("level_02") and passed
-	passed = service.calculate_stars(LevelResult.completed_result(definition, definition.par_shots), definition) == 3 and passed
-	if not passed:
-		print(
-			"PHASE8 rewarded detail granted=", granted,
-			" used=", bool(level.get("rewarded_continue_used")),
-			" shots=", int(level.get("shots_remaining")),
-			" state=", int(level.get("level_state")),
-			" stars=", service.get_best_stars("level_01"),
-			" fewest=", service.get_fewest_shots("level_01"),
-			" unlocked02=", service.is_level_unlocked("level_02")
-		)
 
 	if level.has_method("prepare_for_unload"):
 		level.call("prepare_for_unload")
@@ -208,8 +199,8 @@ func _test_rewarded_continue() -> bool:
 	await process_frame
 
 	passed = await _test_reward_provider_results() and passed
-	passed = await _test_rewarded_continue_button_flow() and passed
-	print("PHASE8 rewarded_continue ok=", passed)
+	passed = await _test_failure_retry_and_token_button_flow() and passed
+	print("PHASE8 free_retry_rewarded_tokens ok=", passed)
 	return passed
 
 
@@ -239,7 +230,7 @@ func _test_reward_provider_results() -> bool:
 	return passed
 
 
-func _test_rewarded_continue_button_flow() -> bool:
+func _test_failure_retry_and_token_button_flow() -> bool:
 	service.reset_to_defaults()
 	service.recording_enabled = true
 	monetization.call("reset_session_frequency_for_tests")
@@ -258,18 +249,25 @@ func _test_rewarded_continue_button_flow() -> bool:
 	level.set("level_state", level.LevelState.FAILED)
 	app.call("_show_failure_result", LevelResult.failed_result(LevelRegistryScript.load_definition("level_01"), int(level.get("max_shots")), 0))
 	await process_frame
-	var passed := launched \
-		and app.rewarded_continue_button != null \
-		and not app.rewarded_continue_button.disabled
-	app.rewarded_continue_button.emit_signal("pressed")
-	await _wait_frames(8)
+	var try_again: Button = null
+	var has_extra_shot_copy := false
+	for node in app.result_overlay.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button.text == "TRY AGAIN":
+			try_again = button
+		if button.text.contains("SHOT") or button.text.contains("AD"):
+			has_extra_shot_copy = true
+	var passed := launched and try_again != null and not has_extra_shot_copy
+	if try_again:
+		try_again.emit_signal("pressed")
+	await _wait_frames(5)
 	passed = app.current_screen_name == "gameplay" and passed
-	passed = int(level.get("level_state")) == level.LevelState.READY and passed
-	passed = int(level.get("shots_remaining")) == 1 and passed
-	app.call("show_main_menu")
+	passed = int(app.current_level.get("shots_used")) == 0 and passed
+	passed = int(app.current_level.get("shots_remaining")) == int(app.current_level.get("max_shots")) and passed
+	app.call("show_store", "main_menu")
 	await process_frame
-	var grant_after_navigation := bool(level.call("can_use_rewarded_continue")) if is_instance_valid(level) else false
-	passed = not grant_after_navigation and passed
+	passed = app.store_rewarded_token_button != null and passed
+	passed = app.store_rewarded_token_button.text.contains("+2 TOKENS") and passed
 	app.queue_free()
 	app = null
 	await process_frame
