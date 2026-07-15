@@ -118,11 +118,13 @@ func _test_defaults() -> bool:
 func _test_registry() -> bool:
 	var validation: Dictionary = LevelRegistryScript.validate_registry()
 	var passed: bool = bool(validation.ok) \
-		and LevelRegistryScript.get_entries().size() == 10 \
+		and LevelRegistryScript.get_entries().size() == 20 \
 		and LevelRegistryScript.get_level_ids()[0] == "level_01" \
-		and LevelRegistryScript.get_level_ids()[-1] == "level_10" \
+		and LevelRegistryScript.get_level_ids()[-1] == "level_20" \
 		and LevelRegistryScript.get_next_level_id("level_09") == "level_10" \
-		and LevelRegistryScript.get_next_level_id("level_10").is_empty()
+		and LevelRegistryScript.get_next_level_id("level_10") == "level_11" \
+		and LevelRegistryScript.get_next_level_id("level_19") == "level_20" \
+		and LevelRegistryScript.get_next_level_id("level_20").is_empty()
 	for level_id in LevelRegistryScript.get_level_ids():
 		passed = ResourceLoader.exists(LevelRegistryScript.get_scene_path(level_id)) and passed
 		passed = ResourceLoader.exists(LevelRegistryScript.get_definition_path(level_id)) and passed
@@ -199,7 +201,7 @@ func _test_recording() -> bool:
 	passed = service.get_total_stars() == 5 and passed
 
 	var final_update = null
-	for index in range(3, 11):
+	for index in range(3, 21):
 		var level_id := "level_%02d" % index
 		var definition := LevelRegistryScript.load_definition(level_id)
 		final_update = service.record_level_result(
@@ -208,8 +210,8 @@ func _test_recording() -> bool:
 		)
 	passed = not bool(final_update.did_unlock_new_level) and passed
 	passed = String(final_update.unlocked_level_id).is_empty() and passed
-	passed = service.is_level_completed("level_10") and passed
-	passed = service.get_save_data().progression.unlocked_levels.size() <= 10 and passed
+	passed = service.is_level_completed("level_20") and passed
+	passed = service.get_save_data().progression.unlocked_levels.size() <= 20 and passed
 	service.free()
 	print("PHASE4 recording ok=", passed)
 	return passed

@@ -13,7 +13,7 @@ const ResultMotifScript := preload("res://scripts/ui/result_motif.gd")
 const CosmeticChoiceButtonScript := preload("res://scripts/ui/cosmetic_choice_button.gd")
 const CurrencyProductRegistryScript := preload("res://scripts/monetization/currency_product_registry.gd")
 
-const MAX_STARS := 30
+const MAX_STARS := LevelRegistryScript.EXPECTED_LEVEL_COUNT * 3
 const SAFE_MARGIN := 28
 const SAFE_AREA_GROUP := "netbound_safe_area_margin"
 const RESULT_REVEAL_DELAY := 0.35
@@ -534,7 +534,7 @@ func _show_level_select_internal() -> void:
 	outer.add_child(header)
 
 	var back_button := _new_small_button("BACK")
-	back_button.theme_type_variation = "LightQuietButton"
+	back_button.theme_type_variation = "HudButton"
 	back_button.custom_minimum_size = Vector2(92.0, 54.0)
 	back_button.pressed.connect(show_main_menu)
 	header.add_child(back_button)
@@ -550,7 +550,7 @@ func _show_level_select_internal() -> void:
 	title_stack.add_child(title)
 
 	var route_subtitle := Label.new()
-	route_subtitle.text = "FOLLOW THE ROUTE TO THE FINAL GOAL."
+	route_subtitle.text = "20 TRICK-SHOT CHALLENGES"
 	route_subtitle.theme_type_variation = "MetaLabel"
 	title_stack.add_child(route_subtitle)
 
@@ -2494,7 +2494,7 @@ func _play_gameplay_music(level_id: String) -> void:
 	var audio_service := get_node_or_null("/root/AudioService")
 	if not audio_service or not audio_service.has_method("play_music"):
 		return
-	var music_id := "music_final_loop" if level_id == "level_10" else "music_gameplay_loop"
+	var music_id := "music_final_loop" if level_id == "level_20" else "music_gameplay_loop"
 	audio_service.call("play_music", music_id)
 
 
@@ -2548,6 +2548,16 @@ func _mechanic_label(mechanic_id: String) -> String:
 		"bank_shot": "Bank",
 		"double_timing": "Double Timing",
 		"combo_challenge": "Finale",
+		"side_entry": "Side Goal",
+		"vertical_slider": "Elevator",
+		"cross_traffic": "Cross Traffic",
+		"pinhole": "Precision",
+		"sky_hook": "Curve + Lift",
+		"under_curve": "Low Curve",
+		"moving_target": "Moving Goal",
+		"double_bank": "Ricochet",
+		"rhythm_gates": "Rhythm",
+		"championship": "Finale",
 	}
 	return String(labels.get(mechanic_id, mechanic_id.capitalize()))
 

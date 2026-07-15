@@ -17,6 +17,9 @@ var _quality_config: Dictionary = {
 	"dynamic_shadows_enabled": true,
 }
 
+const GOAL_FRAME_COLOR := Color(1.0, 1.0, 1.0, 1.0)
+const GOAL_FRAME_EMISSION := Color(0.08, 0.09, 0.1, 1.0)
+
 
 func setup(level: Node) -> void:
 	_level = level
@@ -42,7 +45,7 @@ func on_goal_scored() -> void:
 		return
 	var tween := create_tween()
 	_active_tweens.append(tween)
-	var base_emission: Color = _palette.get("goal_emission", Color(0.3, 0.55, 0.75, 1.0))
+	var base_emission := GOAL_FRAME_EMISSION
 	var pulse_emission: Color = _palette.get("pulse", Color(1.0, 0.92, 0.25, 1.0))
 	tween.tween_property(_goal_material, "emission", pulse_emission, 0.08)
 	tween.tween_interval(0.16)
@@ -56,7 +59,7 @@ func clear_feedback() -> void:
 			tween.kill()
 	_active_tweens.clear()
 	if _goal_material:
-		_goal_material.emission = _palette.get("goal_emission", Color(0.3, 0.55, 0.75, 1.0))
+		_goal_material.emission = GOAL_FRAME_EMISSION
 
 
 func get_budget_snapshot() -> Dictionary:
@@ -101,16 +104,17 @@ func _apply_environment() -> void:
 func _apply_material_language() -> void:
 	var field_material := _material(_palette.get("field", Color(0.08, 0.48, 0.28, 1.0)), 0.9)
 	var static_material := _material(_palette.get("static", Color(0.86, 0.28, 0.24, 1.0)), 0.66)
+	var static_accent_material := _material(
+		_palette.get("static_accent", Color(0.52, 0.28, 0.82, 1.0)),
+		0.58,
+		true
+	)
 	var gate_material := _material(_palette.get("gate", Color(0.16, 0.82, 1.0, 1.0)), 0.48, true)
 	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.72)), 0.62, true, true)
 	var bounce_material := _material(_palette.get("bounce", Color(0.0, 0.95, 0.72, 1.0)), 0.32, true)
 	var net_material := _material(_palette.get("net", Color(0.8, 0.95, 1.0, 0.26)), 0.86, false, true)
-	_goal_material = _material(
-		_palette.get("goal", Color(0.96, 1.0, 1.0, 1.0)),
-		0.28,
-		true
-	)
-	_goal_material.emission = _palette.get("goal_emission", Color(0.3, 0.55, 0.75, 1.0))
+	_goal_material = _material(GOAL_FRAME_COLOR, 0.28, true)
+	_goal_material.emission = GOAL_FRAME_EMISSION
 	_trim_material = _material(_palette.get("trim", Color(1.0, 0.85, 0.28, 1.0)), 0.45, true)
 
 	for node in _level.find_children("*", "MeshInstance3D", true, false):
@@ -128,8 +132,10 @@ func _apply_material_language() -> void:
 			mesh.material_override = route_material
 		elif path.contains("bank") or path.contains("bounce"):
 			mesh.material_override = bounce_material
-		elif path.contains("gate") or path.contains("rotating"):
+		elif _uses_moving_material(mesh) or path.contains("gate") or path.contains("rotating"):
 			mesh.material_override = gate_material
+		elif path.contains("tower") or path.contains("lift"):
+			mesh.material_override = static_accent_material
 		elif mesh.get_parent() is StaticBody3D:
 			mesh.material_override = static_material
 
@@ -244,12 +250,21 @@ func _is_route_mesh(path: String, node_name: String, parent_name: String) -> boo
 	)
 
 
+func _uses_moving_material(mesh: MeshInstance3D) -> bool:
+	var ancestor: Node = mesh.get_parent()
+	while ancestor and ancestor != _level:
+		if ancestor is MovingObstacle or ancestor is TimedGate or ancestor is RotatingObstacle:
+			return true
+		ancestor = ancestor.get_parent()
+	return false
+
+
 func _level_index() -> int:
 	if not _definition:
 		return 1
 	var parts := _definition.level_id.split("_")
 	if parts.size() >= 2:
-		return clampi(int(parts[-1]), 1, 10)
+		return clampi(int(parts[-1]), 1, 20)
 	return 1
 
 
@@ -311,23 +326,76 @@ func _palette_for_level(level_index: int) -> Dictionary:
 			"backdrop": Color(0.045, 0.075, 0.12, 1.0),
 			"pulse": Color(1.0, 0.35, 0.9, 1.0),
 		}
+	if level_index <= 14:
+		return {
+			"sky": Color(0.34, 0.72, 0.91, 1.0),
+			"ambient": Color(0.92, 0.98, 1.0, 1.0),
+			"sun": Color(1.0, 0.96, 0.78, 1.0),
+			"sun_energy": 1.52,
+			"field": Color(0.08, 0.5, 0.31, 1.0),
+			"field_line": Color(0.88, 1.0, 0.78, 0.2),
+			"static": Color(0.96, 0.3, 0.23, 1.0),
+			"static_accent": Color(0.5, 0.3, 0.84, 1.0),
+			"gate": Color(0.05, 0.7, 0.95, 1.0),
+			"route": Color(1.0, 0.84, 0.16, 0.72),
+			"bounce": Color(0.05, 0.86, 0.68, 1.0),
+			"trim": Color(1.0, 0.78, 0.12, 1.0),
+			"net": Color(0.9, 0.97, 1.0, 0.3),
+			"backdrop": Color(0.08, 0.22, 0.34, 1.0),
+			"pulse": Color(1.0, 0.82, 0.12, 1.0),
+		}
+	if level_index <= 17:
+		return {
+			"sky": Color(0.94, 0.57, 0.48, 1.0),
+			"ambient": Color(1.0, 0.88, 0.76, 1.0),
+			"sun": Color(1.0, 0.88, 0.62, 1.0),
+			"sun_energy": 1.48,
+			"field": Color(0.04, 0.43, 0.38, 1.0),
+			"field_line": Color(1.0, 0.9, 0.62, 0.2),
+			"static": Color(0.9, 0.24, 0.32, 1.0),
+			"static_accent": Color(0.48, 0.25, 0.76, 1.0),
+			"gate": Color(0.1, 0.76, 0.96, 1.0),
+			"route": Color(1.0, 0.85, 0.2, 0.72),
+			"bounce": Color(0.08, 0.88, 0.72, 1.0),
+			"trim": Color(1.0, 0.69, 0.16, 1.0),
+			"net": Color(1.0, 0.96, 0.9, 0.28),
+			"backdrop": Color(0.25, 0.13, 0.22, 1.0),
+			"pulse": Color(0.32, 1.0, 0.78, 1.0),
+		}
+	if level_index <= 19:
+		return {
+			"sky": Color(0.22, 0.39, 0.72, 1.0),
+			"ambient": Color(0.72, 0.86, 1.0, 1.0),
+			"sun": Color(0.92, 0.96, 1.0, 1.0),
+			"sun_energy": 1.38,
+			"field": Color(0.04, 0.34, 0.32, 1.0),
+			"field_line": Color(0.58, 1.0, 0.88, 0.22),
+			"static": Color(0.95, 0.27, 0.33, 1.0),
+			"static_accent": Color(0.58, 0.32, 0.88, 1.0),
+			"gate": Color(0.06, 0.8, 1.0, 1.0),
+			"route": Color(1.0, 0.84, 0.18, 0.74),
+			"bounce": Color(0.12, 0.94, 0.7, 1.0),
+			"trim": Color(0.96, 0.72, 0.16, 1.0),
+			"net": Color(0.82, 0.94, 1.0, 0.28),
+			"backdrop": Color(0.07, 0.12, 0.25, 1.0),
+			"pulse": Color(1.0, 0.82, 0.18, 1.0),
+		}
 	return {
-		"sky": Color(0.08, 0.09, 0.11, 1.0),
-		"ambient": Color(0.88, 0.78, 0.58, 1.0),
-		"sun": Color(1.0, 0.86, 0.44, 1.0),
+		"sky": Color(0.18, 0.38, 0.72, 1.0),
+		"ambient": Color(0.82, 0.9, 1.0, 1.0),
+		"sun": Color(1.0, 0.9, 0.62, 1.0),
 		"sun_energy": 1.58,
-		"field": Color(0.055, 0.24, 0.22, 1.0),
-		"field_line": Color(1.0, 0.78, 0.25, 0.18),
-		"goal": Color(1.0, 0.9, 0.45, 1.0),
-		"goal_emission": Color(0.62, 0.38, 0.06, 1.0),
-		"static": Color(0.78, 0.14, 0.2, 1.0),
+		"field": Color(0.045, 0.38, 0.3, 1.0),
+		"field_line": Color(0.72, 1.0, 0.84, 0.22),
+		"static": Color(0.96, 0.25, 0.29, 1.0),
+		"static_accent": Color(0.56, 0.28, 0.84, 1.0),
 		"gate": Color(0.12, 0.82, 1.0, 1.0),
-		"route": Color(0.55, 1.0, 0.82, 0.75),
+		"route": Color(1.0, 0.82, 0.14, 0.75),
 		"bounce": Color(0.12, 0.95, 0.72, 1.0),
-		"trim": Color(1.0, 0.7, 0.18, 1.0),
-		"net": Color(1.0, 0.92, 0.55, 0.22),
-		"backdrop": Color(0.12, 0.11, 0.09, 1.0),
-		"pulse": Color(0.36, 1.0, 0.88, 1.0),
+		"trim": Color(1.0, 0.7, 0.14, 1.0),
+		"net": Color(0.86, 0.95, 1.0, 0.3),
+		"backdrop": Color(0.06, 0.12, 0.25, 1.0),
+		"pulse": Color(1.0, 0.82, 0.14, 1.0),
 	}
 
 

@@ -5,6 +5,7 @@ const RESET_GROUP := "netbound_level_resettable"
 
 @export var point_a: Vector3 = Vector3.ZERO
 @export var point_b: Vector3 = Vector3.ZERO
+@export var target_path: NodePath = NodePath(".")
 @export var duration: float = 2.0
 @export var ping_pong: bool = true
 @export var loop: bool = true
@@ -12,6 +13,7 @@ const RESET_GROUP := "netbound_level_resettable"
 @export var active: bool = true
 
 var phase: float = 0.0
+var target: Node3D
 
 
 func _enter_tree() -> void:
@@ -19,9 +21,12 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	target = get_node_or_null(target_path) as Node3D
+	if not target:
+		target = self
 	if point_a == Vector3.ZERO and point_b == Vector3.ZERO:
-		point_a = position
-		point_b = position
+		point_a = target.position
+		point_b = target.position
 	reset_level_element(0)
 
 
@@ -38,12 +43,13 @@ func reset_level_element(_generation: int) -> void:
 
 
 func get_reset_signature() -> String:
-	return "%s|%.4f" % [position, phase]
+	return "%s|%.4f" % [target.position if target else position, phase]
 
 
 func _apply_phase() -> void:
 	var t := _normalized_motion_phase(phase)
-	position = point_a.lerp(point_b, t)
+	if target:
+		target.position = point_a.lerp(point_b, t)
 
 
 func _normalized_motion_phase(value: float) -> float:

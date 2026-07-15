@@ -1,0 +1,73 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://levels/definitions/level_14_definition.tres" id="2_definition"]
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.36, 0.26, 0.82, 1)
+emission_enabled = true
+emission = Color(0.06, 0.025, 0.2, 1)
+roughness = 0.62
+
+[sub_resource type="BoxMesh" id="Mesh_side"]
+material = SubResource("Material_wall")
+size = Vector3(9.8, 6.4, 0.8)
+
+[sub_resource type="BoxShape3D" id="Shape_side"]
+size = Vector3(9.8, 6.4, 0.8)
+
+[sub_resource type="BoxMesh" id="Mesh_top"]
+material = SubResource("Material_wall")
+size = Vector3(2.6, 1.9, 0.8)
+
+[sub_resource type="BoxShape3D" id="Shape_top"]
+size = Vector3(2.6, 1.9, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="Material_gap"]
+albedo_color = Color(1, 0.86, 0.12, 1)
+emission_enabled = true
+emission = Color(0.35, 0.2, 0, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_gap"]
+material = SubResource("Material_gap")
+size = Vector3(2.65, 0.09, 0.9)
+
+[node name="Level14" instance=ExtResource("1_base")]
+level_definition = ExtResource("2_definition")
+
+[node name="Obstacle" parent="."]
+position = Vector3(-30, 0.38, -2.2)
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="LeftWall" type="StaticBody3D" parent="."]
+position = Vector3(-6.2, 3.2, -6.1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LeftWall"]
+mesh = SubResource("Mesh_side")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LeftWall"]
+shape = SubResource("Shape_side")
+
+[node name="RightWall" type="StaticBody3D" parent="."]
+position = Vector3(6.2, 3.2, -6.1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RightWall"]
+mesh = SubResource("Mesh_side")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RightWall"]
+shape = SubResource("Shape_side")
+
+[node name="TopCap" type="StaticBody3D" parent="."]
+position = Vector3(0, 5.45, -6.1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TopCap"]
+mesh = SubResource("Mesh_top")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TopCap"]
+shape = SubResource("Shape_top")
+
+[node name="GapMarker" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.08, -6.1)
+mesh = SubResource("Mesh_gap")

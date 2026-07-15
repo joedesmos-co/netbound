@@ -290,7 +290,7 @@ func _test_ui_motion_and_reduced_motion() -> bool:
 	await process_frame
 	passed = String(app.get("current_screen_name")) == "level_select" and passed
 	passed = int(app.get("active_ui_tweens").size()) == 0 and passed
-	passed = int(app.call("get_registered_level_card_count")) == 10 and passed
+	passed = int(app.call("get_registered_level_card_count")) == 20 and passed
 	passed = app.call("show_cosmetics") and passed
 	await process_frame
 	passed = String(app.get("current_screen_name")) == "cosmetics" and passed

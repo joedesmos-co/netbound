@@ -1,0 +1,64 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://levels/definitions/level_13_definition.tres" id="2_definition"]
+[ext_resource type="Script" path="res://scripts/components/moving_obstacle.gd" id="3_moving"]
+
+[sub_resource type="StandardMaterial3D" id="Material_a"]
+albedo_color = Color(1, 0.35, 0.26, 1)
+emission_enabled = true
+emission = Color(0.24, 0.03, 0.01, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_b"]
+albedo_color = Color(0.16, 0.78, 0.94, 1)
+emission_enabled = true
+emission = Color(0, 0.2, 0.28, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_a"]
+material = SubResource("Material_a")
+size = Vector3(5.6, 2.5, 0.7)
+
+[sub_resource type="BoxShape3D" id="Shape_a"]
+size = Vector3(5.6, 2.5, 0.7)
+
+[sub_resource type="BoxMesh" id="Mesh_b"]
+material = SubResource("Material_b")
+size = Vector3(5.0, 2.3, 0.7)
+
+[sub_resource type="BoxShape3D" id="Shape_b"]
+size = Vector3(5.0, 2.3, 0.7)
+
+[node name="Level13" instance=ExtResource("1_base")]
+level_definition = ExtResource("2_definition")
+
+[node name="Obstacle" parent="."]
+position = Vector3(-30, 0.38, -2.2)
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="NearTraffic" type="StaticBody3D" parent="."]
+script = ExtResource("3_moving")
+point_a = Vector3(-7.2, 1.45, -4.6)
+point_b = Vector3(7.2, 1.45, -4.6)
+duration = 2.35
+start_phase = 0.08
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NearTraffic"]
+mesh = SubResource("Mesh_a")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NearTraffic"]
+shape = SubResource("Shape_a")
+
+[node name="FarTraffic" type="StaticBody3D" parent="."]
+script = ExtResource("3_moving")
+point_a = Vector3(7.4, 3.65, -7.1)
+point_b = Vector3(-7.4, 3.65, -7.1)
+duration = 2.05
+start_phase = 0.42
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FarTraffic"]
+mesh = SubResource("Mesh_b")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FarTraffic"]
+shape = SubResource("Shape_b")

@@ -1,7 +1,7 @@
 class_name LevelRegistry
 extends RefCounted
 
-const EXPECTED_LEVEL_COUNT := 10
+const EXPECTED_LEVEL_COUNT := 20
 
 const PRODUCTION_LEVELS := [
 	{
@@ -53,6 +53,56 @@ const PRODUCTION_LEVELS := [
 		"id": "level_10",
 		"scene": "res://levels/level_10.tscn",
 		"definition": "res://levels/definitions/level_10_definition.tres",
+	},
+	{
+		"id": "level_11",
+		"scene": "res://levels/level_11.tscn",
+		"definition": "res://levels/definitions/level_11_definition.tres",
+	},
+	{
+		"id": "level_12",
+		"scene": "res://levels/level_12.tscn",
+		"definition": "res://levels/definitions/level_12_definition.tres",
+	},
+	{
+		"id": "level_13",
+		"scene": "res://levels/level_13.tscn",
+		"definition": "res://levels/definitions/level_13_definition.tres",
+	},
+	{
+		"id": "level_14",
+		"scene": "res://levels/level_14.tscn",
+		"definition": "res://levels/definitions/level_14_definition.tres",
+	},
+	{
+		"id": "level_15",
+		"scene": "res://levels/level_15.tscn",
+		"definition": "res://levels/definitions/level_15_definition.tres",
+	},
+	{
+		"id": "level_16",
+		"scene": "res://levels/level_16.tscn",
+		"definition": "res://levels/definitions/level_16_definition.tres",
+	},
+	{
+		"id": "level_17",
+		"scene": "res://levels/level_17.tscn",
+		"definition": "res://levels/definitions/level_17_definition.tres",
+	},
+	{
+		"id": "level_18",
+		"scene": "res://levels/level_18.tscn",
+		"definition": "res://levels/definitions/level_18_definition.tres",
+	},
+	{
+		"id": "level_19",
+		"scene": "res://levels/level_19.tscn",
+		"definition": "res://levels/definitions/level_19_definition.tres",
+	},
+	{
+		"id": "level_20",
+		"scene": "res://levels/level_20.tscn",
+		"definition": "res://levels/definitions/level_20_definition.tres",
 	},
 ]
 

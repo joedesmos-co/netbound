@@ -38,14 +38,7 @@ func setup(ball: RigidBody3D) -> void:
 		detector.debug_goal_detection = debug_goal_detection
 		detector.show_debug_volumes = show_debug_volumes
 		detector.setup(ball)
-		detector.sync_geometry(
-			global_position.z,
-			global_position.x,
-			opening_half_width,
-			crossbar_height,
-			interior_depth,
-			ball_radius
-		)
+		_sync_detector_geometry()
 
 
 func reset_level_element(_generation: int) -> void:
@@ -65,6 +58,7 @@ func begin_shot_tracking(shot_id: int, ball_position: Vector3) -> void:
 
 
 func process_ball(ball_position: Vector3, radius: float, shot_id: int) -> bool:
+	_sync_detector_geometry()
 	return detector.process_ball(ball_position, radius, shot_id) if detector else false
 
 
@@ -74,6 +68,7 @@ func set_level_state_name(state_name: String) -> void:
 
 
 func is_ball_fully_in_goal(ball_position: Vector3, radius: float) -> bool:
+	_sync_detector_geometry()
 	return detector.is_ball_fully_in_goal(ball_position, radius) if detector else false
 
 
@@ -101,14 +96,20 @@ func _sync_geometry() -> void:
 	if detector:
 		detector.debug_goal_detection = debug_goal_detection
 		detector.show_debug_volumes = show_debug_volumes
-		detector.sync_geometry(
-			global_position.z,
-			global_position.x,
-			opening_half_width,
-			crossbar_height,
-			interior_depth,
-			ball_radius
-		)
+		_sync_detector_geometry()
+
+
+func _sync_detector_geometry() -> void:
+	if not detector:
+		return
+	detector.sync_geometry(
+		global_position.z,
+		global_position.x,
+		opening_half_width,
+		crossbar_height,
+		interior_depth,
+		ball_radius
+	)
 
 
 func _sync_frame_visuals() -> void:

@@ -1,0 +1,69 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://levels/definitions/level_16_definition.tres" id="2_definition"]
+
+[sub_resource type="StandardMaterial3D" id="Material_overhead"]
+albedo_color = Color(0.16, 0.34, 0.9, 1)
+emission_enabled = true
+emission = Color(0.01, 0.04, 0.24, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_low"]
+albedo_color = Color(1, 0.4, 0.18, 1)
+emission_enabled = true
+emission = Color(0.26, 0.05, 0, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_overhead"]
+material = SubResource("Material_overhead")
+size = Vector3(14.0, 3.0, 0.85)
+
+[sub_resource type="BoxShape3D" id="Shape_overhead"]
+size = Vector3(14.0, 3.0, 0.85)
+
+[sub_resource type="BoxMesh" id="Mesh_low"]
+material = SubResource("Material_low")
+size = Vector3(4.0, 2.2, 1.0)
+
+[sub_resource type="BoxShape3D" id="Shape_low"]
+size = Vector3(4.0, 2.2, 1.0)
+
+[sub_resource type="StandardMaterial3D" id="Material_route"]
+albedo_color = Color(1, 0.88, 0.12, 1)
+emission_enabled = true
+emission = Color(0.34, 0.2, 0, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_route"]
+material = SubResource("Material_route")
+size = Vector3(1.4, 0.08, 4.8)
+
+[node name="Level16" instance=ExtResource("1_base")]
+level_definition = ExtResource("2_definition")
+
+[node name="Obstacle" parent="."]
+position = Vector3(-30, 0.38, -2.2)
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="Overhead" type="StaticBody3D" parent="."]
+position = Vector3(0, 5.25, -5.8)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Overhead"]
+mesh = SubResource("Mesh_overhead")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Overhead"]
+shape = SubResource("Shape_overhead")
+
+[node name="LowBlocker" type="StaticBody3D" parent="."]
+position = Vector3(0.8, 1.1, -5.8)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LowBlocker"]
+mesh = SubResource("Mesh_low")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LowBlocker"]
+shape = SubResource("Shape_low")
+
+[node name="LowCurveRoute" type="MeshInstance3D" parent="."]
+position = Vector3(-4.0, 0.08, -5.6)
+rotation_degrees = Vector3(0, -12, 0)
+mesh = SubResource("Mesh_route")

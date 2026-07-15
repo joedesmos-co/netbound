@@ -79,7 +79,7 @@ func _test_primary_screens() -> bool:
 	app.show_level_select()
 	await process_frame
 	passed = app.current_screen_name == "level_select" \
-		and app.get_registered_level_card_count() == 10 \
+		and app.get_registered_level_card_count() == 20 \
 		and passed
 	for card_value in app.level_card_buttons.values():
 		var card := card_value as Button
@@ -142,16 +142,44 @@ func _test_responsive_markers() -> bool:
 		app.show_level_select()
 		await process_frame
 		await process_frame
+		var scroll := app.level_grid.get_parent() as ScrollContainer
+		var scroll_rect := scroll.get_global_rect()
+		var size_ok := true
 		for card_value in app.level_card_buttons.values():
 			var card := card_value as Button
 			var rect := card.get_global_rect()
-			passed = rect.position.x >= -1.0 \
-				and rect.position.y >= -1.0 \
-				and rect.end.x <= float(size.x) + 1.0 \
-				and rect.end.y <= float(size.y) + 1.0 \
+			size_ok = rect.position.x >= scroll_rect.position.x - 1.0 \
+				and rect.end.x <= scroll_rect.end.x + 1.0 \
 				and rect.size.x >= 48.0 \
 				and rect.size.y >= 48.0 \
-				and passed
+				and size_ok
+		scroll.scroll_vertical = 0
+		await process_frame
+		var first_rect := (app.level_card_buttons.level_01 as Button).get_global_rect()
+		var first_visible := first_rect.intersects(scroll.get_global_rect())
+		var last_initial_rect := (app.level_card_buttons.level_20 as Button).get_global_rect()
+		var last_initial_visible := last_initial_rect.intersects(scroll.get_global_rect())
+		var scroll_bar := scroll.get_v_scroll_bar()
+		var has_scroll := scroll_bar.max_value > scroll_bar.page + 1.0
+		scroll.scroll_vertical = roundi(scroll_bar.max_value)
+		await process_frame
+		var last_rect := (app.level_card_buttons.level_20 as Button).get_global_rect()
+		var last_visible := last_rect.intersects(scroll.get_global_rect())
+		var route_reachable := last_visible if has_scroll else last_initial_visible
+		var viewport_ok := size_ok and first_visible and route_reachable
+		if not viewport_ok:
+			print(
+				"UI_ART_DIRECTION responsive_detail size=", size,
+				" lane=", scroll_rect,
+				" first=", first_rect,
+				" last=", last_rect,
+				" max=", scroll_bar.max_value,
+				" page=", scroll_bar.page,
+				" size_ok=", size_ok,
+				" first_visible=", first_visible,
+				" last_visible=", last_visible
+			)
+		passed = viewport_ok and passed
 	get_root().size = Vector2i(1280, 720)
 	get_root().content_scale_size = Vector2i(1280, 720)
 	print("UI_ART_DIRECTION responsive ok=", passed)

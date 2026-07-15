@@ -1,0 +1,57 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://levels/definitions/level_12_definition.tres" id="2_definition"]
+[ext_resource type="Script" path="res://scripts/components/moving_obstacle.gd" id="3_moving"]
+
+[sub_resource type="StandardMaterial3D" id="Material_elevator"]
+albedo_color = Color(0.12, 0.72, 0.96, 1)
+emission_enabled = true
+emission = Color(0, 0.2, 0.3, 1)
+roughness = 0.52
+
+[sub_resource type="BoxMesh" id="Mesh_elevator"]
+material = SubResource("Material_elevator")
+size = Vector3(12.0, 2.4, 0.7)
+
+[sub_resource type="BoxShape3D" id="Shape_elevator"]
+size = Vector3(12.0, 2.4, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="Material_rail"]
+albedo_color = Color(1, 0.85, 0.16, 1)
+emission_enabled = true
+emission = Color(0.28, 0.18, 0, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_rail"]
+material = SubResource("Material_rail")
+size = Vector3(0.16, 7.4, 0.82)
+
+[node name="Level12" instance=ExtResource("1_base")]
+level_definition = ExtResource("2_definition")
+
+[node name="Obstacle" parent="."]
+position = Vector3(-30, 0.38, -2.2)
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="ElevatorBlocker" type="StaticBody3D" parent="."]
+script = ExtResource("3_moving")
+point_a = Vector3(0, 1.2, -5.5)
+point_b = Vector3(0, 6.6, -5.5)
+duration = 2.2
+start_phase = 0.18
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ElevatorBlocker"]
+mesh = SubResource("Mesh_elevator")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ElevatorBlocker"]
+shape = SubResource("Shape_elevator")
+
+[node name="LeftRail" type="MeshInstance3D" parent="."]
+position = Vector3(-6.3, 3.7, -5.5)
+mesh = SubResource("Mesh_rail")
+
+[node name="RightRail" type="MeshInstance3D" parent="."]
+position = Vector3(6.3, 3.7, -5.5)
+mesh = SubResource("Mesh_rail")

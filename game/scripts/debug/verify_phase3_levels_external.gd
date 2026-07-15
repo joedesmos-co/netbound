@@ -100,12 +100,64 @@ const LEVEL_SPECS := [
 	{
 		"scene": "res://levels/level_10.tscn",
 		"id": "level_10",
-		"next": "",
+		"next": "level_11",
 		"shots": 5,
 		"par": 3,
 		"offset": Vector2(-4.0, -305.0),
 		"curve": -4.0,
 		"wait": 0.5,
+	},
+	{
+		"scene": "res://levels/level_11.tscn",
+		"id": "level_11", "next": "level_12", "shots": 4, "par": 2,
+		"offset": Vector2(25.0, -230.0), "curve": 11.0, "wait": 0.0,
+		"entry": "right",
+	},
+	{
+		"scene": "res://levels/level_12.tscn",
+		"id": "level_12", "next": "level_13", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -140.0), "curve": 0.0, "wait": 0.8,
+	},
+	{
+		"scene": "res://levels/level_13.tscn",
+		"id": "level_13", "next": "level_14", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -225.0), "curve": 0.0, "wait": 0.45,
+	},
+	{
+		"scene": "res://levels/level_14.tscn",
+		"id": "level_14", "next": "level_15", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -130.0), "curve": 0.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_15.tscn",
+		"id": "level_15", "next": "level_16", "shots": 5, "par": 3,
+		"offset": Vector2(-165.0, -260.0), "curve": -16.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_16.tscn",
+		"id": "level_16", "next": "level_17", "shots": 4, "par": 2,
+		"offset": Vector2(-115.0, -145.0), "curve": -8.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_17.tscn",
+		"id": "level_17", "next": "level_18", "shots": 5, "par": 3,
+		"offset": Vector2(0.0, -230.0), "curve": 0.0, "wait": 0.4,
+	},
+	{
+		"scene": "res://levels/level_18.tscn",
+		"id": "level_18", "next": "level_19", "shots": 5, "par": 3,
+		"offset": Vector2(230.0, -205.0), "curve": 0.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_19.tscn",
+		"id": "level_19", "next": "level_20", "shots": 5, "par": 3,
+		"offset": Vector2(0.0, -225.0), "curve": 0.0, "wait": 0.55,
+	},
+	{
+		"scene": "res://levels/level_20.tscn",
+		"id": "level_20", "next": "", "shots": 6, "par": 4,
+		"offset": Vector2(75.0, -230.0), "curve": 20.0, "wait": 0.0,
+		"entry": "right",
 	},
 ]
 
@@ -116,7 +168,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var passed := true
-	var count_ok := LEVEL_SPECS.size() == 10
+	var count_ok := LEVEL_SPECS.size() == 20
 	print("PHASE3 level_count ok=", count_ok)
 	passed = count_ok and passed
 	var seen_ids: Dictionary = {}
@@ -185,6 +237,17 @@ func _verify_level(spec: Dictionary, seen_ids: Dictionary) -> bool:
 		float(spec.curve),
 		float(spec.wait)
 	)
+	if completed and spec.has("entry"):
+		var detector := level.get_node_or_null("Goal/GoalDetection")
+		var actual_entry := String(detector.get("entry_boundary")) if detector else ""
+		var entry_ok := actual_entry == String(spec.entry)
+		print(
+			"PHASE3 completion_entry id=", spec.id,
+			" expected=", spec.entry,
+			" actual=", actual_entry,
+			" ok=", entry_ok
+		)
+		completed = entry_ok
 	print("PHASE3 completion id=", spec.id, " ok=", completed)
 	passed = completed and passed
 

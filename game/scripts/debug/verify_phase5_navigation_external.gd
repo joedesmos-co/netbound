@@ -88,12 +88,12 @@ func _test_level_select() -> bool:
 	app.show_level_select()
 	await process_frame
 	var passed := app.current_screen_name == "level_select" \
-		and app.get_registered_level_card_count() == 10
+		and app.get_registered_level_card_count() == 20
 	var first_card := app.level_card_buttons.get("level_01") as Button
 	var second_card := app.level_card_buttons.get("level_02") as Button
 	passed = first_card and not first_card.disabled and passed
 	passed = second_card and second_card.disabled and passed
-	passed = app.total_stars_label.text == "Stars: 0 / 30" and passed
+	passed = app.total_stars_label.text == "Stars: 0 / 60" and passed
 	passed = not app.request_level_launch("level_02") and passed
 	await process_frame
 	passed = app.current_screen_name == "level_select" and passed
@@ -162,7 +162,7 @@ func _test_results() -> bool:
 	for level_id in LevelRegistryScript.get_level_ids():
 		if not service.is_level_completed(level_id):
 			_record_completion(level_id, LevelRegistryScript.load_definition(level_id).par_shots)
-	var final_definition := LevelRegistryScript.load_definition("level_10")
+	var final_definition := LevelRegistryScript.load_definition("level_20")
 	var final_update = service.record_level_result(
 		LevelResult.completed_result(final_definition, final_definition.par_shots),
 		final_definition

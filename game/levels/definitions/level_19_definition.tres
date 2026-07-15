@@ -4,15 +4,15 @@
 
 [resource]
 script = ExtResource("1_definition")
-level_id = "level_10"
-display_name = "The Impossible Shot"
+level_id = "level_19"
+display_name = "Rhythm Gates"
 shot_limit = 5
 par_shots = 3
-tutorial_text = "Lift, bend, and hit the lane."
+tutorial_text = "Follow the three-beat opening."
 bounds_min = Vector3(-24, -2, -18)
 bounds_max = Vector3(24, 34, 12)
-camera_position = Vector3(0, 12.8, 15.8)
-camera_look_at = Vector3(0, 4.2, -8.4)
-mechanic_id = "combo_challenge"
-tags = PackedStringArray("curve", "height", "timing", "finale")
-next_level_id = "level_11"
+camera_position = Vector3(0, 13.0, 16.5)
+camera_look_at = Vector3(0, 4.0, -8.5)
+mechanic_id = "rhythm_gates"
+tags = PackedStringArray("timing", "three_gates", "rhythm")
+next_level_id = "level_20"

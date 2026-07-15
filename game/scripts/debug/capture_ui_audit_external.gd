@@ -201,6 +201,8 @@ func _show_requested_screen() -> void:
 			app._show_failure_result(LevelResult.failed_result(definition, definition.shot_limit, 0))
 		"level_10_result":
 			await _show_success("level_10")
+		"level_20_result":
+			await _show_success("level_20")
 		_:
 			push_error("Unknown UI audit screen: %s" % screen_name)
 
@@ -255,9 +257,9 @@ func _apply_fixture() -> void:
 		"partial":
 			_complete_through_level("level_04")
 		"complete":
-			_complete_through_level("level_10")
+			_complete_through_level("level_20")
 		"all_unlocked":
-			_complete_through_level("level_10")
+			_complete_through_level("level_20")
 			service.unlock_all_cosmetics_for_development()
 		"coins":
 			wallet.grant_coins(6000, "ui_audit", "ui_audit:coins")
