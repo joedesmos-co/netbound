@@ -3,6 +3,7 @@ extends Node3D
 
 const VISUAL_GROUP := "netbound_visual_polish"
 const CourseArtScript := preload("res://scripts/presentation/arcade_course_art.gd")
+const WorldCatalogScript := preload("res://scripts/levels/world_catalog.gd")
 
 var _level: Node
 var _definition: LevelDefinition
@@ -13,6 +14,7 @@ var _shadow: MeshInstance3D
 var _course_art
 var _active_tweens: Array[Tween] = []
 var _palette: Dictionary = {}
+var _world_id: String = WorldCatalogScript.WORLD_TRAINING
 var _quality_config: Dictionary = {
 	"decorative_geometry_enabled": true,
 	"contact_shadow_enabled": true,
@@ -30,7 +32,10 @@ func setup(level: Node) -> void:
 	_ball = level.get_node_or_null("Ball") as RigidBody3D
 	name = "LevelVisualPolish"
 	add_to_group(VISUAL_GROUP)
-	_palette = _palette_for_level(_level_index())
+	_world_id = WorldCatalogScript.get_world_id_for_level_id(
+		_definition.level_id if _definition else "level_01"
+	)
+	_palette = _palette_for_world(_world_id, _level_index())
 	_apply_environment()
 	_apply_material_language()
 	_hide_prototype_markers()
@@ -113,7 +118,9 @@ func _apply_environment() -> void:
 		environment.background_color = _palette.get("sky", Color(0.42, 0.58, 0.82, 1.0))
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		environment.ambient_light_color = _palette.get("ambient", Color(0.85, 0.9, 1.0, 1.0))
-		environment.ambient_light_energy = 0.72
+		environment.ambient_light_energy = float(_palette.get("ambient_energy", 0.78))
+		environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+		environment.tonemap_exposure = float(_palette.get("exposure", 1.0))
 		environment_node.environment = environment
 
 	var sun := _level.get_node_or_null("DirectionalLight3D") as DirectionalLight3D
@@ -121,6 +128,14 @@ func _apply_environment() -> void:
 		sun.light_color = _palette.get("sun", Color(1.0, 0.96, 0.86, 1.0))
 		sun.light_energy = float(_palette.get("sun_energy", 1.55))
 		sun.shadow_enabled = bool(_quality_config.get("dynamic_shadows_enabled", true))
+		sun.shadow_blur = float(_palette.get("shadow_blur", 1.15))
+		sun.directional_shadow_max_distance = 48.0
+		if _world_id == WorldCatalogScript.WORLD_STADIUM:
+			sun.rotation_degrees = Vector3(-48.0, -28.0, 0.0)
+		elif _world_id == WorldCatalogScript.WORLD_STREET:
+			sun.rotation_degrees = Vector3(-42.0, 34.0, 0.0)
+		else:
+			sun.rotation_degrees = Vector3(-50.0, 18.0, 0.0)
 
 
 func _apply_material_language() -> void:
@@ -184,6 +199,13 @@ func _build_decorative_geometry() -> void:
 	var field_line_material := _material(_palette.get("field_line", Color(1.0, 1.0, 1.0, 0.16)), 0.75, false, true)
 	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.6)), 0.58, true, true)
 	var backdrop_material := _material(_palette.get("backdrop", Color(0.08, 0.14, 0.22, 1.0)), 0.82, true)
+	var secondary_material := _material(
+		_palette.get("backdrop_secondary", Color(0.12, 0.2, 0.3, 1.0)),
+		0.78,
+		true
+	)
+	var banner_material := _material(_palette.get("banner", Color(0.95, 0.35, 0.28, 1.0)), 0.55, true)
+	var seat_material := _material(_palette.get("seating", Color(0.16, 0.22, 0.34, 1.0)), 0.88, true)
 
 	for i in 9:
 		var z := lerpf(-16.0, 9.5, float(i) / 8.0)
@@ -197,6 +219,35 @@ func _build_decorative_geometry() -> void:
 	_add_box(deck, "BackArenaWall", Vector3(0.0, 2.2, -17.2), Vector3(45.0, 4.4, 0.18), backdrop_material)
 	_add_box(deck, "LeftArenaRail", Vector3(-22.7, 1.05, -3.0), Vector3(0.18, 2.1, 30.0), backdrop_material)
 	_add_box(deck, "RightArenaRail", Vector3(22.7, 1.05, -3.0), Vector3(0.18, 2.1, 30.0), backdrop_material)
+
+	match _world_id:
+		WorldCatalogScript.WORLD_TRAINING:
+			_add_box(deck, "PracticeFence", Vector3(0.0, 1.35, -17.55), Vector3(36.0, 2.4, 0.12), secondary_material)
+			for i in 4:
+				var x := lerpf(-14.0, 14.0, float(i) / 3.0)
+				_add_box(deck, "PracticeBanner%02d" % i, Vector3(x, 2.7, -17.4), Vector3(3.2, 1.1, 0.08), banner_material)
+			for i in 5:
+				var x := lerpf(-12.0, 12.0, float(i) / 4.0)
+				_add_box(deck, "ConeMark%02d" % i, Vector3(x, 0.18, 4.8), Vector3(0.35, 0.36, 0.35), _trim_material)
+		WorldCatalogScript.WORLD_STREET:
+			_add_box(deck, "CourtWall", Vector3(0.0, 2.8, -17.55), Vector3(40.0, 5.2, 0.16), secondary_material)
+			for i in 3:
+				var x := lerpf(-12.0, 12.0, float(i) / 2.0)
+				_add_box(deck, "WallStripe%02d" % i, Vector3(x, 2.4, -17.42), Vector3(4.8, 0.55, 0.06), banner_material)
+			_add_box(deck, "LeftCourtRail", Vector3(-21.8, 0.55, -2.0), Vector3(0.35, 1.1, 24.0), seat_material)
+			_add_box(deck, "RightCourtRail", Vector3(21.8, 0.55, -2.0), Vector3(0.35, 1.1, 24.0), seat_material)
+		_:
+			_add_box(deck, "StandBand", Vector3(0.0, 3.6, -17.8), Vector3(48.0, 6.8, 0.4), seat_material)
+			_add_box(deck, "UpperDeck", Vector3(0.0, 6.4, -18.5), Vector3(46.0, 2.2, 1.4), secondary_material)
+			for i in 5:
+				var x := lerpf(-16.0, 16.0, float(i) / 4.0)
+				_add_box(deck, "FlagMast%02d" % i, Vector3(x, 5.2, -17.1), Vector3(0.12, 4.4, 0.12), _trim_material)
+				_add_box(deck, "FlagCloth%02d" % i, Vector3(x + 0.55, 6.8, -17.05), Vector3(1.1, 0.7, 0.05), banner_material)
+			for i in 3:
+				var x := lerpf(-14.0, 14.0, float(i) / 2.0)
+				_add_box(deck, "Floodlight%02d" % i, Vector3(x, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
+			_add_box(deck, "ScoreboardFace", Vector3(0.0, 7.8, -17.0), Vector3(8.5, 2.2, 0.25), secondary_material)
+			_add_box(deck, "ScoreboardScreen", Vector3(0.0, 7.8, -16.85), Vector3(7.2, 1.5, 0.08), route_material)
 
 
 func _build_contact_shadow() -> void:
@@ -297,7 +348,7 @@ func _level_index() -> int:
 		return 1
 	var parts := _definition.level_id.split("_")
 	if parts.size() >= 2:
-		return clampi(int(parts[-1]), 1, 20)
+		return clampi(int(parts[-1]), 1, 30)
 	return 1
 
 
@@ -306,134 +357,94 @@ func _reduced_motion_enabled() -> bool:
 	return bool(save_service and save_service.call("get_setting_value", "reduced_motion_enabled", false))
 
 
-func _palette_for_level(level_index: int) -> Dictionary:
-	if level_index <= 3:
-		return {
-			"sky": Color(0.42, 0.64, 0.86, 1.0),
-			"ambient": Color(0.9, 0.96, 1.0, 1.0),
-			"sun": Color(1.0, 0.98, 0.88, 1.0),
-			"sun_energy": 1.55,
-			"field": Color(0.08, 0.52, 0.31, 1.0),
-			"field_line": Color(0.78, 1.0, 0.78, 0.18),
-			"goal": Color(0.94, 1.0, 1.0, 1.0),
-			"goal_emission": Color(0.16, 0.38, 0.58, 1.0),
-			"static": Color(0.93, 0.28, 0.23, 1.0),
-			"gate": Color(0.07, 0.72, 1.0, 1.0),
-			"route": Color(1.0, 0.9, 0.24, 0.68),
-			"bounce": Color(0.08, 0.9, 0.72, 1.0),
-			"trim": Color(0.15, 0.78, 1.0, 1.0),
-			"net": Color(0.82, 0.94, 1.0, 0.25),
-			"backdrop": Color(0.08, 0.18, 0.26, 1.0),
-			"pulse": Color(1.0, 0.96, 0.24, 1.0),
-		}
-	if level_index <= 6:
-		return {
-			"sky": Color(0.66, 0.46, 0.36, 1.0),
-			"ambient": Color(0.98, 0.82, 0.64, 1.0),
-			"sun": Color(1.0, 0.78, 0.5, 1.0),
-			"sun_energy": 1.42,
-			"field": Color(0.06, 0.43, 0.36, 1.0),
-			"field_line": Color(1.0, 0.82, 0.42, 0.17),
-			"goal": Color(1.0, 0.95, 0.84, 1.0),
-			"goal_emission": Color(0.48, 0.22, 0.08, 1.0),
-			"static": Color(0.78, 0.18, 0.34, 1.0),
-			"gate": Color(1.0, 0.5, 0.18, 1.0),
-			"route": Color(0.35, 1.0, 0.65, 0.7),
-			"bounce": Color(0.1, 0.9, 0.85, 1.0),
-			"trim": Color(1.0, 0.62, 0.2, 1.0),
-			"net": Color(1.0, 0.9, 0.72, 0.24),
-			"backdrop": Color(0.23, 0.13, 0.14, 1.0),
-			"pulse": Color(0.35, 1.0, 0.62, 1.0),
-		}
-	if level_index <= 9:
-		return {
-			"sky": Color(0.06, 0.1, 0.15, 1.0),
-			"ambient": Color(0.45, 0.78, 0.86, 1.0),
-			"sun": Color(0.62, 0.95, 1.0, 1.0),
-			"sun_energy": 1.25,
-			"field": Color(0.025, 0.23, 0.2, 1.0),
-			"field_line": Color(0.28, 1.0, 0.86, 0.2),
-			"goal": Color(0.85, 1.0, 0.96, 1.0),
-			"goal_emission": Color(0.0, 0.55, 0.68, 1.0),
-			"static": Color(0.95, 0.18, 0.42, 1.0),
-			"gate": Color(0.0, 0.88, 1.0, 1.0),
-			"route": Color(1.0, 0.82, 0.16, 0.72),
-			"bounce": Color(0.2, 1.0, 0.54, 1.0),
-			"trim": Color(0.95, 0.23, 0.8, 1.0),
-			"net": Color(0.6, 1.0, 0.95, 0.22),
-			"backdrop": Color(0.045, 0.075, 0.12, 1.0),
-			"pulse": Color(1.0, 0.35, 0.9, 1.0),
-		}
-	if level_index <= 14:
-		return {
-			"sky": Color(0.34, 0.72, 0.91, 1.0),
-			"ambient": Color(0.92, 0.98, 1.0, 1.0),
-			"sun": Color(1.0, 0.96, 0.78, 1.0),
-			"sun_energy": 1.52,
-			"field": Color(0.08, 0.5, 0.31, 1.0),
-			"field_line": Color(0.88, 1.0, 0.78, 0.2),
-			"static": Color(0.96, 0.3, 0.23, 1.0),
-			"static_accent": Color(0.5, 0.3, 0.84, 1.0),
-			"gate": Color(0.05, 0.7, 0.95, 1.0),
-			"route": Color(1.0, 0.84, 0.16, 0.72),
-			"bounce": Color(0.05, 0.86, 0.68, 1.0),
-			"trim": Color(1.0, 0.78, 0.12, 1.0),
-			"net": Color(0.9, 0.97, 1.0, 0.3),
-			"backdrop": Color(0.08, 0.22, 0.34, 1.0),
-			"pulse": Color(1.0, 0.82, 0.12, 1.0),
-		}
-	if level_index <= 17:
-		return {
-			"sky": Color(0.94, 0.57, 0.48, 1.0),
-			"ambient": Color(1.0, 0.88, 0.76, 1.0),
-			"sun": Color(1.0, 0.88, 0.62, 1.0),
-			"sun_energy": 1.48,
-			"field": Color(0.04, 0.43, 0.38, 1.0),
-			"field_line": Color(1.0, 0.9, 0.62, 0.2),
-			"static": Color(0.9, 0.24, 0.32, 1.0),
-			"static_accent": Color(0.48, 0.25, 0.76, 1.0),
-			"gate": Color(0.1, 0.76, 0.96, 1.0),
-			"route": Color(1.0, 0.85, 0.2, 0.72),
-			"bounce": Color(0.08, 0.88, 0.72, 1.0),
-			"trim": Color(1.0, 0.69, 0.16, 1.0),
-			"net": Color(1.0, 0.96, 0.9, 0.28),
-			"backdrop": Color(0.25, 0.13, 0.22, 1.0),
-			"pulse": Color(0.32, 1.0, 0.78, 1.0),
-		}
-	if level_index <= 19:
-		return {
-			"sky": Color(0.22, 0.39, 0.72, 1.0),
-			"ambient": Color(0.72, 0.86, 1.0, 1.0),
-			"sun": Color(0.92, 0.96, 1.0, 1.0),
-			"sun_energy": 1.38,
-			"field": Color(0.04, 0.34, 0.32, 1.0),
-			"field_line": Color(0.58, 1.0, 0.88, 0.22),
-			"static": Color(0.95, 0.27, 0.33, 1.0),
-			"static_accent": Color(0.58, 0.32, 0.88, 1.0),
-			"gate": Color(0.06, 0.8, 1.0, 1.0),
-			"route": Color(1.0, 0.84, 0.18, 0.74),
-			"bounce": Color(0.12, 0.94, 0.7, 1.0),
-			"trim": Color(0.96, 0.72, 0.16, 1.0),
-			"net": Color(0.82, 0.94, 1.0, 0.28),
-			"backdrop": Color(0.07, 0.12, 0.25, 1.0),
-			"pulse": Color(1.0, 0.82, 0.18, 1.0),
-		}
+func _palette_for_world(world_id: String, level_index: int) -> Dictionary:
+	match world_id:
+		WorldCatalogScript.WORLD_STREET:
+			return _street_palette(level_index)
+		WorldCatalogScript.WORLD_STADIUM:
+			return _stadium_palette(level_index)
+		_:
+			return _training_palette(level_index)
+
+
+func _training_palette(level_index: int) -> Dictionary:
+	var warm := level_index >= 7
 	return {
-		"sky": Color(0.18, 0.38, 0.72, 1.0),
-		"ambient": Color(0.82, 0.9, 1.0, 1.0),
-		"sun": Color(1.0, 0.9, 0.62, 1.0),
+		"sky": Color(0.46, 0.68, 0.9, 1.0) if not warm else Color(0.34, 0.56, 0.86, 1.0),
+		"ambient": Color(0.92, 0.96, 1.0, 1.0),
+		"ambient_energy": 0.82,
+		"sun": Color(1.0, 0.98, 0.9, 1.0),
 		"sun_energy": 1.58,
-		"field": Color(0.045, 0.38, 0.3, 1.0),
-		"field_line": Color(0.72, 1.0, 0.84, 0.22),
-		"static": Color(0.96, 0.25, 0.29, 1.0),
-		"static_accent": Color(0.56, 0.28, 0.84, 1.0),
-		"gate": Color(0.12, 0.82, 1.0, 1.0),
-		"route": Color(1.0, 0.82, 0.14, 0.75),
-		"bounce": Color(0.12, 0.95, 0.72, 1.0),
-		"trim": Color(1.0, 0.7, 0.14, 1.0),
-		"net": Color(0.86, 0.95, 1.0, 0.3),
-		"backdrop": Color(0.06, 0.12, 0.25, 1.0),
-		"pulse": Color(1.0, 0.82, 0.14, 1.0),
+		"shadow_blur": 1.2,
+		"exposure": 1.02,
+		"field": Color(0.1, 0.54, 0.32, 1.0),
+		"field_line": Color(0.92, 1.0, 0.9, 0.22),
+		"static": Color(0.93, 0.3, 0.24, 1.0),
+		"static_accent": Color(0.2, 0.55, 0.86, 1.0),
+		"gate": Color(0.08, 0.76, 0.98, 1.0),
+		"route": Color(1.0, 0.88, 0.2, 0.7),
+		"bounce": Color(0.08, 0.9, 0.74, 1.0),
+		"trim": Color(0.18, 0.78, 1.0, 1.0),
+		"net": Color(0.9, 0.97, 1.0, 0.34),
+		"backdrop": Color(0.12, 0.28, 0.22, 1.0),
+		"backdrop_secondary": Color(0.18, 0.34, 0.28, 1.0),
+		"banner": Color(0.96, 0.38, 0.28, 1.0),
+		"seating": Color(0.16, 0.26, 0.22, 1.0),
+		"pulse": Color(1.0, 0.92, 0.2, 1.0),
+	}
+
+
+func _street_palette(level_index: int) -> Dictionary:
+	var dusk := level_index >= 17
+	return {
+		"sky": Color(0.42, 0.74, 0.92, 1.0) if not dusk else Color(0.24, 0.4, 0.72, 1.0),
+		"ambient": Color(0.95, 0.9, 0.84, 1.0) if not dusk else Color(0.74, 0.84, 1.0, 1.0),
+		"ambient_energy": 0.8,
+		"sun": Color(1.0, 0.9, 0.7, 1.0) if not dusk else Color(0.92, 0.95, 1.0, 1.0),
+		"sun_energy": 1.5 if not dusk else 1.36,
+		"shadow_blur": 1.1,
+		"exposure": 1.0,
+		"field": Color(0.07, 0.46, 0.34, 1.0),
+		"field_line": Color(1.0, 0.92, 0.7, 0.2),
+		"static": Color(0.95, 0.32, 0.24, 1.0),
+		"static_accent": Color(0.52, 0.3, 0.84, 1.0),
+		"gate": Color(0.08, 0.78, 0.96, 1.0),
+		"route": Color(1.0, 0.82, 0.16, 0.72),
+		"bounce": Color(0.08, 0.88, 0.7, 1.0),
+		"trim": Color(1.0, 0.72, 0.16, 1.0),
+		"net": Color(0.94, 0.98, 1.0, 0.36),
+		"backdrop": Color(0.18, 0.16, 0.22, 1.0),
+		"backdrop_secondary": Color(0.28, 0.24, 0.3, 1.0),
+		"banner": Color(1.0, 0.48, 0.22, 1.0),
+		"seating": Color(0.22, 0.2, 0.26, 1.0),
+		"pulse": Color(1.0, 0.78, 0.18, 1.0),
+	}
+
+
+func _stadium_palette(level_index: int) -> Dictionary:
+	var finale := level_index >= 28
+	return {
+		"sky": Color(0.16, 0.28, 0.52, 1.0) if not finale else Color(0.12, 0.2, 0.42, 1.0),
+		"ambient": Color(0.78, 0.86, 1.0, 1.0),
+		"ambient_energy": 0.86,
+		"sun": Color(1.0, 0.92, 0.72, 1.0),
+		"sun_energy": 1.62,
+		"shadow_blur": 1.25,
+		"exposure": 0.98,
+		"field": Color(0.05, 0.4, 0.28, 1.0),
+		"field_line": Color(0.86, 1.0, 0.9, 0.24),
+		"static": Color(0.94, 0.28, 0.3, 1.0),
+		"static_accent": Color(0.28, 0.42, 0.86, 1.0),
+		"gate": Color(0.14, 0.82, 1.0, 1.0),
+		"route": Color(1.0, 0.84, 0.2, 0.74),
+		"bounce": Color(0.12, 0.94, 0.74, 1.0),
+		"trim": Color(0.96, 0.78, 0.28, 1.0),
+		"net": Color(0.92, 0.97, 1.0, 0.38),
+		"backdrop": Color(0.08, 0.12, 0.22, 1.0),
+		"backdrop_secondary": Color(0.14, 0.18, 0.3, 1.0),
+		"banner": Color(0.9, 0.24, 0.3, 1.0),
+		"seating": Color(0.14, 0.18, 0.3, 1.0),
+		"pulse": Color(1.0, 0.84, 0.22, 1.0),
 	}
 
 
@@ -451,5 +462,5 @@ func _material(
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	if emissive:
 		material.emission_enabled = true
-		material.emission = Color(color.r, color.g, color.b, 1.0) * 0.45
+		material.emission = Color(color.r, color.g, color.b, 1.0) * 0.38
 	return material
