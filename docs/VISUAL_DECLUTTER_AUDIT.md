@@ -127,8 +127,8 @@ Root: `artifacts/visual-declutter/`
 - Environment art / world expansion / Phase 7: PASS
 - Rewarded skip / economy / economy RC / goal detection / final RC flow / player feel / level clarity: PASS
 - Phase 9: PASS (known safe-area harness script errors on freed level-grid controls; pre-existing)
-- Android debug APK: `/tmp/netbound-visual-declutter-exports-20260729/netbound-debug.apk`
-- Android debug AAB: same export directory (isolated template path)
+- Android debug APK: `/tmp/netbound-visual-declutter-exports-20260729/netbound-debug.apk` (28 MB, SHA-256 `c2b1b464f3fe7d1d6a130b890cb13e363499fea0a0a9b0ed684196fb06fe4364`)
+- Android debug AAB: `/tmp/netbound-visual-declutter-exports-20260729/netbound-debug.aab` (28 MB, SHA-256 `370f0962214af113d666f63b7d4818902fee35c103f83438484b761b3fc5208b`)
 
 ## Remaining Limitations
 
