@@ -35,7 +35,7 @@ func _run() -> void:
 	passed = await _test_cancel_failure_and_unavailable() and passed
 	passed = await _test_delayed_navigation_and_normal_completion_race() and passed
 	passed = await _test_atomic_rollback_and_v2_compatibility() and passed
-	passed = await _test_level_20_assisted_result() and passed
+	passed = await _test_level_30_assisted_result() and passed
 
 	await _free_app()
 	service.recording_enabled = false
@@ -255,26 +255,26 @@ func _test_atomic_rollback_and_v2_compatibility() -> bool:
 	return passed
 
 
-func _test_level_20_assisted_result() -> bool:
+func _test_level_30_assisted_result() -> bool:
 	await _free_app()
 	service.reset_to_defaults()
 	for level_id in LevelRegistryScript.get_level_ids():
-		if level_id == "level_20":
+		if level_id == "level_30":
 			break
 		var definition := LevelRegistryScript.load_definition(level_id)
 		service.record_level_result(LevelResult.completed_result(definition, definition.par_shots), definition)
-	var level_20 := LevelRegistryScript.load_definition("level_20")
+	var level_30 := LevelRegistryScript.load_definition("level_30")
 	var coins_before := wallet.get_coin_balance()
-	var update := service.record_assisted_clear("level_20", level_20, "level20:assisted:1")
-	var passed := bool(update.get("save_succeeded")) and service.is_level_assisted("level_20") and not service.is_level_normally_completed("level_20")
-	passed = service.get_best_stars("level_20") == 1 and service.get_fewest_shots("level_20") == -1 and wallet.get_coin_balance() == coins_before and passed
+	var update := service.record_assisted_clear("level_30", level_30, "level30:assisted:1")
+	var passed := bool(update.get("save_succeeded")) and service.is_level_assisted("level_30") and not service.is_level_normally_completed("level_30")
+	passed = service.get_best_stars("level_30") == 1 and service.get_fewest_shots("level_30") == -1 and wallet.get_coin_balance() == coins_before and passed
 	app = AppScene.instantiate() as NetboundApp
 	get_root().add_child(app)
 	await _wait_frames(3)
-	app.call("_show_success_result", LevelResult.assisted_result(level_20), update)
+	app.call("_show_success_result", LevelResult.assisted_result(level_30), update)
 	var text := _collect_text(app.result_overlay)
 	passed = text.contains("ASSISTED CLEAR") and text.contains("REPLAY FOR A FULL FINALE CLEAR") and not text.contains("ALL PRODUCTION LEVELS COMPLETE") and passed
-	print("REWARDED_LEVEL_SKIP level20 ok=", passed)
+	print("REWARDED_LEVEL_SKIP level30 ok=", passed)
 	return passed
 
 

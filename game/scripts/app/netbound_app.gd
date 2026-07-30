@@ -52,6 +52,7 @@ var play_subtitle_label: Label
 var total_stars_label: Label
 var level_grid: Container
 var level_world_routes: Array[Container] = []
+var level_select_scroll: ScrollContainer
 var result_title_label: Label
 var result_detail_label: Label
 var result_stars_label: Label
@@ -576,6 +577,7 @@ func _show_level_select_internal() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.scroll_deadzone = 18
 	outer.add_child(scroll)
+	level_select_scroll = scroll
 
 	var worlds_column := VBoxContainer.new()
 	worlds_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL

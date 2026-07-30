@@ -1,6 +1,22 @@
 # Changelog
 
+## World Structure, Graphics, And Levels 21-30 - 2026-07-29
+
+### Added
+
+- Organize production levels into Training Yard, Street Arcade, and Stadium Showdown.
+- Add Levels 21-30 with verified production swipe routes.
+- Add world-aware Level Select sections and shared `WorldCatalog` metadata.
+- Add world art direction, graphics upgrade, and Levels 21-30 documentation.
+
+### Changed
+
+- Upgrade environment lighting, skies, nets, and decorative decks by world without changing physics.
+- Raise maximum stars from 60 to 90 while preserving version-2 saves, wallet balances, and cosmetics.
+- Keep Level 20 as the Street Arcade finale and unlock Level 21 into Stadium Showdown.
+
 ## Rewarded Level Skip And Level Clarity - 2026-07-15
+
 
 ### Added
 

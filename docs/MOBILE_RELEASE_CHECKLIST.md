@@ -113,7 +113,7 @@ Required:
 - No accounts.
 - No analytics.
 - No real ads or purchase SDKs.
-- Simulated ads/purchases are local and optional; all 20 levels remain playable offline without payment or ads.
+- Simulated ads/purchases are local and optional; all 30 levels remain playable offline without payment or ads.
 - Versioned local save.
 - Corrupted-save fallback.
 - Settings persistence.
@@ -178,7 +178,7 @@ Flows:
 - Fresh launch.
 - Continue game.
 - Level select.
-- All 20 levels.
+- All 30 levels.
 - Retry.
 - Reset Ball.
 - Pause.

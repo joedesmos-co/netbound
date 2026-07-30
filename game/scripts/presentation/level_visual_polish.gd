@@ -239,15 +239,13 @@ func _build_decorative_geometry() -> void:
 		_:
 			_add_box(deck, "StandBand", Vector3(0.0, 3.6, -17.8), Vector3(48.0, 6.8, 0.4), seat_material)
 			_add_box(deck, "UpperDeck", Vector3(0.0, 6.4, -18.5), Vector3(46.0, 2.2, 1.4), secondary_material)
-			for i in 5:
-				var x := lerpf(-16.0, 16.0, float(i) / 4.0)
+			for i in 3:
+				var x := lerpf(-12.0, 12.0, float(i) / 2.0)
 				_add_box(deck, "FlagMast%02d" % i, Vector3(x, 5.2, -17.1), Vector3(0.12, 4.4, 0.12), _trim_material)
 				_add_box(deck, "FlagCloth%02d" % i, Vector3(x + 0.55, 6.8, -17.05), Vector3(1.1, 0.7, 0.05), banner_material)
-			for i in 3:
-				var x := lerpf(-14.0, 14.0, float(i) / 2.0)
-				_add_box(deck, "Floodlight%02d" % i, Vector3(x, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
+			_add_box(deck, "FloodlightL", Vector3(-10.0, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
+			_add_box(deck, "FloodlightR", Vector3(10.0, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
 			_add_box(deck, "ScoreboardFace", Vector3(0.0, 7.8, -17.0), Vector3(8.5, 2.2, 0.25), secondary_material)
-			_add_box(deck, "ScoreboardScreen", Vector3(0.0, 7.8, -16.85), Vector3(7.2, 1.5, 0.08), route_material)
 
 
 func _build_contact_shadow() -> void:

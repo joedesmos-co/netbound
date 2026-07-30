@@ -142,7 +142,9 @@ func _test_responsive_markers() -> bool:
 		app.show_level_select()
 		await process_frame
 		await process_frame
-		var scroll := app.level_grid.get_parent() as ScrollContainer
+		var scroll := app.level_select_scroll as ScrollContainer
+		if scroll == null and app.level_grid:
+			scroll = app.level_grid.get_parent() as ScrollContainer
 		var scroll_rect := scroll.get_global_rect()
 		var size_ok := true
 		for card_value in app.level_card_buttons.values():

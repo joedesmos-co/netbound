@@ -370,10 +370,14 @@ func _apply_fixture() -> void:
 		"partial":
 			_complete_through_level("level_04")
 		"complete":
-			_complete_through_level("level_20")
+			_complete_through_level("level_30")
 		"all_unlocked":
-			_complete_through_level("level_20")
+			_complete_through_level("level_30")
 			service.unlock_all_cosmetics_for_development()
+		"world2":
+			_complete_through_level("level_10")
+		"world3":
+			_complete_through_level("level_20")
 		"coins":
 			wallet.grant_coins(6000, "ui_audit", "ui_audit:coins")
 		"tokens":

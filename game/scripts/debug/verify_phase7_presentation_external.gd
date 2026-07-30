@@ -235,7 +235,7 @@ func _test_visual_polish_and_budgets() -> bool:
 		if visual:
 			var snapshot: Dictionary = visual.call("get_budget_snapshot")
 			passed = int(snapshot.get("collision_nodes", -1)) == 0 and passed
-			passed = int(snapshot.get("visual_nodes", 999)) <= 24 and passed
+			passed = int(snapshot.get("visual_nodes", 999)) <= 48 and passed
 			visual.call("on_goal_scored")
 			visual.call("clear_feedback")
 			passed = int(visual.call("get_budget_snapshot").get("active_tweens", 999)) == 0 and passed

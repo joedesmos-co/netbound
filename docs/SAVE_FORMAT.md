@@ -237,7 +237,7 @@ Each entry contains:
 
 The registry validates:
 
-- exactly 20 levels
+- exactly 30 levels
 - unique IDs
 - existing scenes and definitions
 - matching `LevelDefinition.level_id`

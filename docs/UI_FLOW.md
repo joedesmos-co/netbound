@@ -26,13 +26,13 @@ Phase 7 adds lightweight motion to this flow. The production UI art-direction pa
 - Resolves Play/Continue from `SaveService`:
   - first unlocked incomplete level
   - highest unlocked level if unlocked levels are complete but later levels remain locked
-  - Level Select when all 20 levels are complete
+  - Level Select when all 30 levels are complete
 - Cosmetics opens the Phase 6 cosmetic selection screen.
 - Store opens the Phase 8 simulated monetization screen.
 
 ### Level Select
 
-- Builds exactly 20 connected route markers from `LevelRegistry` in a vertically scrollable, responsive progression grid.
+- Builds exactly 30 connected route markers from `LevelRegistry`, grouped into three world sections inside one vertically scrollable column.
 - Reads unlocks, completion, stars, fewest shots, and total stars from `SaveService`.
 - Locked markers are disabled and use a geometric lock state.
 - The current marker uses signal yellow; complete markers use warm paper/success accents.

@@ -1,6 +1,6 @@
 # Netbound
 
-Netbound is an offline arcade trick-shot soccer game built with Godot 4.7. The current production slice contains twenty authored levels, arcade front/side-net scoring, swipe-driven shot height and curve, local progression, a 38-item cosmetic economy, settings, simulated development-only monetization flows, an optional five-miss assisted level clear, and mobile export presets.
+Netbound is an offline arcade trick-shot soccer game built with Godot 4.7. The current production slice contains thirty authored levels across three worlds, arcade front/side-net scoring, swipe-driven shot height and curve, local progression, a 38-item cosmetic economy, settings, simulated development-only monetization flows, an optional five-miss assisted level clear, and mobile export presets.
 
 ## Run locally
 
@@ -20,20 +20,14 @@ The production entry point is `res://app/netbound_app.tscn`.
   --script res://scripts/debug/verify_final_rc_flow_external.gd
 ```
 
-The script uses isolated save paths and covers fresh launch, failure, free Try Again, scoring, progression, cosmetic selection, settings, pause/resume, and relaunch persistence.
-
 ## Documentation
 
+- World art direction: `docs/WORLD_ART_DIRECTION.md`
+- Levels 21-30: `docs/LEVELS_21_30.md`
+- Graphics upgrade: `docs/GRAPHICS_UPGRADE.md`
 - Final audit: `docs/FINAL_RC_AUDIT.md`
-- Player-feel audit: `docs/PLAYER_FEEL_AUDIT.md`
 - Environment art: `docs/ENVIRONMENT_ART.md`
-- Rewarded level skip: `docs/REWARDED_LEVEL_SKIP.md`
-- Level clarity audit: `docs/LEVEL_CLARITY_AUDIT.md`
-- Content expansion: `docs/CONTENT_EXPANSION.md`
-- Cosmetic visual audit: `docs/COSMETIC_VISUAL_AUDIT.md`
 - Test matrix: `docs/TEST_PLAN.md`
-- Local exports: `docs/LOCAL_BUILD_STATUS.md`
-- Export setup: `docs/EXPORT_SETUP.md`
 - Physical-device checklist: `docs/MOBILE_RELEASE_CHECKLIST.md`
 
-Local automated and export validation is complete. Physical iOS and Android device testing is still required before public distribution.
+Local automated and export validation is complete for the thirty-level world expansion. Physical iOS and Android device testing is still required before public distribution.

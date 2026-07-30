@@ -468,3 +468,10 @@ The July 15 pass preserves Trajectory Playground but makes it friendlier and mor
 Expansion screenshots are indexed in `docs/CONTENT_EXPANSION.md`. The visual review compared draft and refined captures for the default ball, aim line, side goals, cosmetic concepts/effects, Levels 11/12/14/17/20, Level Select, and the new final result.
 
 The current responsive review rendered Level Select at `1280x720`, `1600x720`, `1920x864`, `2340x1080`, `1024x768`, and `1366x1024`. Wide layouts show all 20 markers; shorter/tablet layouts preserve touch-sized markers and expose vertical scrolling. The UI regression verifies Level 01 is initially visible and Level 20 is reachable. Goal-effect evidence was recaptured with near-black GPU-tile rejection and independently sampled at a `0.0000` near-black ratio.
+
+
+## Thirty-Level Select
+
+Date: 2026-07-29
+
+Level Select remains a chalk-route board, not a cluttered world map. Worlds appear as short section headers above ten-marker route strips. Stars, best shots, locks, and current-target accents are unchanged. Scroll deadzone remains enabled so dragging does not accidentally launch a level.

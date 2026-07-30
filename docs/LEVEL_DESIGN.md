@@ -4,7 +4,7 @@ Phase 3 built the first ten authored levels. The content-expansion pass extends 
 
 ## Production Level Set
 
-All production levels live under `res://levels/level_01.tscn` through `res://levels/level_20.tscn`. Each has a matching `LevelDefinition` in `res://levels/definitions/`.
+All production levels live under `res://levels/level_01.tscn` through `res://levels/level_30.tscn`. Each has a matching `LevelDefinition` in `res://levels/definitions/`. Worlds and Levels 21-30 are documented in `docs/WORLD_ART_DIRECTION.md` and `docs/LEVELS_21_30.md`.
 
 | Level | Name | Main mechanic | Shots | Par | Verified route |
 | --- | --- | --- | ---: | ---: | --- |
@@ -172,9 +172,17 @@ The per-level purpose classification, collider inventory, screenshots, and Level
 - `2` stars: complete in exactly `par + 1`.
 - `1` star: complete within the shot limit after `par + 1`.
 - Replays preserve best-ever stars and fewest shots.
-- The expanded registry has a maximum of `60` best stars. Existing 6-30 star cosmetic milestones remain intentionally unchanged as early/mid-route rewards.
+- The expanded registry has a maximum of `90` best stars. Existing 6-30 star cosmetic milestones remain intentionally unchanged as early/mid-route rewards.
 
 ## Future Phase Notes
 
 - Phase 5 added menu navigation, level selection UI, and save-driven result screens.
 - Cosmetic unlocks and level selection must read these definitions later; levels themselves do not implement progression.
+
+
+### Levels 21-30 - Stadium Showdown
+
+- Level 21 introduces the stadium world with one readable moving scoreboard and a wide goal.
+- Levels 22-25 teach elevated curve, dual routes, moving goals, and crossbar windows.
+- Levels 26-29 emphasize side entry, staggered movers, dual banks, and short rhythm.
+- Level 30 is the championship finale: timing, lift, curve, and right-side enclosure entry without a maximum gesture requirement.

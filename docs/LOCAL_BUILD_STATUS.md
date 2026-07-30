@@ -1,5 +1,18 @@
 # Netbound Local Build Status
 
+## July 29 World Expansion
+
+Thirty-level world expansion artifacts:
+
+| Artifact | Result | Size | SHA-256 |
+| --- | --- | ---: | --- |
+| `netbound-debug.apk` | exported, signed | 28 MB | `298c631e6563799a77d2b5c932d22d8bd467143e124fca48bc3d4d01105595be` |
+| `netbound-debug.aab` | isolated-template export, structurally written | 28 MB | `114d6e04cafdc63332d10abd0efd23ac5d3a85161417f37e550635209c2afd6c` |
+
+Paths: `/tmp/netbound-world-expansion-exports-20260729/`.
+
+Screenshots: `artifacts/world-expansion/`
+
 ## July 15 Content Expansion
 
 The 20-level build preserves the existing export configuration. Current local artifacts:

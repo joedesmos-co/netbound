@@ -274,3 +274,18 @@ the repository is clean except for the explicitly preserved unstaged
 `game/project.godot` user edit. See `docs/PLAYER_FEEL_AUDIT.md` and
 `docs/ENVIRONMENT_ART.md` for measurements, screenshots, commands, and remaining
 physical-device checks.
+
+
+## World Expansion RC Addendum
+
+Date: 2026-07-29
+
+Current production candidate:
+
+- 30 levels / 90 stars
+- three visual worlds
+- Levels 21-30 Stadium Showdown
+- Level Select world grouping
+- version-2 save compatibility preserved
+
+Physical-device preparation remains intentionally deferred.

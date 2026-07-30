@@ -913,3 +913,23 @@ The local economy adds one service without moving authority into UI or gameplay:
 Level completion remains authoritative in `SaveService.record_level_result()`. The resulting `ProgressionUpdate` is passed once to `WalletService.process_level_completion_rewards()`, then progression and economy are saved before the success rail is shown. No gameplay script reads currency and no economy method changes physics, collision, scoring, stars, level unlocks, or obstacle timing.
 
 External callbacks use stable transaction IDs. The processed-ID ledger is bounded to 2048 and the developer history to 64 entries. This prevents unbounded local storage but is not a substitute for future server receipt validation. The complete contract is documented in `docs/ECONOMY.md` and `docs/CURRENCY_PRODUCTS.md`.
+
+
+## World Structure And Levels 21-30 Update
+
+Date: 2026-07-29
+
+Production content now spans thirty levels across three worlds:
+
+1. Training Yard (`level_01`–`level_10`)
+2. Street Arcade (`level_11`–`level_20`)
+3. Stadium Showdown (`level_21`–`level_30`)
+
+Authoritative helpers:
+
+- `scripts/levels/world_catalog.gd` maps level IDs to world metadata.
+- `scripts/levels/level_registry.gd` expects exactly `30` production entries.
+- `LevelVisualPolish` selects world palettes/backdrops from the catalog.
+- Level Select builds one scrollable column of world sections, each with a ten-marker route.
+
+Save version remains `2`. Completing Level 20 unlocks Level 21. Maximum stars are `90`. Wallet, cosmetics, assisted clears, and star rules are unchanged.

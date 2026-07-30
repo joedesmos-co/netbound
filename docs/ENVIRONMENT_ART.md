@@ -114,3 +114,16 @@ example, Low-quality examples, a 4:3 capture, and a wide-phone capture.
 - verify Low-quality readability and frame pacing on representative Android hardware
 - inspect moving-object silhouette clarity on small phones at arm's length
 - confirm no device-specific Metal/Vulkan material or depth-sorting issue
+
+
+## World Expansion Update
+
+Date: 2026-07-29
+
+Course equipment kit remains the authoritative obstacle language. World identity is now layered through `LevelVisualPolish` decorative decks and palettes:
+
+- Training Yard: fencing, practice banners, cone marks, bright field lighting
+- Street Arcade: painted court walls, safety stripes, warmer/dusk skies
+- Stadium Showdown: seating bands, flags, floodlights, scoreboard silhouette
+
+See `docs/WORLD_ART_DIRECTION.md` and `docs/GRAPHICS_UPGRADE.md`.

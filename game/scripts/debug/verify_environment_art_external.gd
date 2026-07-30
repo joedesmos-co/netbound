@@ -48,7 +48,7 @@ func _run() -> void:
 		var budget: Dictionary = course.call("get_budget_snapshot") if course else {}
 		var wrappers: Array = course.call("get_wrappers") if course else []
 		var wrapped_count := wrappers.size()
-		if level_id not in ["level_01", "level_17"]:
+		if level_id not in ["level_01", "level_17", "level_24"]:
 			level_ok = wrapped_count > 0 and level_ok
 		for wrapper_variant in wrappers:
 			var wrapper := wrapper_variant as Node3D

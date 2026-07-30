@@ -203,3 +203,13 @@ Desktop/headless instrumentation checks currently verify:
 - cleanup: Reset/Retry/unload clears camera feedback, goal pulses, cosmetic effects, and UI tweens
 
 This is not a substitute for physical mobile profiling. GPU cost, thermal behavior, safe-area comfort, haptic feel, and audio focus still need iOS/Android hardware validation in the mobile hardening/release phase.
+
+
+## World Presentation Accents
+
+Date: 2026-07-29
+
+- Level Select uses world section headers and taglines from `WorldCatalog`.
+- Stadium levels use deeper arena lighting and denser non-colliding backdrop forms.
+- Final-loop music still plays on championship beats (`level_20`, `level_30`).
+- Reduced Motion continues to suppress decorative entrance motion while keeping titles readable.
