@@ -22,7 +22,7 @@ var _quality_config: Dictionary = {
 }
 
 const GOAL_FRAME_COLOR := Color(1.0, 1.0, 1.0, 1.0)
-const GOAL_FRAME_EMISSION := Color(0.08, 0.09, 0.1, 1.0)
+const GOAL_FRAME_EMISSION := Color(0.12, 0.13, 0.14, 1.0)
 const SUCCESS_EMISSION := Color(0.16, 0.9, 0.4, 1.0)
 
 
@@ -64,6 +64,30 @@ func on_goal_scored() -> void:
 		tween.tween_property(_goal_material, "emission", SUCCESS_EMISSION, 0.06)
 		tween.tween_interval(0.12)
 		tween.tween_property(_goal_material, "emission", base_emission, 0.24)
+	tween.tween_callback(func() -> void: _active_tweens.erase(tween))
+
+
+func on_goal_net_impact(_impact_position: Vector3, _impact_velocity: Vector3) -> void:
+	# GoalTarget owns the net reaction; polish only frames the success pulse.
+	pass
+
+
+func on_ball_impact(kind: String, strength: float, body: Node) -> void:
+	if _reduced_motion_enabled() or not body:
+		return
+	if kind not in ["obstacle", "bounce", "post"]:
+		return
+	var wrapper := body.get_node_or_null("NetboundCourseArt") as Node3D
+	if not wrapper:
+		return
+	var amount := clampf(0.04 + strength * 0.03, 0.04, 0.1)
+	if _reduced_motion_enabled():
+		amount *= 0.5
+	var tween := create_tween()
+	_active_tweens.append(tween)
+	var base_scale := wrapper.scale
+	tween.tween_property(wrapper, "scale", base_scale * Vector3(1.0 + amount, 1.0 - amount * 1.2, 1.0 + amount), 0.05)
+	tween.tween_property(wrapper, "scale", base_scale, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_callback(func() -> void: _active_tweens.erase(tween))
 
 
@@ -150,8 +174,8 @@ func _apply_material_language() -> void:
 	# Quiet route marks: support the line without competing with obstacles.
 	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.42)), 0.62, false, true)
 	var bounce_material := _material(_palette.get("bounce", Color(0.0, 0.95, 0.72, 1.0)), 0.32, true)
-	var net_material := _material(_palette.get("net", Color(0.8, 0.95, 1.0, 0.26)), 0.86, false, true)
-	_goal_material = _material(GOAL_FRAME_COLOR, 0.28, true)
+	_goal_material = _material(GOAL_FRAME_COLOR, 0.34, true)
+	_goal_material.metallic = 0.18
 	_goal_material.emission = GOAL_FRAME_EMISSION
 	_trim_material = _material(_palette.get("trim", Color(1.0, 0.85, 0.28, 1.0)), 0.45, true)
 
@@ -165,7 +189,10 @@ func _apply_material_language() -> void:
 		if parent_name == "ground":
 			mesh.material_override = field_material
 		elif path.contains("/goal/"):
-			mesh.material_override = net_material if node_name.contains("net") or parent_name.contains("net") else _goal_material
+			# Flat net boxes are hidden by GoalNetArt; keep supports/frame white metal.
+			if node_name.contains("net"):
+				continue
+			mesh.material_override = _goal_material
 		elif _is_route_mesh(path, node_name, parent_name):
 			mesh.material_override = route_material
 		elif path.contains("bank") or path.contains("bounce"):

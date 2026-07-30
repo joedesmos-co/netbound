@@ -365,20 +365,21 @@ func _cylinder_mesh(radius: float, depth: float, segments: int) -> CylinderMesh:
 
 func _build_materials() -> void:
 	_materials = {
-		"foam": _material(Color("ef6a59"), 0.86),
-		"moving": _material(Color("35a9a3"), 0.78),
-		"spinner": _material(Color("f0c84b"), 0.78),
-		"rebound": _material(Color("238d82"), 0.7),
-		"canvas": _material(Color("f6f0df"), 0.92),
-		"navy": _material(Color("17324a"), 0.82),
-		"yellow": _material(Color("f3cf4b"), 0.78),
+		"foam": _material(Color("ef6a59"), 0.78, 0.0),
+		"moving": _material(Color("35a9a3"), 0.62, 0.08),
+		"spinner": _material(Color("f0c84b"), 0.55, 0.05),
+		"rebound": _material(Color("2a9a8e"), 0.58, 0.04),
+		"canvas": _material(Color("f6f0df"), 0.86, 0.0),
+		"navy": _material(Color("1a3650"), 0.48, 0.12),
+		"yellow": _material(Color("f3cf4b"), 0.55, 0.04),
 	}
 
 
-func _material(color: Color, roughness: float, emission: Color = Color.TRANSPARENT) -> StandardMaterial3D:
+func _material(color: Color, roughness: float, metallic: float = 0.0, emission: Color = Color.TRANSPARENT) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = roughness
+	material.metallic = metallic
 	if emission.a > 0.0:
 		material.emission_enabled = true
 		material.emission = emission
