@@ -2,6 +2,7 @@ class_name NetboundApp
 extends Node
 
 const LevelRegistryScript := preload("res://scripts/levels/level_registry.gd")
+const WorldCatalogScript := preload("res://scripts/levels/world_catalog.gd")
 const MenuBackdropScript := preload("res://scripts/ui/menu_backdrop.gd")
 const CosmeticRegistryScript := preload("res://scripts/cosmetics/cosmetic_registry.gd")
 const CosmeticPreviewScript := preload("res://scripts/cosmetics/cosmetic_preview.gd")
@@ -50,6 +51,7 @@ var play_button: Button
 var play_subtitle_label: Label
 var total_stars_label: Label
 var level_grid: Container
+var level_world_routes: Array[Container] = []
 var result_title_label: Label
 var result_detail_label: Label
 var result_stars_label: Label
@@ -554,7 +556,7 @@ func _show_level_select_internal() -> void:
 	title_stack.add_child(title)
 
 	var route_subtitle := Label.new()
-	route_subtitle.text = "20 TRICK-SHOT CHALLENGES"
+	route_subtitle.text = "30 TRICK-SHOT CHALLENGES"
 	route_subtitle.theme_type_variation = "MetaLabel"
 	title_stack.add_child(route_subtitle)
 
@@ -572,18 +574,51 @@ func _show_level_select_internal() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.scroll_deadzone = 18
 	outer.add_child(scroll)
 
-	level_grid = LevelRouteScript.new()
-	level_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	level_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.add_child(level_grid)
+	var worlds_column := VBoxContainer.new()
+	worlds_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	worlds_column.add_theme_constant_override("separation", NetboundUITheme.SPACE_6)
+	scroll.add_child(worlds_column)
 
-	for i in LevelRegistryScript.get_level_ids().size():
-		var level_id := LevelRegistryScript.get_level_ids()[i]
-		var card := _build_level_card(level_id, i)
-		level_grid.add_child(card)
-		level_card_buttons[level_id] = card
+	level_world_routes.clear()
+	level_grid = null
+	for world in WorldCatalogScript.get_worlds():
+		var world_block := VBoxContainer.new()
+		world_block.add_theme_constant_override("separation", NetboundUITheme.SPACE_2)
+		worlds_column.add_child(world_block)
+
+		var world_header := HBoxContainer.new()
+		world_header.add_theme_constant_override("separation", NetboundUITheme.SPACE_3)
+		world_block.add_child(world_header)
+
+		var world_title := Label.new()
+		world_title.text = "%s  %s" % [
+			String(world.get("short_label", "")),
+			String(world.get("display_name", "")).to_upper(),
+		]
+		world_title.theme_type_variation = "NumericLabel"
+		world_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		world_header.add_child(world_title)
+
+		var world_tag := Label.new()
+		world_tag.text = String(world.get("tagline", ""))
+		world_tag.theme_type_variation = "MetaLabel"
+		world_header.add_child(world_tag)
+
+		var route := LevelRouteScript.new()
+		route.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		world_block.add_child(route)
+		level_world_routes.append(route)
+		if level_grid == null:
+			level_grid = route
+
+		for level_id in WorldCatalogScript.get_level_ids_for_world(String(world.get("id", ""))):
+			var index := LevelRegistryScript.get_order_index(level_id)
+			var card := _build_level_card(level_id, index)
+			route.add_child(card)
+			level_card_buttons[level_id] = card
 
 	status_label = Label.new()
 	status_label.theme_type_variation = "MetaLabel"
@@ -2370,12 +2405,19 @@ func _refresh_level_select_state() -> void:
 				best_text,
 				requirement,
 			]
-	if level_grid:
+	if level_world_routes.is_empty() and level_grid:
 		level_grid.queue_redraw()
+	else:
+		for route in level_world_routes:
+			if route:
+				route.queue_redraw()
 
 
 func _refresh_level_grid_columns() -> void:
-	if not level_grid:
+	var routes: Array[Container] = level_world_routes.duplicate()
+	if routes.is_empty() and level_grid:
+		routes.append(level_grid)
+	if routes.is_empty():
 		return
 	var margins := _safe_area_margins()
 	var width := (
@@ -2383,12 +2425,13 @@ func _refresh_level_grid_columns() -> void:
 		- float(margins.get("left", SAFE_MARGIN))
 		- float(margins.get("right", SAFE_MARGIN))
 	)
+	var columns := 3
 	if width >= 1120.0:
-		level_grid.set("columns", 5)
+		columns = 5
 	elif width >= 860.0:
-		level_grid.set("columns", 4)
-	else:
-		level_grid.set("columns", 3)
+		columns = 4
+	for route in routes:
+		route.set("columns", columns)
 
 
 func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: String) -> void:
@@ -2562,7 +2605,7 @@ func _play_gameplay_music(level_id: String) -> void:
 	var audio_service := get_node_or_null("/root/AudioService")
 	if not audio_service or not audio_service.has_method("play_music"):
 		return
-	var music_id := "music_final_loop" if level_id == "level_20" else "music_gameplay_loop"
+	var music_id := "music_final_loop" if level_id in ["level_20", "level_30"] else "music_gameplay_loop"
 	audio_service.call("play_music", music_id)
 
 
@@ -2626,6 +2669,15 @@ func _mechanic_label(mechanic_id: String) -> String:
 		"double_bank": "Ricochet",
 		"rhythm_gates": "Rhythm",
 		"championship": "Finale",
+		"stadium_intro": "Opening Night",
+		"elevated_curve": "Flood Curve",
+		"dual_route": "Split Route",
+		"moving_goal": "Moving Frame",
+		"vertical_precision": "Crossbar",
+		"side_curve": "Side Swerve",
+		"dual_movers": "Scoreboard Shift",
+		"dual_bank": "Double Bank",
+		"rhythm": "Final Whistle",
 	}
 	return String(labels.get(mechanic_id, mechanic_id.capitalize()))
 

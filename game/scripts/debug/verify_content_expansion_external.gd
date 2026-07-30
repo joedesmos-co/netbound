@@ -27,10 +27,10 @@ func _run() -> void:
 func _verify_registry() -> bool:
 	var ids := LevelRegistryScript.get_level_ids()
 	var validation := LevelRegistryScript.validate_registry()
-	var passed := bool(validation.ok) and ids.size() == 20
+	var passed := bool(validation.ok) and ids.size() == 30
 	for index in ids.size():
 		var expected_id := "level_%02d" % (index + 1)
-		var expected_next := "level_%02d" % (index + 2) if index < 19 else ""
+		var expected_next := "level_%02d" % (index + 2) if index < 29 else ""
 		passed = ids[index] == expected_id and passed
 		passed = LevelRegistryScript.get_next_level_id(expected_id) == expected_next and passed
 		passed = ResourceLoader.exists(LevelRegistryScript.get_scene_path(expected_id)) and passed

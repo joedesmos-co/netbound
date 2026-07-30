@@ -79,7 +79,7 @@ func _test_primary_screens() -> bool:
 	app.show_level_select()
 	await process_frame
 	passed = app.current_screen_name == "level_select" \
-		and app.get_registered_level_card_count() == 20 \
+		and app.get_registered_level_card_count() == 30 \
 		and passed
 	for card_value in app.level_card_buttons.values():
 		var card := card_value as Button
@@ -157,13 +157,13 @@ func _test_responsive_markers() -> bool:
 		await process_frame
 		var first_rect := (app.level_card_buttons.level_01 as Button).get_global_rect()
 		var first_visible := first_rect.intersects(scroll.get_global_rect())
-		var last_initial_rect := (app.level_card_buttons.level_20 as Button).get_global_rect()
+		var last_initial_rect := (app.level_card_buttons.level_30 as Button).get_global_rect()
 		var last_initial_visible := last_initial_rect.intersects(scroll.get_global_rect())
 		var scroll_bar := scroll.get_v_scroll_bar()
 		var has_scroll := scroll_bar.max_value > scroll_bar.page + 1.0
 		scroll.scroll_vertical = roundi(scroll_bar.max_value)
 		await process_frame
-		var last_rect := (app.level_card_buttons.level_20 as Button).get_global_rect()
+		var last_rect := (app.level_card_buttons.level_30 as Button).get_global_rect()
 		var last_visible := last_rect.intersects(scroll.get_global_rect())
 		var route_reachable := last_visible if has_scroll else last_initial_visible
 		var viewport_ok := size_ok and first_visible and route_reachable

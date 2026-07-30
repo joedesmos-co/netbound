@@ -24,7 +24,7 @@ func _run() -> void:
 	var wrapped_total := 0
 	var maximum_visual_nodes := 0
 	var level_ids := LevelRegistryScript.get_level_ids()
-	passed = level_ids.size() == 20 and passed
+	passed = level_ids.size() == 30 and passed
 
 	for level_id in level_ids:
 		var scene: PackedScene = load(LevelRegistryScript.get_scene_path(level_id))

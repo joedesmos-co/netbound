@@ -16,7 +16,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var level_ids := LevelRegistryScript.get_level_ids()
-	var passed := level_ids.size() == 20
+	var passed := level_ids.size() == 30
 	var collider_counts: Dictionary = {}
 	for level_id in level_ids:
 		var result := await _audit_level(level_id)
