@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_23"
+display_name = "Split Stands"
+shot_limit = 4
+par_shots = 2
+tutorial_text = "Take the high safe lane or the tight low road."
+bounds_min = Vector3(-24, -2, -22)
+bounds_max = Vector3(24, 40, 12)
+camera_position = Vector3(0, 12.6, 15.8)
+camera_look_at = Vector3(0, 3.8, -9.0)
+mechanic_id = "dual_route"
+tags = PackedStringArray("height", "precision", "stadium")
+next_level_id = "level_24"

@@ -15,4 +15,4 @@ camera_position = Vector3(0, 14.0, 18.2)
 camera_look_at = Vector3(-5.0, 4.4, -9.5)
 mechanic_id = "championship"
 tags = PackedStringArray("timing", "curve", "height", "side_goal", "finale")
-next_level_id = ""
+next_level_id = "level_21"

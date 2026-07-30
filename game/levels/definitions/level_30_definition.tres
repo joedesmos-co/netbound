@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_30"
+display_name = "Grand Final"
+shot_limit = 6
+par_shots = 4
+tutorial_text = "Time it, lift, and bend into the side for the trophy."
+bounds_min = Vector3(-24, -2, -22)
+bounds_max = Vector3(24, 40, 12)
+camera_position = Vector3(0, 14.2, 18.4)
+camera_look_at = Vector3(-5.0, 4.6, -9.8)
+mechanic_id = "championship"
+tags = PackedStringArray("timing", "curve", "height", "side_goal", "finale", "stadium")
+next_level_id = ""

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_27"
+display_name = "Scoreboard Shift"
+shot_limit = 5
+par_shots = 3
+tutorial_text = "Read both panels and shoot the shared opening."
+bounds_min = Vector3(-24, -2, -22)
+bounds_max = Vector3(24, 40, 12)
+camera_position = Vector3(0, 13.0, 16.2)
+camera_look_at = Vector3(0, 4.0, -9.0)
+mechanic_id = "dual_movers"
+tags = PackedStringArray("timing", "moving", "stadium")
+next_level_id = "level_28"

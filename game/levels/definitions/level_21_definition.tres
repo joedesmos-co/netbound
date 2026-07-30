@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_21"
+display_name = "Opening Night"
+shot_limit = 4
+par_shots = 2
+tutorial_text = "Wait for the scoreboard, then shoot straight."
+bounds_min = Vector3(-24, -2, -22)
+bounds_max = Vector3(24, 40, 12)
+camera_position = Vector3(0, 12.8, 16.0)
+camera_look_at = Vector3(0, 4.0, -9.0)
+mechanic_id = "stadium_intro"
+tags = PackedStringArray("timing", "stadium")
+next_level_id = "level_22"

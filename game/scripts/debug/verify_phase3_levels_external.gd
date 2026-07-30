@@ -155,7 +155,59 @@ const LEVEL_SPECS := [
 	},
 	{
 		"scene": "res://levels/level_20.tscn",
-		"id": "level_20", "next": "", "shots": 6, "par": 4,
+		"id": "level_20", "next": "level_21", "shots": 6, "par": 4,
+		"offset": Vector2(75.0, -230.0), "curve": 20.0, "wait": 0.0,
+		"entry": "right",
+	},
+	{
+		"scene": "res://levels/level_21.tscn",
+		"id": "level_21", "next": "level_22", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -230.0), "curve": 0.0, "wait": 0.25,
+	},
+	{
+		"scene": "res://levels/level_22.tscn",
+		"id": "level_22", "next": "level_23", "shots": 5, "par": 3,
+		"offset": Vector2(-165.0, -260.0), "curve": -16.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_23.tscn",
+		"id": "level_23", "next": "level_24", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -245.0), "curve": 0.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_24.tscn",
+		"id": "level_24", "next": "level_25", "shots": 5, "par": 3,
+		"offset": Vector2(0.0, -230.0), "curve": 0.0, "wait": 0.4,
+	},
+	{
+		"scene": "res://levels/level_25.tscn",
+		"id": "level_25", "next": "level_26", "shots": 4, "par": 2,
+		"offset": Vector2(0.0, -225.0), "curve": 0.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_26.tscn",
+		"id": "level_26", "next": "level_27", "shots": 5, "par": 3,
+		"offset": Vector2(30.0, -230.0), "curve": 14.0, "wait": 0.0,
+		"entry": "right",
+	},
+	{
+		"scene": "res://levels/level_27.tscn",
+		"id": "level_27", "next": "level_28", "shots": 5, "par": 3,
+		"offset": Vector2(0.0, -225.0), "curve": 0.0, "wait": 0.45,
+	},
+	{
+		"scene": "res://levels/level_28.tscn",
+		"id": "level_28", "next": "level_29", "shots": 5, "par": 3,
+		"offset": Vector2(230.0, -205.0), "curve": 0.0, "wait": 0.0,
+	},
+	{
+		"scene": "res://levels/level_29.tscn",
+		"id": "level_29", "next": "level_30", "shots": 5, "par": 3,
+		"offset": Vector2(0.0, -225.0), "curve": 0.0, "wait": 0.5,
+	},
+	{
+		"scene": "res://levels/level_30.tscn",
+		"id": "level_30", "next": "", "shots": 6, "par": 4,
 		"offset": Vector2(75.0, -230.0), "curve": 20.0, "wait": 0.0,
 		"entry": "right",
 	},
@@ -168,7 +220,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var passed := true
-	var count_ok := LEVEL_SPECS.size() == 20
+	var count_ok := LEVEL_SPECS.size() == 30
 	print("PHASE3 level_count ok=", count_ok)
 	passed = count_ok and passed
 	var seen_ids: Dictionary = {}

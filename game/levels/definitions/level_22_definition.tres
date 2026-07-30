@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LevelDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/level_definition.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = "level_22"
+display_name = "Floodlight"
+shot_limit = 5
+par_shots = 3
+tutorial_text = "Lift and bend around the tall pad."
+bounds_min = Vector3(-24, -2, -22)
+bounds_max = Vector3(24, 40, 12)
+camera_position = Vector3(0, 13.4, 16.6)
+camera_look_at = Vector3(-2.5, 4.6, -9.5)
+mechanic_id = "elevated_curve"
+tags = PackedStringArray("curve", "height", "stadium")
+next_level_id = "level_23"

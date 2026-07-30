@@ -1,0 +1,100 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://levels/definitions/level_29_definition.tres" id="2_definition"]
+[ext_resource type="Script" path="res://scripts/components/timed_gate.gd" id="3_gate"]
+
+[sub_resource type="StandardMaterial3D" id="Material_gate_a"]
+albedo_color = Color(0.16, 0.8, 0.98, 1)
+emission_enabled = true
+emission = Color(0, 0.22, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_gate_b"]
+albedo_color = Color(1, 0.42, 0.22, 1)
+emission_enabled = true
+emission = Color(0.28, 0.04, 0.01, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_gate_c"]
+albedo_color = Color(1, 0.84, 0.14, 1)
+emission_enabled = true
+emission = Color(0.3, 0.17, 0, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_gate_a"]
+material = SubResource("Material_gate_a")
+size = Vector3(7.2, 3.2, 0.55)
+
+[sub_resource type="BoxShape3D" id="Shape_gate_a"]
+size = Vector3(7.2, 3.2, 0.55)
+
+[sub_resource type="BoxMesh" id="Mesh_gate_b"]
+material = SubResource("Material_gate_b")
+size = Vector3(7.6, 3.3, 0.55)
+
+[sub_resource type="BoxShape3D" id="Shape_gate_b"]
+size = Vector3(7.6, 3.3, 0.55)
+
+[sub_resource type="BoxMesh" id="Mesh_gate_c"]
+material = SubResource("Material_gate_c")
+size = Vector3(6.8, 3.1, 0.55)
+
+[sub_resource type="BoxShape3D" id="Shape_gate_c"]
+size = Vector3(6.8, 3.1, 0.55)
+
+[node name="Level29" instance=ExtResource("1_base")]
+level_definition = ExtResource("2_definition")
+
+[node name="Obstacle" parent="."]
+position = Vector3(-30, 0.38, -2.2)
+visible = false
+collision_layer = 0
+collision_mask = 0
+
+[node name="WhistleOne" type="Node3D" parent="."]
+script = ExtResource("3_gate")
+target_path = NodePath("Body")
+closed_position = Vector3(0, 1.55, -4.0)
+open_position = Vector3(0, 6.7, -4.0)
+closed_duration = 0.5
+open_duration = 0.85
+transition_duration = 0.28
+starts_open = true
+
+[node name="Body" type="StaticBody3D" parent="WhistleOne"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WhistleOne/Body"]
+mesh = SubResource("Mesh_gate_a")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WhistleOne/Body"]
+shape = SubResource("Shape_gate_a")
+
+[node name="WhistleTwo" type="Node3D" parent="."]
+script = ExtResource("3_gate")
+target_path = NodePath("Body")
+closed_position = Vector3(0, 1.6, -6.3)
+open_position = Vector3(0, 6.9, -6.3)
+closed_duration = 0.5
+open_duration = 0.85
+transition_duration = 0.28
+starts_open = true
+start_phase_seconds = 0.34
+
+[node name="Body" type="StaticBody3D" parent="WhistleTwo"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WhistleTwo/Body"]
+mesh = SubResource("Mesh_gate_b")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WhistleTwo/Body"]
+shape = SubResource("Shape_gate_b")
+
+[node name="WhistleThree" type="Node3D" parent="."]
+script = ExtResource("3_gate")
+target_path = NodePath("Body")
+closed_position = Vector3(0, 1.5, -8.5)
+open_position = Vector3(0, 6.6, -8.5)
+closed_duration = 0.5
+open_duration = 0.85
+transition_duration = 0.28
+starts_open = true
+start_phase_seconds = 0.68
+
+[node name="Body" type="StaticBody3D" parent="WhistleThree"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WhistleThree/Body"]
+mesh = SubResource("Mesh_gate_c")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WhistleThree/Body"]
+shape = SubResource("Shape_gate_c")
