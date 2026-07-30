@@ -147,7 +147,8 @@ func _apply_material_language() -> void:
 		true
 	)
 	var gate_material := _material(_palette.get("gate", Color(0.16, 0.82, 1.0, 1.0)), 0.48, true)
-	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.72)), 0.62, true, true)
+	# Quiet route marks: support the line without competing with obstacles.
+	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.42)), 0.62, false, true)
 	var bounce_material := _material(_palette.get("bounce", Color(0.0, 0.95, 0.72, 1.0)), 0.32, true)
 	var net_material := _material(_palette.get("net", Color(0.8, 0.95, 1.0, 0.26)), 0.86, false, true)
 	_goal_material = _material(GOAL_FRAME_COLOR, 0.28, true)
@@ -197,7 +198,6 @@ func _build_decorative_geometry() -> void:
 	add_child(deck)
 
 	var field_line_material := _material(_palette.get("field_line", Color(1.0, 1.0, 1.0, 0.16)), 0.75, false, true)
-	var route_material := _material(_palette.get("route", Color(1.0, 0.86, 0.22, 0.6)), 0.58, true, true)
 	var backdrop_material := _material(_palette.get("backdrop", Color(0.08, 0.14, 0.22, 1.0)), 0.82, true)
 	var secondary_material := _material(
 		_palette.get("backdrop_secondary", Color(0.12, 0.2, 0.3, 1.0)),
@@ -207,45 +207,44 @@ func _build_decorative_geometry() -> void:
 	var banner_material := _material(_palette.get("banner", Color(0.95, 0.35, 0.28, 1.0)), 0.55, true)
 	var seat_material := _material(_palette.get("seating", Color(0.16, 0.22, 0.34, 1.0)), 0.88, true)
 
-	for i in 9:
-		var z := lerpf(-16.0, 9.5, float(i) / 8.0)
-		_add_box(deck, "FieldStripe%02d" % i, Vector3(0.0, 0.025, z), Vector3(45.5, 0.018, 0.1), field_line_material)
+	# Spacious field: fewer stripes, side framing only. No route rails in the play corridor.
+	for i in 5:
+		var z := lerpf(-14.0, 8.0, float(i) / 4.0)
+		_add_box(deck, "FieldStripe%02d" % i, Vector3(0.0, 0.025, z), Vector3(42.0, 0.016, 0.08), field_line_material)
 
 	for x in [-18.0, 18.0]:
-		_add_box(deck, "SideTrim%.0f" % x, Vector3(x, 0.08, -3.0), Vector3(0.18, 0.16, 31.5), _trim_material)
-	for x in [-5.5, 5.5]:
-		_add_box(deck, "RouteRail%.0f" % x, Vector3(x, 0.04, -5.5), Vector3(0.12, 0.08, 10.0), route_material)
+		_add_box(deck, "SideTrim%.0f" % x, Vector3(x, 0.08, -3.0), Vector3(0.16, 0.14, 30.0), _trim_material)
 
-	_add_box(deck, "BackArenaWall", Vector3(0.0, 2.2, -17.2), Vector3(45.0, 4.4, 0.18), backdrop_material)
-	_add_box(deck, "LeftArenaRail", Vector3(-22.7, 1.05, -3.0), Vector3(0.18, 2.1, 30.0), backdrop_material)
-	_add_box(deck, "RightArenaRail", Vector3(22.7, 1.05, -3.0), Vector3(0.18, 2.1, 30.0), backdrop_material)
+	_add_box(deck, "BackArenaWall", Vector3(0.0, 2.0, -17.35), Vector3(44.0, 4.0, 0.16), backdrop_material)
+	_add_box(deck, "LeftArenaRail", Vector3(-22.7, 1.0, -3.0), Vector3(0.16, 2.0, 28.0), backdrop_material)
+	_add_box(deck, "RightArenaRail", Vector3(22.7, 1.0, -3.0), Vector3(0.16, 2.0, 28.0), backdrop_material)
 
 	match _world_id:
 		WorldCatalogScript.WORLD_TRAINING:
-			_add_box(deck, "PracticeFence", Vector3(0.0, 1.35, -17.55), Vector3(36.0, 2.4, 0.12), secondary_material)
-			for i in 4:
-				var x := lerpf(-14.0, 14.0, float(i) / 3.0)
-				_add_box(deck, "PracticeBanner%02d" % i, Vector3(x, 2.7, -17.4), Vector3(3.2, 1.1, 0.08), banner_material)
-			for i in 5:
-				var x := lerpf(-12.0, 12.0, float(i) / 4.0)
-				_add_box(deck, "ConeMark%02d" % i, Vector3(x, 0.18, 4.8), Vector3(0.35, 0.36, 0.35), _trim_material)
+			# Open yard: fence + two side banners. Cones only at far sidelines, never near the ball.
+			_add_box(deck, "PracticeFence", Vector3(0.0, 1.25, -17.55), Vector3(34.0, 2.2, 0.1), secondary_material)
+			for i in 2:
+				var x := -10.0 if i == 0 else 10.0
+				_add_box(deck, "PracticeBanner%02d" % i, Vector3(x, 2.55, -17.42), Vector3(2.8, 0.95, 0.07), banner_material)
+			for x in [-16.5, 16.5]:
+				_add_box(deck, "ConeMark%.0f" % x, Vector3(x, 0.18, -1.5), Vector3(0.3, 0.3, 0.3), banner_material)
 		WorldCatalogScript.WORLD_STREET:
-			_add_box(deck, "CourtWall", Vector3(0.0, 2.8, -17.55), Vector3(40.0, 5.2, 0.16), secondary_material)
-			for i in 3:
-				var x := lerpf(-12.0, 12.0, float(i) / 2.0)
-				_add_box(deck, "WallStripe%02d" % i, Vector3(x, 2.4, -17.42), Vector3(4.8, 0.55, 0.06), banner_material)
-			_add_box(deck, "LeftCourtRail", Vector3(-21.8, 0.55, -2.0), Vector3(0.35, 1.1, 24.0), seat_material)
-			_add_box(deck, "RightCourtRail", Vector3(21.8, 0.55, -2.0), Vector3(0.35, 1.1, 24.0), seat_material)
+			# Court identity without wall decal noise or false openings.
+			_add_box(deck, "CourtWall", Vector3(0.0, 2.6, -17.55), Vector3(38.0, 4.8, 0.14), secondary_material)
+			_add_box(deck, "WallStripe", Vector3(0.0, 2.2, -17.44), Vector3(10.0, 0.42, 0.05), banner_material)
+			_add_box(deck, "LeftCourtRail", Vector3(-21.8, 0.5, -2.0), Vector3(0.3, 1.0, 22.0), seat_material)
+			_add_box(deck, "RightCourtRail", Vector3(21.8, 0.5, -2.0), Vector3(0.3, 1.0, 22.0), seat_material)
 		_:
-			_add_box(deck, "StandBand", Vector3(0.0, 3.6, -17.8), Vector3(48.0, 6.8, 0.4), seat_material)
-			_add_box(deck, "UpperDeck", Vector3(0.0, 6.4, -18.5), Vector3(46.0, 2.2, 1.4), secondary_material)
-			for i in 3:
-				var x := lerpf(-12.0, 12.0, float(i) / 2.0)
-				_add_box(deck, "FlagMast%02d" % i, Vector3(x, 5.2, -17.1), Vector3(0.12, 4.4, 0.12), _trim_material)
-				_add_box(deck, "FlagCloth%02d" % i, Vector3(x + 0.55, 6.8, -17.05), Vector3(1.1, 0.7, 0.05), banner_material)
-			_add_box(deck, "FloodlightL", Vector3(-10.0, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
-			_add_box(deck, "FloodlightR", Vector3(10.0, 8.4, -16.4), Vector3(1.8, 0.35, 0.55), _trim_material)
-			_add_box(deck, "ScoreboardFace", Vector3(0.0, 7.8, -17.0), Vector3(8.5, 2.2, 0.25), secondary_material)
+			# Stadium depth from side stands + offset flags/floods. Nothing centered behind the goal.
+			_add_box(deck, "StandBand", Vector3(0.0, 3.8, -18.2), Vector3(46.0, 6.4, 0.32), seat_material)
+			_add_box(deck, "LeftCrowdWing", Vector3(-19.5, 3.2, -6.0), Vector3(2.2, 5.2, 20.0), seat_material)
+			_add_box(deck, "RightCrowdWing", Vector3(19.5, 3.2, -6.0), Vector3(2.2, 5.2, 20.0), seat_material)
+			for i in 2:
+				var x := -13.5 if i == 0 else 13.5
+				_add_box(deck, "FlagMast%02d" % i, Vector3(x, 5.4, -16.8), Vector3(0.1, 3.6, 0.1), _trim_material)
+				_add_box(deck, "FlagCloth%02d" % i, Vector3(x + (0.48 if i == 0 else -0.48), 6.6, -16.75), Vector3(0.9, 0.55, 0.05), banner_material)
+			_add_box(deck, "FloodlightL", Vector3(-14.0, 8.6, -15.5), Vector3(1.4, 0.26, 0.4), _trim_material)
+			_add_box(deck, "FloodlightR", Vector3(14.0, 8.6, -15.5), Vector3(1.4, 0.26, 0.4), _trim_material)
 
 
 func _build_contact_shadow() -> void:
@@ -380,9 +379,9 @@ func _training_palette(level_index: int) -> Dictionary:
 		"static": Color(0.93, 0.3, 0.24, 1.0),
 		"static_accent": Color(0.2, 0.55, 0.86, 1.0),
 		"gate": Color(0.08, 0.76, 0.98, 1.0),
-		"route": Color(1.0, 0.88, 0.2, 0.7),
+		"route": Color(1.0, 0.88, 0.2, 0.4),
 		"bounce": Color(0.08, 0.9, 0.74, 1.0),
-		"trim": Color(0.18, 0.78, 1.0, 1.0),
+		"trim": Color(0.78, 0.88, 0.84, 0.7),
 		"net": Color(0.9, 0.97, 1.0, 0.34),
 		"backdrop": Color(0.12, 0.28, 0.22, 1.0),
 		"backdrop_secondary": Color(0.18, 0.34, 0.28, 1.0),
@@ -407,7 +406,7 @@ func _street_palette(level_index: int) -> Dictionary:
 		"static": Color(0.95, 0.32, 0.24, 1.0),
 		"static_accent": Color(0.52, 0.3, 0.84, 1.0),
 		"gate": Color(0.08, 0.78, 0.96, 1.0),
-		"route": Color(1.0, 0.82, 0.16, 0.72),
+		"route": Color(1.0, 0.82, 0.16, 0.4),
 		"bounce": Color(0.08, 0.88, 0.7, 1.0),
 		"trim": Color(1.0, 0.72, 0.16, 1.0),
 		"net": Color(0.94, 0.98, 1.0, 0.36),
@@ -434,7 +433,7 @@ func _stadium_palette(level_index: int) -> Dictionary:
 		"static": Color(0.94, 0.28, 0.3, 1.0),
 		"static_accent": Color(0.28, 0.42, 0.86, 1.0),
 		"gate": Color(0.14, 0.82, 1.0, 1.0),
-		"route": Color(1.0, 0.84, 0.2, 0.74),
+		"route": Color(1.0, 0.84, 0.2, 0.42),
 		"bounce": Color(0.12, 0.94, 0.74, 1.0),
 		"trim": Color(0.96, 0.78, 0.28, 1.0),
 		"net": Color(0.92, 0.97, 1.0, 0.38),
