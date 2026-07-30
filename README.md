@@ -22,6 +22,7 @@ The production entry point is `res://app/netbound_app.tscn`.
 
 ## Documentation
 
+- Cartoony sports audit: `docs/CARTOONY_SPORTS_AUDIT.md`
 - Visual declutter audit: `docs/VISUAL_DECLUTTER_AUDIT.md`
 - World art direction: `docs/WORLD_ART_DIRECTION.md`
 - Levels 21-30: `docs/LEVELS_21_30.md`

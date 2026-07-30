@@ -5,6 +5,8 @@ Direction: Trajectory Playground training equipment (decluttered)
 
 ## Latest Pass
 
+Cartoony sports materials and goal net reaction follow declutter rules; see `docs/CARTOONY_SPORTS_AUDIT.md`.
+
 Visual declutter (2026-07-29) simplified every reusable archetype to one silhouette,
 one primary face, and at most one accent. World decks lost corridor rails, foreground
 cones, triple wall stripes, and the stadium scoreboard behind the goal. Full notes:

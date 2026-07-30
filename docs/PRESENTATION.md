@@ -4,7 +4,7 @@ Phase 7 presentation systems observe gameplay state and produce feel. They never
 
 ## Audit Snapshot
 
-Current production presentation uses world-aware `LevelVisualPolish`, a decluttered
+Current production presentation includes cartoony ball/goal net systems (`docs/CARTOONY_SPORTS_AUDIT.md`) plus world-aware `LevelVisualPolish`, a decluttered
 `NetboundArcadeCourseArt` kit, and visual-only world decks. See
 `docs/VISUAL_DECLUTTER_AUDIT.md` and `docs/GRAPHICS_UPGRADE.md`.
 

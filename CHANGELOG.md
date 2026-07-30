@@ -1,5 +1,19 @@
 # Changelog
 
+## Cartoony Sports Visual Overhaul - 2026-07-29
+
+### Changed
+
+- Overhaul the Classic soccer ball panels/materials for cartoony readability and spin.
+- Replace flat goal nets with a woven MultiMesh rope lattice and bounded spring-grid reaction.
+- Convert goal crossbar visuals to chunky tubes while preserving collider sizes.
+- Soften course-art materials and add short obstacle squash on impact.
+
+### Docs
+
+- Add `docs/CARTOONY_SPORTS_AUDIT.md` with evidence under `artifacts/cartoony-sports/`.
+
+
 ## Visual Declutter And Composition Polish - 2026-07-29
 
 ### Changed

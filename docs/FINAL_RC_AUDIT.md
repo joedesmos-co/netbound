@@ -5,6 +5,11 @@ Candidate: `0.9.0-rc`
 Baseline: `3d39f96`
 Godot: `4.7.stable.official.5b4e0cb0f`
 
+## July 29 Cartoony Sports Addendum
+
+Presentation pass for ball, tubular goal, woven net reaction, and sports materials.
+Scoring and collision contracts unchanged. See `docs/CARTOONY_SPORTS_AUDIT.md`.
+
 ## July 29 Visual Declutter Addendum
 
 Obstacle faces and world decks were simplified without touching colliders, scoring,

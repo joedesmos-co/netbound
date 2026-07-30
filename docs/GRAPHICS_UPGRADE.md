@@ -29,6 +29,7 @@ Scope: world-aware environment presentation without gameplay changes
 - Stadium Showdown: deeper arena sky, side seating wings, two flags, wide floodlights.
 
 All backdrop pieces are visual-only and disabled on Low when decorative geometry is off.
+Cartoony sports pass adds tubular goal visuals, woven net reaction, and richer sports materials without changing physics.
 Obstacle faces were decluttered in `docs/VISUAL_DECLUTTER_AUDIT.md` without changing colliders.
 
 ## Materials

@@ -1,3 +1,13 @@
+## Cartoony Sports Contract
+
+Date: 2026-07-29
+
+- Ball cosmetics preserve radius/mass/mesh identity; Classic panels are cartoony soccer.
+- Goal crossbar visual is tubular; scoring colliders unchanged.
+- `GoalNetArt` woven net reacts after authoritative scoring; resets deterministically.
+- Focused script: `verify_cartoony_sports_external.gd`.
+- Evidence: `docs/CARTOONY_SPORTS_AUDIT.md`, `artifacts/cartoony-sports/`.
+
 ## Visual Declutter Contract
 
 Date: 2026-07-29
