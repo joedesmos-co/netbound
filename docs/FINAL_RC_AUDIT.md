@@ -5,6 +5,20 @@ Candidate: `0.9.0-rc`
 Baseline: `3d39f96`
 Godot: `4.7.stable.official.5b4e0cb0f`
 
+## July 29 Visual Declutter Addendum
+
+Obstacle faces and world decks were simplified without touching colliders, scoring,
+or routes. Course-art archetypes now use one silhouette + one accent. Training lost
+foreground cones and corridor rails; Stadium lost the centered scoreboard behind the
+goal. Evidence: `docs/VISUAL_DECLUTTER_AUDIT.md`, screenshots under
+`artifacts/visual-declutter/`.
+
+Verification: parser 75/75, 30/30 startups, Phase 3 routes, environment art, world
+expansion, Phase 7, economy/skip/feel/clarity suites PASS. Android debug APK/AAB at
+`/tmp/netbound-visual-declutter-exports-20260729/`.
+
+Physical-device beta preparation is still intentionally not started.
+
 ## July 15 Content-Expansion Addendum
 
 The July 14 audit below is retained as historical evidence for the original ten-level candidate. The current candidate expands the same architecture to 20 levels/60 stars and adds arcade side-enclosure scoring, continuous moving hazards, one-line aiming, a soccer-ball identity pass, improved cosmetic concepts/effects, and UI contrast/copy refinements.

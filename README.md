@@ -22,6 +22,7 @@ The production entry point is `res://app/netbound_app.tscn`.
 
 ## Documentation
 
+- Visual declutter audit: `docs/VISUAL_DECLUTTER_AUDIT.md`
 - World art direction: `docs/WORLD_ART_DIRECTION.md`
 - Levels 21-30: `docs/LEVELS_21_30.md`
 - Graphics upgrade: `docs/GRAPHICS_UPGRADE.md`
@@ -30,4 +31,4 @@ The production entry point is `res://app/netbound_app.tscn`.
 - Test matrix: `docs/TEST_PLAN.md`
 - Physical-device checklist: `docs/MOBILE_RELEASE_CHECKLIST.md`
 
-Local automated and export validation is complete for the thirty-level world expansion. Physical iOS and Android device testing is still required before public distribution.
+Local automated and export validation includes the visual-declutter pass. Physical iOS and Android device testing is still required before public distribution.

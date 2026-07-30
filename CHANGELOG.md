@@ -1,5 +1,18 @@
 # Changelog
 
+## Visual Declutter And Composition Polish - 2026-07-29
+
+### Changed
+
+- Simplify reusable obstacle-art faces to one silhouette and one accent per archetype.
+- Reduce world decorative decks: fewer field stripes, no corridor rails, no foreground cones, quieter Street/Stadium backdrops.
+- Quiet authored route marks and soft Training side trim so gameplay silhouettes stay primary.
+- Keep all collider transforms, moving paths, goals, and production routes unchanged.
+
+### Docs
+
+- Add `docs/VISUAL_DECLUTTER_AUDIT.md` with before/after evidence under `artifacts/visual-declutter/`.
+
 ## World Structure, Graphics, And Levels 21-30 - 2026-07-29
 
 ### Added

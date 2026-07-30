@@ -1,3 +1,13 @@
+## Visual Declutter Contract
+
+Date: 2026-07-29
+
+- Presentation-only: obstacle kit + world decks + quieter route materials.
+- Environment art: collision signatures unchanged across all 30 levels; max course-art visual nodes ≤ 96 (observed max 15).
+- Phase 3: all 30 production swipe routes still complete.
+- Evidence: `docs/VISUAL_DECLUTTER_AUDIT.md`, `artifacts/visual-declutter/`.
+- Exports: `/tmp/netbound-visual-declutter-exports-20260729/`.
+
 ## World Expansion Contract
 
 Date: 2026-07-29
