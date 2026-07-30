@@ -109,11 +109,11 @@ func _archetype_for(body: StaticBody3D) -> String:
 		return ARCHETYPE_REBOUND
 	if _script_path(body).ends_with("rotating_obstacle.gd") or path.contains("rotating"):
 		return ARCHETYPE_SPINNER
-	if _has_motion_ancestor(body) or path.contains("gate") or path.contains("traffic") or path.contains("slider") or path.contains("elevator") or path.contains("beat"):
+	if _has_motion_ancestor(body) or path.contains("gate") or path.contains("traffic") or path.contains("slider") or path.contains("elevator") or path.contains("beat") or path.contains("whistle") or path.contains("board"):
 		return ARCHETYPE_GATE
-	if path.contains("tower") or path.contains("lift") or path.contains("overhead") or path.contains("topcap"):
+	if path.contains("tower") or path.contains("lift") or path.contains("overhead") or path.contains("topcap") or path.contains("floodpad") or path.contains("hurdle"):
 		return ARCHETYPE_TOWER
-	if path.contains("wall") or path.contains("shield"):
+	if path.contains("wall") or path.contains("shield") or path.contains("divider") or path.contains("partition") or path.contains("barricade"):
 		return ARCHETYPE_PARTITION
 	return ARCHETYPE_BLOCKER
 
@@ -150,91 +150,83 @@ func _build_archetype(root: Node3D, size: Vector3, archetype: String) -> void:
 
 
 func _build_padded_blocker(root: Node3D, size: Vector3) -> void:
+	# Silhouette + one coral face. No rings or stacked accents.
 	_add_box(root, "PadFrame", size, Vector3.ZERO, _materials.navy, false)
-	var face_z := size.z * 0.5 + 0.014
 	_add_box(
 		root,
 		"SafetyPad",
-		Vector3(size.x * 0.9, size.y * 0.78, 0.035),
-		Vector3(0.0, 0.0, face_z),
+		Vector3(size.x * 0.88, size.y * 0.8, 0.04),
+		Vector3(0.0, 0.0, size.z * 0.5 + 0.016),
 		_materials.foam,
 		true,
 		true
 	)
-	if size.y >= 0.8 and size.x >= 0.8:
-		var radius := clampf(minf(size.x, size.y) * 0.2, 0.16, 0.72)
-		_add_disc(root, "TargetRing", radius, 0.035, Vector3(0.0, 0.0, face_z + 0.02), _materials.canvas, "z", 16, true)
-		_add_disc(root, "TargetCenter", radius * 0.58, 0.04, Vector3(0.0, 0.0, face_z + 0.044), _materials.navy, "z", 16)
 
 
 func _build_sliding_panel(root: Node3D, size: Vector3) -> void:
+	# Moving panels: navy body, teal face, one yellow motion stripe.
 	_add_box(root, "ScoreboardFrame", size, Vector3.ZERO, _materials.navy, false)
-	var face_z := size.z * 0.5 + 0.014
+	var face_z := size.z * 0.5 + 0.016
 	_add_box(
 		root,
 		"ScoreboardFace",
-		Vector3(size.x * 0.9, size.y * 0.78, 0.035),
+		Vector3(size.x * 0.88, size.y * 0.8, 0.04),
 		Vector3(0.0, 0.0, face_z),
 		_materials.moving,
 		true,
 		true
 	)
-	var track_height := clampf(size.y * 0.1, 0.08, 0.2)
 	_add_box(
 		root,
-		"MotionTrack",
-		Vector3(size.x * 0.54, track_height, 0.04),
+		"MotionStripe",
+		Vector3(size.x * 0.5, clampf(size.y * 0.1, 0.08, 0.18), 0.045),
 		Vector3(0.0, 0.0, face_z + 0.03),
-		_materials.canvas
-	)
-	_add_box(
-		root,
-		"TrackMarker",
-		Vector3(clampf(size.x * 0.1, 0.14, 0.46), track_height * 1.45, 0.045),
-		Vector3(0.0, 0.0, face_z + 0.052),
-		_materials.yellow
+		_materials.yellow,
+		true,
+		true
 	)
 
 
 func _build_training_spinner(root: Node3D, size: Vector3) -> void:
+	# Three alternating panels + one hub. No bolt stack.
 	_add_box(root, "BarrierFrame", size, Vector3.ZERO, _materials.navy, false)
-	var face_z := size.z * 0.5 + 0.014
-	for segment_index in 5:
-		var segment_x := (float(segment_index) - 2.0) * size.x * 0.18
+	var face_z := size.z * 0.5 + 0.016
+	for segment_index in 3:
+		var segment_x := (float(segment_index) - 1.0) * size.x * 0.28
 		_add_box(
 			root,
 			"BarrierStripe",
-			Vector3(size.x * 0.15, size.y * 0.72, 0.035),
+			Vector3(size.x * 0.22, size.y * 0.74, 0.04),
 			Vector3(segment_x, 0.0, face_z),
 			_materials.spinner if segment_index % 2 == 0 else _materials.canvas,
 			true,
 			true
 		)
-	var radius := clampf(size.y * 0.78, 0.18, 0.46)
-	_add_disc(root, "OctagonalHub", radius, 0.04, Vector3(0.0, 0.0, face_z + 0.02), _materials.foam, "z", 8, true)
-	_add_disc(root, "HubBolt", radius * 0.42, 0.045, Vector3(0.0, 0.0, face_z + 0.044), _materials.navy, "z", 8)
+	var radius := clampf(size.y * 0.55, 0.16, 0.36)
+	_add_disc(root, "OctagonalHub", radius, 0.04, Vector3(0.0, 0.0, face_z + 0.024), _materials.foam, "z", 8, true)
 
 
 func _build_stacked_tower(root: Node3D, size: Vector3) -> void:
+	# One foam face for short hurdles; two mats for tall towers.
 	_add_box(root, "CrashPadFrame", size, Vector3.ZERO, _materials.navy, false)
-	var face_z := size.z * 0.5 + 0.014
-	if size.y < 1.4:
+	var face_z := size.z * 0.5 + 0.016
+	if size.y < 1.6:
 		_add_box(
 			root,
 			"HurdlePad",
-			Vector3(size.x * 0.9, size.y * 0.7, 0.035),
+			Vector3(size.x * 0.88, size.y * 0.74, 0.04),
 			Vector3(0.0, 0.0, face_z),
 			_materials.foam,
 			true,
 			true
 		)
 		return
-	var segment_height := size.y * 0.22
-	for segment_y in [-0.27, 0.0, 0.27]:
+	var segment_height := size.y * 0.34
+	for segment_y in [-0.18, 0.18]:
 		_add_box(
 			root,
 			"CrashMat",
-			Vector3(size.x * 0.86, segment_height, 0.035),
+			Vector3(size.x * 0.86, segment_height, 0.04),
 			Vector3(0.0, segment_y * size.y, face_z),
 			_materials.foam,
 			true,
@@ -243,41 +235,54 @@ func _build_stacked_tower(root: Node3D, size: Vector3) -> void:
 
 
 func _build_training_partition(root: Node3D, size: Vector3) -> void:
+	# Canvas face + one coral stripe. No triple stripe noise.
 	_add_box(root, "PartitionBody", size, Vector3.ZERO, _materials.navy, false)
-	var face_z := size.z * 0.5 + 0.014
+	var face_z := size.z * 0.5 + 0.016
 	_add_box(
 		root,
 		"BarricadeFace",
-		Vector3(size.x * 0.9, size.y * 0.78, 0.035),
+		Vector3(size.x * 0.88, size.y * 0.8, 0.04),
 		Vector3(0.0, 0.0, face_z),
 		_materials.canvas,
 		true,
 		true
 	)
-	for stripe_index in 3:
-		var x := (float(stripe_index) - 1.0) * size.x * 0.26
-		_add_box(
-			root,
-			"SafetyStripe",
-			Vector3(size.x * 0.09, size.y * 0.62, 0.04),
-			Vector3(x, 0.0, face_z + 0.03),
-			_materials.foam,
-			true,
-			false,
-			Vector3(0.0, 0.0, -0.32)
-		)
+	_add_box(
+		root,
+		"SafetyStripe",
+		Vector3(size.x * 0.12, size.y * 0.64, 0.045),
+		Vector3(0.0, 0.0, face_z + 0.028),
+		_materials.foam,
+		true,
+		false
+	)
 
 
 func _build_rebound_board(root: Node3D, size: Vector3) -> void:
+	# Frame + impact faces only. Drop secondary marks.
 	_add_box(root, "ReboundFrame", size, Vector3.ZERO, _materials.navy, false)
 	var thin_axis := "x" if size.x <= size.z else "z"
 	for side in [-1.0, 1.0]:
 		if thin_axis == "x":
-			_add_box(root, "ReboundFace", Vector3(0.035, size.y * 0.84, size.z * 0.88), Vector3(side * (size.x * 0.5 + 0.014), 0.0, 0.0), _materials.rebound, true, true)
-			_add_box(root, "ReboundMark", Vector3(0.04, size.y * 0.12, size.z * 0.62), Vector3(side * (size.x * 0.5 + 0.038), 0.0, 0.0), _materials.canvas)
+			_add_box(
+				root,
+				"ReboundFace",
+				Vector3(0.04, size.y * 0.84, size.z * 0.86),
+				Vector3(side * (size.x * 0.5 + 0.016), 0.0, 0.0),
+				_materials.rebound,
+				true,
+				true
+			)
 		else:
-			_add_box(root, "ReboundFace", Vector3(size.x * 0.88, size.y * 0.84, 0.035), Vector3(0.0, 0.0, side * (size.z * 0.5 + 0.014)), _materials.rebound, true, true)
-			_add_box(root, "ReboundMark", Vector3(size.x * 0.62, size.y * 0.12, 0.04), Vector3(0.0, 0.0, side * (size.z * 0.5 + 0.038)), _materials.canvas)
+			_add_box(
+				root,
+				"ReboundFace",
+				Vector3(size.x * 0.86, size.y * 0.84, 0.04),
+				Vector3(0.0, 0.0, side * (size.z * 0.5 + 0.016)),
+				_materials.rebound,
+				true,
+				true
+			)
 
 
 func _add_box(
