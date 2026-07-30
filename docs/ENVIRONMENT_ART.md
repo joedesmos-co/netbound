@@ -1,7 +1,14 @@
 # Netbound Environment Art
 
-Audit date: 2026-07-15
-Direction: Trajectory Playground training equipment
+Audit date: 2026-07-29
+Direction: Trajectory Playground training equipment (decluttered)
+
+## Latest Pass
+
+Visual declutter (2026-07-29) simplified every reusable archetype to one silhouette,
+one primary face, and at most one accent. World decks lost corridor rails, foreground
+cones, triple wall stripes, and the stadium scoreboard behind the goal. Full notes:
+`docs/VISUAL_DECLUTTER_AUDIT.md`.
 
 ## Problem Audit
 
@@ -12,7 +19,7 @@ Levels 10 and 20 read as unrelated parts rather than one course.
 
 The first replacement draft added many small indicators and mixed-color pads. It
 improved differentiation but became noisy when several obstacles overlapped. That
-direction was rejected. The final kit uses fewer, larger details and one physical
+direction was rejected. The decluttered kit uses fewer, larger details and one physical
 construction language.
 
 ## Object Vocabulary
@@ -23,18 +30,16 @@ All course equipment uses a restrained real-world training palette:
 - off-white: canvas, board faces, and high-contrast markings
 - coral: safety padding and barricade stripes
 - teal: moving scoreboard faces and rebound surfaces
-- yellow: motion tracks and rotating-hazard markings only
+- yellow: motion stripes and rotating-hazard markings only
 
-Reusable archetypes:
+Reusable archetypes (post-declutter):
 
-- **Padded target blocker:** navy frame, one coral safety pad, white target ring.
-- **Moving scoreboard panel:** navy frame, teal board face, one white motion track.
-- **Rotating training barrier:** navy bar, alternating white/yellow barrier panels,
-  octagonal coral hub.
-- **Rebound board:** navy frame, teal impact face, one broad white rebound mark.
-- **Crash-pad stack:** navy frame with one or three separate coral mats.
-- **Training barricade:** navy frame, off-white face, three restrained coral safety
-  stripes.
+- **Padded blocker:** navy frame + coral face.
+- **Moving scoreboard panel:** navy frame + teal face + one yellow motion stripe.
+- **Rotating training barrier:** navy bar + three alternating panels + one coral hub.
+- **Rebound board:** navy frame + teal impact faces.
+- **Crash-pad stack:** navy frame with one pad, or two mats when tall.
+- **Training barricade:** navy frame + canvas face + one coral safety stripe.
 
 These are recognizable pieces of an arcade soccer training course. They avoid
 logos, characters, text decals, and one-off novelty objects.

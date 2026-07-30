@@ -4,7 +4,7 @@ Phase 3 built the first ten authored levels. The content-expansion pass extends 
 
 ## Production Level Set
 
-All production levels live under `res://levels/level_01.tscn` through `res://levels/level_30.tscn`. Each has a matching `LevelDefinition` in `res://levels/definitions/`. Worlds and Levels 21-30 are documented in `docs/WORLD_ART_DIRECTION.md` and `docs/LEVELS_21_30.md`.
+All production levels live under `res://levels/level_01.tscn` through `res://levels/level_30.tscn`. Each has a matching `LevelDefinition` in `res://levels/definitions/`. Worlds and Levels 21-30 are documented in `docs/WORLD_ART_DIRECTION.md` and `docs/LEVELS_21_30.md`. Visual declutter evidence is in `docs/VISUAL_DECLUTTER_AUDIT.md` (kit/deck only; collision layouts unchanged).
 
 | Level | Name | Main mechanic | Shots | Par | Verified route |
 | --- | --- | --- | ---: | ---: | --- |

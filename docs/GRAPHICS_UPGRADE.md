@@ -24,11 +24,12 @@ Scope: world-aware environment presentation without gameplay changes
 
 ## Skies And Backgrounds
 
-- Training Yard: bright practice sky, fencing, banners, cone marks.
-- Street Arcade: warmer/dusk court skies, painted wall stripes, low court rails.
-- Stadium Showdown: deeper arena sky, seating bands, flags, floodlights, scoreboard silhouette.
+- Training Yard: bright practice sky, distant fence, two banners, sideline cones.
+- Street Arcade: warmer/dusk court skies, one wall stripe, low court rails.
+- Stadium Showdown: deeper arena sky, side seating wings, two flags, wide floodlights.
 
 All backdrop pieces are visual-only and disabled on Low when decorative geometry is off.
+Obstacle faces were decluttered in `docs/VISUAL_DECLUTTER_AUDIT.md` without changing colliders.
 
 ## Materials
 

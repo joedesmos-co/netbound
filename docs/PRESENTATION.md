@@ -4,7 +4,11 @@ Phase 7 presentation systems observe gameplay state and produce feel. They never
 
 ## Audit Snapshot
 
-Current production presentation before Phase 7:
+Current production presentation uses world-aware `LevelVisualPolish`, a decluttered
+`NetboundArcadeCourseArt` kit, and visual-only world decks. See
+`docs/VISUAL_DECLUTTER_AUDIT.md` and `docs/GRAPHICS_UPGRADE.md`.
+
+Historical Phase 7 baseline before world expansion:
 
 - Audio: no final audio layer existed. Phase 5 applied volume sliders directly to buses only if those buses existed.
 - Audio buses: only Godot's default `Master` bus existed before runtime setup.

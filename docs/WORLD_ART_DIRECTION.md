@@ -14,9 +14,9 @@ gameplay signatures.
 
 | World | Levels | Identity | Atmosphere |
 | --- | ---: | --- | --- |
-| 1 Training Yard | 01–10 | sunny practice field | cones, padded blockers, rebound boards, fencing |
-| 2 Street Arcade | 11–20 | urban court course | barricades, stop-sign spinners, scoreboard gates |
-| 3 Stadium Showdown | 21–30 | championship arena | floodlights, flags, seating silhouettes, scoreboards |
+| 1 Training Yard | 01–10 | sunny practice field | distant fence, two banners, sideline cones |
+| 2 Street Arcade | 11–20 | urban court course | court wall, one stripe, compact rails |
+| 3 Stadium Showdown | 21–30 | championship arena | side stands, two flags, wide floodlights |
 
 ## Shared Rules
 
@@ -34,21 +34,23 @@ gameplay signatures.
 - Sky: bright mid-day blue
 - Field: vivid practice green
 - Accents: coral pads, teal rebound faces, yellow motion marks
-- Backdrop: simple fencing and practice banners
+- Backdrop: simple fencing and two side practice banners
 
 ### Street Arcade
 
 - Sky: warmer urban daylight / late-afternoon court light
 - Field: deeper court green with chalk-adjacent lines
 - Accents: striped barricades, teal scoreboard panels, coral safety stripes
-- Backdrop: painted walls and compact court rails
+- Backdrop: painted wall with one stripe and compact court rails
 
 ### Stadium Showdown
 
 - Sky: deeper arena blue with floodlight warmth
 - Field: richer match green
 - Accents: navy frames, teal panels, restrained gold trim
-- Backdrop: seating bands, flags, floodlight masts, scoreboard silhouettes
+- Backdrop: side seating wings, two offset flags, wide floodlights (no centered scoreboard behind the goal)
+
+Declutter rules and evidence: `docs/VISUAL_DECLUTTER_AUDIT.md`.
 
 ## Presentation Accents
 
