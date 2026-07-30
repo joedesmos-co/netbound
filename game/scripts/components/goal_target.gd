@@ -5,6 +5,7 @@ signal goal_scored(target: GoalTarget)
 
 const RESET_GROUP := "netbound_level_resettable"
 const GOAL_GROUP := "netbound_goal_target"
+const GoalNetArtScript := preload("res://scripts/presentation/goal_net_art.gd")
 
 @export var opening_half_width: float = 11.0
 @export var crossbar_height: float = 8.4
@@ -20,6 +21,8 @@ const GOAL_GROUP := "netbound_goal_target"
 @onready var detector: GoalDetector = get_node_or_null(detector_path) as GoalDetector
 @onready var goal_particles: CPUParticles3D = get_node_or_null(particles_path) as CPUParticles3D
 
+var _net_art
+
 
 func _enter_tree() -> void:
 	add_to_group(RESET_GROUP)
@@ -28,6 +31,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_sync_geometry()
+	_ensure_net_art()
 	if detector and not detector.goal_scored.is_connected(_on_detector_goal_scored):
 		detector.goal_scored.connect(_on_detector_goal_scored)
 
@@ -45,11 +49,25 @@ func reset_level_element(_generation: int) -> void:
 	reset_shot_tracking()
 	if goal_particles:
 		goal_particles.emitting = false
+	if _net_art and _net_art.has_method("reset_reaction"):
+		_net_art.call("reset_reaction")
 
 
 func reset_shot_tracking() -> void:
 	if detector:
 		detector.reset_shot_tracking()
+
+
+func play_net_impact(global_impact: Vector3, global_velocity: Vector3) -> void:
+	_ensure_net_art()
+	if _net_art and _net_art.has_method("trigger_impact"):
+		_net_art.call("trigger_impact", global_impact, global_velocity)
+
+
+func apply_net_quality_settings(config: Dictionary) -> void:
+	_ensure_net_art()
+	if _net_art and _net_art.has_method("apply_quality_settings"):
+		_net_art.call("apply_quality_settings", config)
 
 
 func begin_shot_tracking(shot_id: int, ball_position: Vector3) -> void:
@@ -115,6 +133,7 @@ func _sync_detector_geometry() -> void:
 func _sync_frame_visuals() -> void:
 	var post_center_y := crossbar_height * 0.5
 	var post_center_x := opening_half_width + post_radius
+	var crossbar_length := opening_half_width * 2.0 + post_radius * 2.0
 	_set_child_position("LeftPost", Vector3(-post_center_x, post_center_y, 0.0))
 	_set_child_position("RightPost", Vector3(post_center_x, post_center_y, 0.0))
 	_set_child_position("Crossbar", Vector3(0.0, crossbar_height + post_radius * 0.5, 0.0))
@@ -122,14 +141,37 @@ func _sync_frame_visuals() -> void:
 	_set_cylinder_mesh_height("RightPost/MeshInstance3D", crossbar_height)
 	_set_cylinder_shape_height("LeftPost/CollisionShape3D", crossbar_height)
 	_set_cylinder_shape_height("RightPost/CollisionShape3D", crossbar_height)
-	_set_box_mesh_size(
-		"Crossbar/MeshInstance3D",
-		Vector3(opening_half_width * 2.0 + post_radius * 2.0, post_radius, post_radius)
-	)
+	_set_crossbar_tube_visual(crossbar_length)
 	_set_box_shape_size(
 		"Crossbar/CollisionShape3D",
-		Vector3(opening_half_width * 2.0 + post_radius * 2.0, post_radius, post_radius)
+		Vector3(crossbar_length, post_radius, post_radius)
 	)
+
+
+func _ensure_net_art() -> void:
+	if _net_art and is_instance_valid(_net_art):
+		return
+	_net_art = GoalNetArtScript.new()
+	add_child(_net_art)
+	_net_art.call("setup", self, {})
+
+
+func _set_crossbar_tube_visual(length: float) -> void:
+	var mesh_instance := get_node_or_null("Crossbar/MeshInstance3D") as MeshInstance3D
+	if not mesh_instance:
+		return
+	var cylinder := mesh_instance.mesh as CylinderMesh
+	if cylinder == null or not mesh_instance.mesh.resource_local_to_scene:
+		cylinder = CylinderMesh.new()
+		cylinder.resource_local_to_scene = true
+		mesh_instance.mesh = cylinder
+	var visual_radius := post_radius * 1.18
+	cylinder.top_radius = visual_radius
+	cylinder.bottom_radius = visual_radius
+	cylinder.height = length
+	cylinder.radial_segments = 18
+	cylinder.rings = 1
+	mesh_instance.rotation_degrees = Vector3(0.0, 0.0, 90.0)
 
 
 func _sync_net_visuals() -> void:
@@ -227,6 +269,10 @@ func _set_cylinder_mesh_height(path: NodePath, height: float) -> void:
 		cylinder_mesh.resource_local_to_scene = true
 		mesh_instance.mesh = cylinder_mesh
 	cylinder_mesh.height = height
+	var visual_radius := post_radius * 1.18
+	cylinder_mesh.top_radius = visual_radius
+	cylinder_mesh.bottom_radius = visual_radius
+	cylinder_mesh.radial_segments = 18
 
 
 func _set_cylinder_shape_height(path: NodePath, height: float) -> void:

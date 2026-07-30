@@ -125,6 +125,9 @@ func apply_quality_settings(config: Dictionary) -> void:
 	current_quality_config = config.duplicate(true)
 	if level_visual_polish and level_visual_polish.has_method("apply_quality_settings"):
 		level_visual_polish.call("apply_quality_settings", current_quality_config)
+	for target in goal_targets:
+		if target and target.has_method("apply_net_quality_settings"):
+			target.call("apply_net_quality_settings", current_quality_config)
 	_apply_quality_to_ball_trail()
 	_apply_quality_to_goal_particles()
 
@@ -334,8 +337,10 @@ func _on_goal_scored() -> void:
 	)
 	last_progression_update = _record_progression_result(last_level_result)
 	_clear_active_curve()
+	var impact_position := ball.global_position
+	var impact_velocity := ball.linear_velocity
 	ball.freeze = true
-	_show_goal_feedback()
+	_show_goal_feedback(impact_position, impact_velocity)
 	if not external_navigation_ui_enabled:
 		win_title.text = "GOAL!"
 		win_shots_used.text = "Shots used: %d / %d" % [shots_used, max_shots]
@@ -555,12 +560,20 @@ func _is_ball_out_of_bounds() -> bool:
 	)
 
 
-func _show_goal_feedback() -> void:
+func _show_goal_feedback(
+	impact_position: Vector3 = Vector3.ZERO,
+	impact_velocity: Vector3 = Vector3.ZERO
+) -> void:
 	_refresh_selected_cosmetics()
 	if gameplay_feedback:
 		gameplay_feedback.on_goal_scored()
 	if level_visual_polish:
 		level_visual_polish.on_goal_scored()
+		if level_visual_polish.has_method("on_goal_net_impact"):
+			level_visual_polish.call("on_goal_net_impact", impact_position, impact_velocity)
+	for target in goal_targets:
+		if target and target.has_method("play_net_impact"):
+			target.call("play_net_impact", impact_position, impact_velocity)
 	CosmeticVisualsScript.trigger_goal_effect(
 		self,
 		goal_root,
@@ -682,6 +695,8 @@ func _clear_level_presentation_feedback() -> void:
 
 func _present_ball_impact(kind: String, strength: float, body: Node) -> void:
 	super._present_ball_impact(kind, strength, body)
+	if level_visual_polish and level_visual_polish.has_method("on_ball_impact"):
+		level_visual_polish.call("on_ball_impact", kind, strength, body)
 	if kind == "post":
 		_maybe_present_near_miss(active_shot_id)
 

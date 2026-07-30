@@ -208,11 +208,14 @@ func _goal_visuals_match_target(target: GoalTarget) -> bool:
 	) as CollisionShape3D
 	var mouth_box := mouth_shape.shape as BoxShape3D
 	var crossbar_mesh_instance := target.get_node("Crossbar/MeshInstance3D") as MeshInstance3D
-	var crossbar_mesh := crossbar_mesh_instance.mesh as BoxMesh
+	var crossbar_mesh := crossbar_mesh_instance.mesh as CylinderMesh
+	var expected_length := target.opening_half_width * 2.0 + target.post_radius * 2.0
 	return (
 		is_equal_approx(mouth_box.size.x, target.opening_half_width * 2.0)
 		and is_equal_approx(mouth_box.size.y, target.crossbar_height)
-		and is_equal_approx(crossbar_mesh.size.x, target.opening_half_width * 2.0 + target.post_radius * 2.0)
+		and crossbar_mesh != null
+		and is_equal_approx(crossbar_mesh.height, expected_length)
+		and is_equal_approx(crossbar_mesh.top_radius, target.post_radius * 1.18)
 	)
 
 
