@@ -47,6 +47,8 @@ func _run() -> void:
 	passed = await _test_release_ui_filters() and passed
 	passed = await _test_all_production_level_startups() and passed
 	_cleanup()
+	await process_frame
+	await process_frame
 	print("PHASE9 verify=", "PASS" if passed else "FAIL")
 	quit(0 if passed else 1)
 
@@ -388,8 +390,11 @@ func _cleanup() -> void:
 	runtime.set_release_mode_override_for_tests(-1)
 	runtime.clear_safe_area_override_for_tests()
 	monetization.set_release_mode_enabled(false)
-	if app:
+	if app and is_instance_valid(app):
+		if app.has_method("_disconnect_mobile_runtime_service"):
+			app.call("_disconnect_mobile_runtime_service")
 		app.queue_free()
+		app = null
 	for path in [TEST_SAVE, TEST_TMP, TEST_BAK, TEST_CORRUPT]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)

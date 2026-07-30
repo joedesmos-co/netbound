@@ -2202,6 +2202,12 @@ func _clear_screen() -> void:
 		if child != fade_rect:
 			child.queue_free()
 	status_label = null
+	total_stars_label = null
+	level_grid = null
+	level_world_routes.clear()
+	level_card_buttons.clear()
+	play_button = null
+	play_subtitle_label = null
 	cosmetic_items_box = null
 	cosmetic_preview = null
 	cosmetic_name_label = null
@@ -2321,11 +2327,37 @@ func _connect_mobile_runtime_service() -> void:
 		viewport.size_changed.connect(_on_viewport_size_changed)
 
 
+func _disconnect_mobile_runtime_service() -> void:
+	var mobile_runtime := _get_mobile_runtime_service()
+	if mobile_runtime:
+		var connections := {
+			"safe_area_changed": Callable(self, "_on_safe_area_changed"),
+			"app_backgrounded": Callable(self, "_on_mobile_app_backgrounded"),
+			"app_foregrounded": Callable(self, "_on_mobile_app_foregrounded"),
+			"app_quit_requested": Callable(self, "_on_mobile_app_quit_requested"),
+		}
+		for signal_name in connections.keys():
+			var callback := connections[signal_name] as Callable
+			if mobile_runtime.has_signal(String(signal_name)) and mobile_runtime.is_connected(String(signal_name), callback):
+				mobile_runtime.disconnect(String(signal_name), callback)
+	var viewport := get_viewport()
+	if viewport and viewport.size_changed.is_connected(_on_viewport_size_changed):
+		viewport.size_changed.disconnect(_on_viewport_size_changed)
+
+
+func _exit_tree() -> void:
+	_disconnect_mobile_runtime_service()
+
+
 func _on_safe_area_changed(_margins: Dictionary) -> void:
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	_refresh_safe_area_layout()
 
 
 func _on_viewport_size_changed() -> void:
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	_refresh_safe_area_layout()
 	_refresh_level_grid_columns()
 
@@ -2355,22 +2387,24 @@ func _on_mobile_app_quit_requested(_reason: String) -> void:
 
 func _refresh_main_menu_play_state() -> void:
 	var resolution := get_play_resolution()
-	if play_subtitle_label:
+	if is_instance_valid(play_subtitle_label):
 		play_subtitle_label.text = String(resolution.get("subtitle", ""))
-	if play_button:
+	if is_instance_valid(play_button):
 		play_button.text = String(resolution.get("button_text", "Play"))
 
 
 func _refresh_level_select_state() -> void:
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	var service := _get_save_service()
 	var play_resolution := get_play_resolution()
 	var current_level_target := String(play_resolution.get("level_id", ""))
-	if total_stars_label:
+	if is_instance_valid(total_stars_label):
 		total_stars_label.text = "Stars: %d / %d" % [service.get_total_stars(), MAX_STARS]
 	for i in LevelRegistryScript.get_level_ids().size():
 		var level_id := LevelRegistryScript.get_level_ids()[i]
 		var button := level_card_buttons.get(level_id) as Button
-		if not button:
+		if not is_instance_valid(button):
 			continue
 		var definition := LevelRegistryScript.load_definition(level_id)
 		var unlocked: bool = service.is_level_unlocked(level_id)
@@ -2407,17 +2441,37 @@ func _refresh_level_select_state() -> void:
 				best_text,
 				requirement,
 			]
-	if level_world_routes.is_empty() and level_grid:
+	_prune_stale_level_select_refs()
+	if level_world_routes.is_empty() and is_instance_valid(level_grid):
 		level_grid.queue_redraw()
 	else:
 		for route in level_world_routes:
-			if route:
+			if is_instance_valid(route):
 				route.queue_redraw()
 
 
+func _prune_stale_level_select_refs() -> void:
+	if level_grid != null and not is_instance_valid(level_grid):
+		level_grid = null
+	var live_routes: Array[Container] = []
+	for route in level_world_routes:
+		if is_instance_valid(route):
+			live_routes.append(route)
+	level_world_routes = live_routes
+	var live_cards := {}
+	for level_id in level_card_buttons.keys():
+		var button: Variant = level_card_buttons[level_id]
+		if is_instance_valid(button):
+			live_cards[level_id] = button
+	level_card_buttons = live_cards
+
+
 func _refresh_level_grid_columns() -> void:
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	_prune_stale_level_select_refs()
 	var routes: Array[Container] = level_world_routes.duplicate()
-	if routes.is_empty() and level_grid:
+	if routes.is_empty() and is_instance_valid(level_grid):
 		routes.append(level_grid)
 	if routes.is_empty():
 		return
@@ -2433,7 +2487,8 @@ func _refresh_level_grid_columns() -> void:
 	elif width >= 860.0:
 		columns = 4
 	for route in routes:
-		route.set("columns", columns)
+		if is_instance_valid(route):
+			route.set("columns", columns)
 
 
 func _add_volume_setting(parent: VBoxContainer, title: String, setting_name: String) -> void:
