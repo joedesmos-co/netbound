@@ -66,7 +66,10 @@ static func _add_ball_concept(
 
 	match skin_id:
 		"ball_classic":
-			_add_soccer_panels(attachments, accent_material, 0.12)
+			_add_soccer_panels(attachments, accent_material, 0.11)
+			var seam := _detail_material(skin_id, "seam", Color(0.22, 0.22, 0.24, 1.0), 0.0)
+			seam.roughness = 0.7
+			_add_ring(attachments, "SeamLatitude", seam, Vector3.ZERO, Vector3(0.96, 0.96, 0.96))
 		"ball_neon":
 			_add_soccer_panels(attachments, accent_material, 0.105)
 			_add_ring(attachments, "NeonLane", accent_material, Vector3(18.0, 0.0, 28.0), Vector3.ONE)
@@ -128,21 +131,18 @@ static func _add_soccer_panels(
 	material: StandardMaterial3D,
 	radius: float
 ) -> void:
-	var normals: Array[Vector3] = [
-		Vector3(0.0, 0.0, 1.0),
-		Vector3(0.0, 0.0, -1.0),
-		Vector3(0.0, 1.0, 0.0),
-		Vector3(0.0, -1.0, 0.0),
-		Vector3(0.82, 0.28, 0.5).normalized(),
-		Vector3(-0.82, 0.28, 0.5).normalized(),
-		Vector3(0.72, -0.42, -0.54).normalized(),
-		Vector3(-0.72, -0.42, -0.54).normalized(),
+	# Cartoony truncated-soccer layout: icosahedron verts + a few equatorial accents.
+	var phi := (1.0 + sqrt(5.0)) * 0.5
+	var raw: Array[Vector3] = [
+		Vector3(-1.0, phi, 0.0), Vector3(1.0, phi, 0.0), Vector3(-1.0, -phi, 0.0), Vector3(1.0, -phi, 0.0),
+		Vector3(0.0, -1.0, phi), Vector3(0.0, 1.0, phi), Vector3(0.0, -1.0, -phi), Vector3(0.0, 1.0, -phi),
+		Vector3(phi, 0.0, -1.0), Vector3(phi, 0.0, 1.0), Vector3(-phi, 0.0, -1.0), Vector3(-phi, 0.0, 1.0),
 	]
-	for index in normals.size():
+	for index in raw.size():
 		_add_surface_disc(
 			attachments,
 			"SoccerPanel%02d" % index,
-			normals[index],
+			raw[index].normalized(),
 			radius,
 			material,
 			5
@@ -175,7 +175,7 @@ static func _add_surface_disc(
 		mesh = CylinderMesh.new()
 		mesh.top_radius = radius
 		mesh.bottom_radius = radius
-		mesh.height = 0.018
+		mesh.height = 0.03
 		mesh.radial_segments = sides
 		mesh.rings = 1
 		_ball_detail_mesh_cache[mesh_key] = mesh
@@ -183,7 +183,7 @@ static func _add_surface_disc(
 	piece.name = piece_name
 	piece.mesh = mesh
 	piece.material_override = material
-	piece.position = normal.normalized() * 0.488
+	piece.position = normal.normalized() * 0.492
 	piece.basis = Basis(Quaternion(Vector3.UP, normal.normalized()))
 	root.add_child(piece)
 
@@ -517,9 +517,12 @@ static func _ball_main_material(skin_id: String) -> StandardMaterial3D:
 			material.emission_enabled = true
 			material.emission = Color(0.05, 0.0, 0.12, 1.0)
 		_:
-			material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+			# Classic match ball: warm canvas white, soft leather response, no black core.
+			material.albedo_color = Color(0.97, 0.97, 0.94, 1.0)
+			material.roughness = 0.52
+			material.metallic = 0.0
 			material.emission_enabled = true
-			material.emission = Color(0.16, 0.16, 0.16, 1.0)
+			material.emission = Color(0.1, 0.1, 0.095, 1.0)
 	_ball_main_material_cache[skin_id] = material
 	return material
 
@@ -595,7 +598,10 @@ static func _ball_accent_material(skin_id: String) -> StandardMaterial3D:
 			material.emission_enabled = true
 			material.emission = Color(0.42, 0.06, 1.0, 1.0)
 		_:
-			material.albedo_color = Color(0.035, 0.035, 0.035, 1.0)
+			# Charcoal panels (not pure black) so rotation and seams stay readable.
+			material.albedo_color = Color(0.2, 0.2, 0.22, 1.0)
+			material.roughness = 0.62
+			material.metallic = 0.04
 	_ball_accent_material_cache[skin_id] = material
 	return material
 

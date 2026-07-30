@@ -38,6 +38,8 @@ roughness = 0.5
 material = SubResource("StandardMaterial3D_ball")
 radius = 0.49
 height = 0.98
+radial_segments = 28
+rings = 14
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
 radius = 0.49

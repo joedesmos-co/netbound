@@ -133,15 +133,16 @@ func _draw_cloud(center: Vector2, radius: float) -> void:
 
 func _draw_soccer_ball(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius, NetboundUITheme.CHALK)
-	draw_arc(center, radius, 0.0, TAU, 30, NetboundUITheme.INK, 2.0, true)
-	var center_patch := _regular_polygon(center, radius * 0.29, 5, -PI * 0.5)
-	draw_colored_polygon(center_patch, NetboundUITheme.INK)
+	draw_arc(center, radius, 0.0, TAU, 36, Color(NetboundUITheme.INK, 0.55), 2.2, true)
+	var panel := Color(0.14, 0.14, 0.16, 1.0)
+	var center_patch := _regular_polygon(center, radius * 0.3, 5, -PI * 0.5)
+	draw_colored_polygon(center_patch, panel)
 	for index in 5:
 		var angle := -PI * 0.5 + TAU * float(index) / 5.0
-		var patch_center := center + Vector2(cos(angle), sin(angle)) * radius * 0.72
-		var patch := _regular_polygon(patch_center, radius * 0.18, 5, angle)
-		draw_colored_polygon(patch, NetboundUITheme.INK)
-		draw_line(center_patch[index], patch_center, Color(NetboundUITheme.INK, 0.62), 1.4, true)
+		var patch_center := center + Vector2(cos(angle), sin(angle)) * radius * 0.7
+		var patch := _regular_polygon(patch_center, radius * 0.19, 5, angle)
+		draw_colored_polygon(patch, panel)
+		draw_line(center_patch[index], patch_center, Color(panel, 0.7), 1.5, true)
 
 
 func _regular_polygon(
